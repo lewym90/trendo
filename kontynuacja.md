@@ -40,3 +40,9 @@ Najlepsza droga dla każdego sklepu:
 - Łączniki: Zara (itxrest search, store 11725), Google Shopping (SerpApi, plan Free 250/mies., limit 8 dziennie). Linki z Google prowadzą do karty oferty w Google, nie prosto do sklepu.
 - Aplikacja: wyniki „W sklepach” prawdziwe; stylizacje, trendy i okazje nadal przykładowe (oznaczone). API można przestawić do testów: localStorage `trendo-api`.
 - Następne łączniki: siostry Inditex, LPP (Reserved, Mohito, House, Cropp, Sinsay), H&M, sklepy grupy A (ld+json), przeglądarka dla reszty.
+
+## 0.4.0 (15.11.2026)
+- Łączniki bezpośrednie: Zara (itxrest), LPP przez Algolię (Reserved, Mohito, House, Cropp, Sinsay; klucz/indeks czytany ze strony głównej marki, history_price = Omnibus), Modivo i eobuwie (search-service.modivo.io, kanały modivo/eobuwie, zdjęcia img.modivo.cloud/product(ścieżka,jpg), omnibus_price), strony wyszukiwania: Ochnik i Bialcon (ld+json ItemList, /products/search?query=), Born2Be i Renee (kafle data-dl-*), Bizuu (Searchanise getresults, klucz 1r4h1n5E9I).
+- Weryfikacja promocji: jeśli sklep podaje cenę Omnibus → ok/pozorna od razu; inaczej własna historia.
+- Trafność (api.py): tokeny 4-literowe; „rzecz” (spodnie, płaszcz…) musi się zgadzać i być pierwszą rzeczą w nazwie (odrzuca „pasek do spodni”); trafnosc 2 = całe hasło, 1 = sama rzecz (sekcja „Podobne” w aplikacji).
+- Zablokowane także u mnie: siostry Inditex (strony z zabezpieczeniem), grupa H&M (403). Wittchen: wyszukiwarka Synerise wymaga autoryzacji (401). C&A: POST /api?o=searchPageSearch (do zrobienia). Vinted: /catalog?search_text= (do zrobienia, second-hand).
