@@ -20,7 +20,7 @@ curl -fsSL https://codeload.github.com/lewym90/trendo/tar.gz/main | tar -xz -C "
 rm -rf "$DIR/trendo"
 cp -r "$TMP"/trendo-main/serwer/. "$DIR"/
 rm -rf "$TMP"
-[ -f /etc/trendo.env ] || { umask 077; printf 'PORT=%s\nTRENDO_DANE=/var/lib/trendo\nSERPAPI_LIMIT_DZIENNY=8\n' "$PORT" > /etc/trendo.env; }
+[ -f /etc/trendo.env ] || ( umask 077; printf 'PORT=%s\nTRENDO_DANE=/var/lib/trendo\nSERPAPI_LIMIT_DZIENNY=8\n' "$PORT" > /etc/trendo.env )
 cat > /etc/systemd/system/trendo.service <<EOF
 [Unit]
 Description=Trendo zbieracz
@@ -40,13 +40,20 @@ EOF
 # Główny blok strony należy do innych aplikacji. Własna trasa idzie wyłącznie do conf.d.
 CF=/etc/caddy/Caddyfile
 if ! grep -q 'conf.d' "$CF"; then echo "STOP: Caddyfile nie wczytuje conf.d. Nic nie zmieniam w Caddy."; exit 2; fi
-printf 'handle_path /trendo-api/* {\n\treverse_proxy 127.0.0.1:%s\n}\n' "$PORT" > /etc/caddy/conf.d/trendo.caddy
-caddy validate --config "$CF" --adapter caddyfile >/dev/null
+TC=/etc/caddy/conf.d/trendo.caddy
+printf 'handle_path /trendo-api/* {\n\treverse_proxy 127.0.0.1:%s\n}\n' "$PORT" > "$TC"
+# Caddy działa na własnym koncie: plik musi być dla niego czytelny (jak pozostałe w conf.d).
+chown --reference=/etc/caddy/Caddyfile "$TC"; chmod 644 "$TC"
+if ! caddy validate --config "$CF" --adapter caddyfile >/dev/null 2>&1; then rm -f "$TC"; echo "STOP: Caddy nie przyjął trasy. Wycofałem ją, nic się nie zmieniło."; exit 2; fi
 echo "Uruchamiam..."
 systemctl daemon-reload
 systemctl enable trendo >/dev/null 2>&1
 systemctl restart trendo
-systemctl reload caddy
+if ! systemctl reload caddy; then
+  rm -f "$TC"; systemctl reload caddy 2>/dev/null || true
+  echo "STOP: Caddy nie przeładował konfiguracji. Wycofałem trasę Trendo, Twoje aplikacje działają jak wcześniej."
+  journalctl -u caddy -n 3 --no-pager | cut -c1-200; exit 2
+fi
 sleep 6
 if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; then
   echo; echo "Status: OK"; cat /tmp/trendo-zdrowie.json; echo
