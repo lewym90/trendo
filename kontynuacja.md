@@ -31,3 +31,12 @@ Najlepsza droga dla każdego sklepu:
 - B. Łącznik (strona produktu dostępna, cenę trzeba wyciągnąć z API sklepu lub przeglądarką): Zara, Bershka, Stradivarius, Pull&Bear, Massimo Dutti, Oysho (curl 200 na stronach produktów, przeglądarka 403), Reserved, Mohito, House, Cropp, H&M (adresy z mapy dają 404), CCC, Deichmann, 4F, Nike, Top Secret, Big Star, Molton, Ryłko, Wólczanka, Vinted, Modivo, About You, Ochnik, Wittchen, Bytom, Diverse, Bialcon, Quiosque, Showroom, Bizuu, Pako Lorente, Tatuum, Zalando.
 - C. Google Shopping (płatne API): Answear i Medicine (serwer blokowany curl i przeglądarką), Vitkac, Lancerto, Decathlon, Guess, Allegro, Mango, COS, & Other Stories, Levi's, Sizeer, Tommy Hilfiger, Calvin Klein.
 - Adresy do poprawy: Monnari sprzedaje online na emonnari.pl; Badura nie odpowiada (sprawdzić).
+
+## Zbieracz na serwerze (15.11.2026, wersja 0.3.x)
+- Zainstalowany przez `curl -fsSL https://raw.githubusercontent.com/lewym90/trendo/main/serwer/install.sh | bash` (ten sam skrypt aktualizuje).
+- Kod: /opt/trendo (pobierany z GitHuba), dane: /var/lib/trendo/trendo.db (pamięć wyników 6 h, historia cen), ustawienia: /etc/trendo.env, klucz SerpApi: /root/.trendo-serpapi.
+- Usługa systemd `trendo` (python z ~/trendo-scraper, port 127.0.0.1:18890, limit 1200 MB), trasa Caddy /etc/caddy/conf.d/trendo.caddy → https://188-68-247-201.sslip.io/trendo-api/ (zdrowie, szukaj, historia).
+- Lekcja: plik w conf.d musi być czytelny dla konta caddy (chmod 644); instalator sam wycofuje trasę, gdy reload się nie uda. Pierwsza próba 14.11 nie przeładowała Caddy (permission denied), aplikacje użytkownika działały cały czas na starej konfiguracji.
+- Łączniki: Zara (itxrest search, store 11725), Google Shopping (SerpApi, plan Free 250/mies., limit 8 dziennie). Linki z Google prowadzą do karty oferty w Google, nie prosto do sklepu.
+- Aplikacja: wyniki „W sklepach” prawdziwe; stylizacje, trendy i okazje nadal przykładowe (oznaczone). API można przestawić do testów: localStorage `trendo-api`.
+- Następne łączniki: siostry Inditex, LPP (Reserved, Mohito, House, Cropp, Sinsay), H&M, sklepy grupy A (ld+json), przeglądarka dla reszty.
