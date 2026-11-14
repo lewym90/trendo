@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.1.0';
+  const WERSJA = '0.2.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -34,6 +34,7 @@
     KOM.textContent = t; KOM.classList.add('widac');
     clearTimeout(komunikat.t); komunikat.t = setTimeout(() => KOM.classList.remove('widac'), 3200);
   }
+  const foto = (p) => (p.img ? `<img src="img/wzorce/${p.img}.webp" alt="" loading="lazy" decoding="async">` : G.ubranie(p.typ, p.k[0], p.k[1]));
   const ikonaW = (n, w) => IK[n].replace('<svg', `<svg width="${w}" height="${w}"`);
 
   /* ---------- menu ---------- */
@@ -77,6 +78,9 @@
           <a class="ikonka" href="#/profil" aria-label="Profil i ustawienia">${IK.profil}</a>
         </div></div>
       <a href="#/szukaj" class="pole-szukaj" style="text-decoration:none">${IK.szukaj}<span style="flex:1;color:var(--szary2);font-size:17px">Np. skórzane spodnie, płaszcz…</span><span class="ikonka" aria-hidden="true">${IK.aparat}</span></a>
+      <div class="sekcja" style="margin-top:22px"><div class="sekcja-tytul"><h2>Kategorie</h2>
+        <div class="przelacznik" role="radiogroup" aria-label="Dział" style="width:190px;padding:3px"><button role="radio" style="height:32px;font-size:13.5px" aria-checked="${st.dzial === 'damskie'}" data-akcja="dzial" data-v="damskie">Damskie</button><button role="radio" style="height:32px;font-size:13.5px" aria-checked="${st.dzial === 'meskie'}" data-akcja="dzial" data-v="meskie">Męskie</button></div></div>
+        <div class="karuzela kategorie">${kategorie(st.dzial).map((k) => `<button class="kategoria" data-akcja="kategoria" data-q="${esc(k.zapytanie)}"><span class="kat-foto"><img src="img/wzorce/${k.id}.webp" alt="" loading="lazy"></span><span>${esc(k.katNazwa)}</span></button>`).join('')}</div></div>
       ${ost.length ? `<div class="sekcja" style="margin-top:16px"><div class="chipy">${ost.map((q) => `<button class="chip" data-akcja="szukajOstatnie" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>` : ''}
 
       <div class="sekcja">
@@ -243,7 +247,7 @@
         <div class="gora"><button class="ikonka" data-akcja="wstecz" aria-label="Wróć">${IK.wstecz}</button>
           <button class="ikonka" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj produkt'}">${ul ? IK.sercePelne : IK.serce}</button></div>
         <svg class="ubranie" viewBox="0 0 10 10" style="display:none"></svg>
-        <div class="wejscie" style="width:56%;height:66%;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 22px 28px rgba(0,0,0,.6))">${G.ubranie(p.typ, p.k[0], p.k[1])}</div>
+        <div class="wejscie" style="width:56%;height:66%;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 22px 28px rgba(0,0,0,.6))">${foto(p)}</div>
       </div>
       <div class="produkt-tresc">
         ${demoZnak()}
@@ -284,7 +288,7 @@
       <div style="margin-top:4px">${lista.map((t) => {
         const [ik, nazwa, kol] = stat[t.status];
         return `<a class="trend" href="#/szukaj" data-akcja="szukajTrendu" data-q="${esc(t.nazwa)}">
-          <div class="probka">${G.probka(t.probka[0], t.probka[1], t.probka[2])}</div>
+          <div class="probka">${t.img ? `<img src="img/wzorce/${t.img}.webp" alt="" loading="lazy">` : G.probka(t.probka[0], t.probka[1], t.probka[2])}</div>
           <div class="opis"><h3>${esc(t.nazwa)}</h3><p>${esc(t.opis)}</p>
             <div style="display:flex;gap:12px;align-items:center"><span class="status ${t.status}">${IK[ik]}${nazwa}</span><span class="zrodla">${t.zrodla} źródeł</span></div></div>
           ${G.wykresLinii(t.seria, kol, 64, 30)}</a>`;
@@ -326,7 +330,7 @@
       if (!darmo) sumaD += d.koszt;
       return `<section class="grupa" aria-label="${esc(sk)}">
         <div class="grupa-gora"><b>${esc(sk)}</b><a class="link" href="${ps[0].url}" target="_blank" rel="noopener">Zamów w sklepie ${ikonaW('link', 14)}</a></div>
-        ${ps.map((p) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${G.ubranie(p.typ, p.k[0], p.k[1])}</a>
+        ${ps.map((p) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
           <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${st.rozmiar[p.id] ? 'Rozmiar ' + esc(st.rozmiar[p.id]) : 'Rozmiar wybierzesz w sklepie'}</div>
           <div class="ceny"><span class="cena" style="font-size:19px">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</div></div>
           <button class="ikonka bez" data-akcja="usunZKoszyka" data-id="${p.id}" aria-label="Usuń ${esc(p.nazwa)}">${IK.kosz}</button></div>`).join('')}
@@ -354,7 +358,7 @@
     return {
       akt: 'start',
       html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Alerty cenowe</h1><span class="puste"></span></div>
-      ${al.length ? `<div class="elementy">${al.map(({ a, p }) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${G.ubranie(p.typ, p.k[0], p.k[1])}</a>
+      ${al.length ? `<div class="elementy">${al.map(({ a, p }) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
         <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${esc(p.sklep)}, teraz ${zl(p.cena)}</div><div class="maly" style="color:var(--roz);margin-top:3px">Powiadom poniżej ${zl(a.cel)}</div></div>
         <button class="ikonka bez" data-akcja="usunAlert" data-id="${p.id}" aria-label="Usuń alert">${IK.kosz}</button></div>`).join('')}</div>
         <div class="info uwaga" style="margin-top:18px">${IK.uwaga}<p>Powiadomienia na telefon zaczną przychodzić po podłączeniu serwera, który codziennie sprawdza ceny.</p></div>`
@@ -380,6 +384,15 @@
   });
 
   /* ---------- elementy wielokrotne ---------- */
+  const KAT_ZAPYTANIE = { spodnie: 'Spodnie', koszule: 'Koszula', swetry: 'Sweter', okrycia: 'Płaszcz', sukienki: 'Sukienka', buty: 'Buty', torebki: 'Torebka', dodatki: 'Dodatki' };
+  const KAT_OKLADKA = { 'damskie': { spodnie: 3, koszule: 3, swetry: 5, okrycia: 1, sukienki: 2, buty: 2, torebki: 2, dodatki: 1 }, 'meskie': { spodnie: 1, koszule: 3, swetry: 2, okrycia: 2, buty: 1, dodatki: 3 } };
+  function kategorie(dzial) {
+    const ok = KAT_OKLADKA[dzial];
+    return Object.keys(ok).map((k) => {
+      const w = WZORCE.find((x) => x.dzial === dzial && x.kat === k && x.id.endsWith('-' + ok[k]));
+      return { id: w.id, katNazwa: w.katNazwa, zapytanie: KAT_ZAPYTANIE[k] };
+    });
+  }
   function kartaStylizacji(s) {
     const el = s.el.map(prod);
     const suma = el.reduce((a, p) => a + p.cena, 0);
@@ -391,7 +404,7 @@
   function kolaz(s) {
     return s.uklad.map(([id, x, y, w, h, rot]) => {
       const p = prod(id);
-      return `<div class="el" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%;transform:rotate(${rot}deg)">${G.ubranie(p.typ, p.k[0], p.k[1])}</div>`;
+      return `<div class="el" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%;transform:rotate(${rot}deg)">${foto(p)}</div>`;
     }).join('');
   }
   function kartaProduktu(p) {
@@ -399,7 +412,7 @@
     const wer = p.weryf === 'ok' ? `<div class="weryf ok">${IK.ok}Obniżka potwierdzona</div>`
       : p.weryf === 'pozorna' ? `<div class="weryf uwaga">${IK.uwaga}Promocja pozorna: przez 30 dni było ${zl(p.omnibus)}</div>`
       : p.weryf === 'second' ? `<div class="weryf" style="color:var(--szary)">${IK.second}Z drugiej ręki</div>` : '';
-    return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${G.ubranie(p.typ, p.k[0], p.k[1])}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
+    return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
       <button class="serce" style="position:relative;margin:-50px 8px 14px auto;width:36px;height:36px;border-radius:18px;background:rgba(14,9,12,.6);border:none;display:flex;align-items:center;justify-content:center" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj'}">${(ul ? IK.sercePelne : IK.serce).replace('<svg', '<svg width="18" height="18"')}</button>
       <a href="#/produkt/${p.id}" style="text-decoration:none;color:var(--tekst);display:flex;flex-direction:column;gap:4px">
       <span class="sklep">${esc(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
@@ -407,7 +420,7 @@
   }
   function wierszElementu(p) {
     const r = rabat(p);
-    return `<a class="element" href="#/produkt/${p.id}"><span class="miniatura">${G.ubranie(p.typ, p.k[0], p.k[1])}</span>
+    return `<a class="element" href="#/produkt/${p.id}"><span class="miniatura">${foto(p)}</span>
       <span class="opis"><span class="nazwa" style="display:block">${esc(p.nazwa)}</span><span class="sklep">${esc(p.sklep)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}${r && p.weryf === 'ok' ? `<span class="rabat">−${r}%</span>` : ''}</span></span>
       <span class="zewn">${IK.dalej}</span></a>`;
@@ -467,6 +480,7 @@
       zakladka = st.tryb === 'rzecz' ? 'sklepy' : 'stylizacje'; strefa = 'budzet';
       zapisz(); location.hash = '#/analiza';
     },
+    kategoria(el) { st.zapytanie = el.dataset.q; st.tryb = 'rzecz'; zapisz(); location.hash = '#/szukaj'; },
     szukajOstatnie(el) { st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
     szukajTrendu(el, e) { e.preventDefault(); st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
     zakladka(el) { zakladka = el.dataset.v; render(); },
