@@ -104,6 +104,10 @@ def weryfikuj(p):
     if not p.get("stara") or p["stara"] <= p["cena"]:
         p["stara"] = None
         return "reg"
+    om = p.get("omnibus")
+    if om:
+        # sklep podał najniższą cenę z 30 dni przed obniżką (dyrektywa Omnibus)
+        return "ok" if p["cena"] < om - 0.01 else "pozorna"
     h = historia(p["id"])
     teraz = time.time()
     przed = [c for c, t in h if teraz - t <= 30 * 86400 and teraz - t > 2 * 86400]
@@ -144,3 +148,28 @@ def produkt(sklep, nazwa, cena, url, zdjecie, stara=None, zrodlo="", dzial="", e
     if extra:
         p.update(extra)
     return p
+
+
+MESKIE = re.compile(r"męsk|meski|meskie|mężczy|mezczy|\bmen\b|\bman\b", re.I)
+DAMSKIE = re.compile(r"damsk|kobiet|\bwomen\b|\bwoman\b|\blady\b", re.I)
+
+
+def pasuje_dzial(tekst, dzial):
+    """Odrzuca produkty wprost opisane jako przeznaczone dla drugiej płci."""
+    t = tekst or ""
+    if dzial == "damskie":
+        return not (MESKIE.search(t) and not DAMSKIE.search(t))
+    return not (DAMSKIE.search(t) and not MESKIE.search(t))
+
+
+def rownolegle(funkcja, lista, watki=6):
+    """Uruchamia funkcję dla każdego elementu naraz, zwraca listę wyników (błędy pomija)."""
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=watki) as ex:
+        out = []
+        for f in [ex.submit(funkcja, x) for x in lista]:
+            try:
+                out.append(f.result(timeout=40))
+            except Exception:
+                out.append(None)
+        return out

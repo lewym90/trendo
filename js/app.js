@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.3.1';
+  const WERSJA = '0.4.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -238,6 +238,18 @@
     if (p.cena <= st.b1 * 1.8) return 'wiecej';
     return 'drozej';
   }
+  function siatkaWynikow(lista, q) {
+    const dokladne = lista.filter((p) => p.trafnosc !== 1);
+    const podobne = lista.filter((p) => p.trafnosc === 1);
+    let h = dokladne.length ? `<div class="siatka">${dokladne.map(kartaProduktu).join('')}</div>` : '';
+    if (podobne.length) {
+      h += `<div class="sekcja-tytul" style="margin:${dokladne.length ? 28 : 4}px 0 12px"><h2>Podobne</h2><span class="maly szary">${podobne.length}</span></div>
+        <p class="maly szary" style="margin:-6px 0 14px">Ten sam rodzaj rzeczy, ale nie każde słowo z hasła „${esc(q)}” jest w opisie sklepu.</p>
+        <div class="siatka">${podobne.map(kartaProduktu).join('')}</div>`;
+    }
+    return h;
+  }
+
   function wynikiPrawdziwe(q) {
     const P = wynik.produkty;
     const ile = (z) => P.filter((p) => strefaProduktu(p) === z).length;
@@ -273,7 +285,7 @@
         <div class="chipy" style="margin-top:8px"><button class="chip" aria-pressed="${tylkoPrawdziwe}" data-akcja="tylkoPrawdziwe">${ikonaW('okazje', 14)} Tylko promocje</button></div>
         <p class="szary maly" style="margin:12px 0">${strefa === 'wiecej' ? `Od ${zl(Math.round(st.b1 * 1.15))} do ${zl(Math.round(st.b1 * 1.8))}: trochę ponad Twój cel.` : strefa === 'second' ? 'Ogłoszenia z serwisów z używaną odzieżą. Stan opisuje sprzedający.' : strefa === 'tanio' ? 'Wszystkie nowe produkty od najtańszego.' : `Do ${zl(Math.round(st.b1 * 1.15))}, czyli w okolicy Twojej kwoty.`}</p>
         ${zamiast}
-        ${lista.length ? `<div class="siatka">${lista.map(kartaProduktu).join('')}</div>` : `<div class="pusty"><p>${strefa === 'second' ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPrawdziwe ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Brak produktów w tej grupie. Zajrzyj do „Najtaniej”.'}</p></div>`}`}`
+        ${lista.length ? siatkaWynikow(lista, q) : `<div class="pusty"><p>${strefa === 'second' ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPrawdziwe ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Brak produktów w tej grupie. Zajrzyj do „Najtaniej”.'}</p></div>`}`}`
     };
   }
 
@@ -314,7 +326,7 @@
     else if (p.weryf === 'pozorna') werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> Przez ostatnie 30 dni produkt kosztował tyle samo (${zl(p.omnibus)}). Przekreślona cena nie była aktualna.</p></div>`;
     else if (p.weryf === 'second') werInfo = `<div class="info neutral">${IK.info}<p>Ogłoszenie z drugiej ręki. Stan i opis podaje sprzedający, sprawdź zdjęcia przed zakupem.</p></div>`;
     else if (p.weryf === 'sklep') werInfo = `<div class="info neutral">${IK.info}<p><b>Obniżkę podaje sklep</b> (wcześniej ${zl(p.stara)}). Historię ceny tego produktu zbieramy od ${new Date(p.sprawdzono * 1000).toLocaleDateString('pl-PL')}. Po 30 dniach ocenimy, czy obniżka jest prawdziwa.</p></div>`;
-    if (p.weryf === 'pozorna' && prawdziwy(p)) werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> W ostatnich 30 dniach ten produkt kosztował już tyle samo albo mniej. Przekreślona cena nie była aktualna.</p></div>`;
+    if (p.weryf === 'pozorna' && prawdziwy(p)) werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> ${p.omnibus ? `Najniższa cena z 30 dni przed obniżką, podana przez sklep, to ${zl(p.omnibus)}, czyli tyle samo albo mniej niż teraz.` : 'W ostatnich 30 dniach ten produkt kosztował już tyle samo albo mniej.'} Przekreślona cena nie była aktualna.</p></div>`;
     return {
       akt: 'szukaj', menu: false, klasa: 'bez-menu',
       po: () => {
@@ -345,7 +357,7 @@
         <div class="karta"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font-weight:500">Cena przez 30 dni</b><span class="maly szary" id="hist-opis">${p.historia ? (p.historia.every((v) => v === p.historia[0]) ? 'bez zmian' : 'zmieniała się') : ''}</span></div>
           <div id="hist">${p.historia ? wykresCeny(p.historia) : '<p class="maly szary">Sprawdzam historię ceny…</p>'}</div></div>
         ${p.rozmiary ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
-          <div class="rozmiary">${p.rozmiary.map((r) => `<button aria-pressed="${wybr === r}" ${p.brak.includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
+          <div class="rozmiary">${p.rozmiary.map((r) => `<button aria-pressed="${wybr === r}" ${(p.brak || []).includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
           <a class="btn" href="${p.url}" target="_blank" rel="noopener">${viaGoogle(p) ? `Przejdź do oferty ${esc(p.sklep)}` : `Kup w sklepie ${esc(p.sklep)}`}</a>
           ${viaGoogle(p) ? '<p class="maly szary" style="margin:-4px 2px 0">Ten produkt znaleźliśmy przez Google Shopping. Otworzy się karta oferty z przyciskiem do sklepu.</p>' : ''}

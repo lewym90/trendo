@@ -3,6 +3,7 @@ from urllib.parse import quote
 from .wspolne import pobierz_json, produkt
 
 NAZWA = "Zara"
+SKLEPY = ["Zara"]
 SKLEP_ID = 11725  # Zara Polska
 
 

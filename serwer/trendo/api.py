@@ -4,18 +4,51 @@ Endpointy (za Caddy pod /trendo-api/):
   GET /szukaj?q=...&dzial=damskie produkty ze wszystkich łączników naraz
   GET /historia?id=...            historia ceny produktu z naszej bazy
 """
-import json, os, time, traceback
+import json, os, re, time, traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from . import lacznik_google, lacznik_zara
+from . import lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara
 from .wspolne import historia, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
 
-WERSJA = "0.3.1"
-LACZNIKI = [lacznik_zara, lacznik_google]
+WERSJA = "0.4.0"
+LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 6 * 3600
+
+
+POMIJANE = {"damskie", "damski", "damska", "męskie", "męski", "męska", "meskie", "meski", "dla", "modne", "modny", "nowe", "tanie"}
+
+
+def tokeny(q):
+    return [w[:4] for w in re.findall(r"\w+", q.lower()) if len(w) >= 4 and w not in POMIJANE]
+
+
+RZECZY = ("spod", "jean", "kosz", "bluz", "swet", "kurt", "płas", "suki", "spód", "buty", "botk", "szpi", "sand", "tore",
+          "plec", "pask", "szal", "czap", "ręka", "mary", "kami", "golf", "kard", "dres", "legg", "szor", "koza", "tramp",
+          "snea", "moka", "okul", "kolc", "nasz", "bran", "zega", "garn", "trencz", "parka", "bomb", "kombi", "body", "top",
+          "półb", "glan", "worker", "kopert", "nerk", "beret", "rękaw", "apasz", "chust", "rajst", "skar", "piża", "szla",
+          "pase", "kolcz", "zesta", "pług", "kosm", "brel")
+
+
+def rzecz(w):
+    w = w[:5]
+    return len(w) >= 4 and any(w.startswith(r[:4]) for r in RZECZY)
+
+
+def trafnosc(p, tok):
+    """2 = pasuje całe hasło, 1 = pasuje sama rzecz (np. płaszcz bez koloru), 0 = nie pasuje."""
+    t = (p["nazwa"] + " " + (p.get("material") or "")).lower()
+    glowne = [x for x in tok if rzecz(x)]
+    pierwsza = next((w[:4] for w in re.findall(r"\w+", p["nazwa"].lower()) if rzecz(w)), None)
+    if glowne and pierwsza and pierwsza not in glowne:
+        return 0  # np. „Pasek do spodni”, gdy szukamy spodni
+    if all(x in t for x in tok):
+        return 2
+    if glowne and all(x in t for x in glowne):
+        return 1
+    return 0
 
 
 def szukaj(q, dzial):
@@ -27,9 +60,10 @@ def szukaj(q, dzial):
         return zap
     t0 = time.time()
     zad = {PULA.submit(l.szukaj, q, dzial): l.NAZWA for l in LACZNIKI}
-    gotowe, _ = wait(zad, timeout=50)
+    gotowe, _ = wait(zad, timeout=55)
     sklepy, produkty, widziane = [], [], set()
-    wlasne = {l.NAZWA.lower() for l in LACZNIKI if l is not lacznik_google}
+    tok = tokeny(q)
+    wlasne = {s.lower() for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}
     for f, nazwa in zad.items():
         if f not in gotowe:
             sklepy.append({"nazwa": nazwa, "stan": "za długo", "ile": 0}); continue
@@ -42,6 +76,9 @@ def szukaj(q, dzial):
         for p in lista:
             k = (p["sklep"].lower(), p["nazwa"].lower(), p["cena"])
             if k in widziane or not p.get("url") or (p["zrodlo"] == "google" and p["sklep"].lower() in wlasne):
+                continue
+            p["trafnosc"] = trafnosc(p, tok) if tok else 2
+            if not p["trafnosc"]:
                 continue
             widziane.add(k)
             zapisz_cene(p)
@@ -78,6 +115,7 @@ class Obsluga(BaseHTTPRequestHandler):
         try:
             if u.path in ("/", "/zdrowie"):
                 return self._wyslij(200, {"ok": True, "wersja": WERSJA, "laczniki": [l.NAZWA for l in LACZNIKI],
+                                      "sklepy_bezposrednio": sorted({s for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}),
                                           "google": lacznik_google.stan()})
             if u.path == "/szukaj":
                 q = a.get("q", "").strip()
