@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.3.0';
+  const WERSJA = '0.3.1';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -32,6 +32,7 @@
     if (k.length > 300) k.slice(0, k.length - 300).forEach((x) => { if (!st.koszyk.includes(x) && !st.ulubione.includes(x)) delete st.znane[x]; });
   }
   const prawdziwy = (p) => !!(p && p.zrodlo);
+  const viaGoogle = (p) => !!(p && p.zrodlo === 'google' && /google\./.test(p.url || ''));
   const rabat = (p) => (p.stara ? Math.round((1 - p.cena / p.stara) * 100) : 0);
   const demoZnak = () => `<div class="demo">${IK.info.replace('<svg', '<svg width="15" height="15"')}Wersja próbna: dane przykładowe</div>`;
   const sezon = () => {
@@ -337,7 +338,7 @@
       </div>
       <div class="produkt-tresc">
         ${prawdziwy(p) ? '' : demoZnak()}
-        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500">${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener">Otwórz w sklepie ${ikonaW('link', 15)}</a></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500">${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener">${viaGoogle(p) ? 'Otwórz ofertę' : 'Otwórz w sklepie'} ${ikonaW('link', 15)}</a></div>
         <h1 style="font-size:30px;margin-top:-8px">${esc(p.nazwa)}</h1>
         <div class="ceny"><span class="cena" style="font-size:38px">${zl(p.cena)}</span>${p.stara ? `<span class="stara" style="font-size:16px">${zl(p.stara)}</span><span class="rabat">−${r}%</span>` : ''}</div>
         ${werInfo}
@@ -346,7 +347,8 @@
         ${p.rozmiary ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
           <div class="rozmiary">${p.rozmiary.map((r) => `<button aria-pressed="${wybr === r}" ${p.brak.includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
-          <a class="btn" href="${p.url}" target="_blank" rel="noopener">Kup w sklepie ${esc(p.sklep)}</a>
+          <a class="btn" href="${p.url}" target="_blank" rel="noopener">${viaGoogle(p) ? `Przejdź do oferty ${esc(p.sklep)}` : `Kup w sklepie ${esc(p.sklep)}`}</a>
+          ${viaGoogle(p) ? '<p class="maly szary" style="margin:-4px 2px 0">Ten produkt znaleźliśmy przez Google Shopping. Otworzy się karta oferty z przyciskiem do sklepu.</p>' : ''}
           <button class="btn drugi" data-akcja="alert" data-id="${p.id}">${IK.dzwonek} ${alert ? `Alert ustawiony: ${zl(alert.cel)}` : 'Powiadom, gdy stanieje'}</button>
           <button class="btn drugi" data-akcja="dodajProdukt" data-id="${p.id}">${IK.torba} ${st.koszyk.includes(p.id) ? 'Jest w zakupach' : 'Dodaj do zakupów'}</button>
           ${prawdziwy(p) ? '' : `<a class="btn drugi" href="#/wyniki" data-akcja="dobierz">${IK.iskra} Dobierz do tego stylizację</a>`}

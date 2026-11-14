@@ -1,11 +1,28 @@
 """Łącznik Google Shopping przez SerpApi. Obejmuje sklepy, których nie czytamy bezpośrednio.
 Klucz: plik ~/.trendo-serpapi albo zmienna SERPAPI_KEY. Dzienny limit chroni darmowy plan."""
-import os, time
+import os, re, time
 from urllib.parse import urlencode
 from .wspolne import pobierz_json, produkt, liczba, licznik
 
 NAZWA = "Google Shopping"
 LIMIT_DZIENNY = int(os.environ.get("SERPAPI_LIMIT_DZIENNY", "8"))
+
+
+NAZWY = {"zara polska": "Zara", "h&m pl": "H&M", "h&m": "H&M", "modivo": "Modivo", "shop.mango.com": "Mango",
+         "zalando.pl": "Zalando", "answear.com": "Answear", "eobuwie.pl": "eobuwie", "eobuwie.com.pl": "eobuwie",
+         "bonprix.pl": "bonprix", "reserved": "Reserved", "allegro": "Allegro", "cos": "COS"}
+
+
+def nazwa_sklepu(n):
+    n = (n or "Inny sklep").strip()
+    k = n.lower()
+    if k in NAZWY:
+        return NAZWY[k]
+    k = re.sub(r"^(www\.|shop\.|sklep\.)", "", k)
+    k = re.sub(r"\.(com\.pl|pl|com|eu|store|shop)$", "", k)
+    if k != n.lower():
+        return NAZWY.get(k, k[:1].upper() + k[1:])
+    return n
 
 
 def klucz():
@@ -43,7 +60,7 @@ def szukaj(q, dzial):
         if not cena:
             continue
         link = r.get("link") or r.get("product_link")
-        sklep = (r.get("source") or "Inny sklep").strip()
+        sklep = nazwa_sklepu(r.get("source"))
         stara = r.get("extracted_old_price") or liczba(r.get("old_price"))
         wyn.append(produkt(sklep, r.get("title", ""), cena, link, r.get("thumbnail"), stara=stara,
                            zrodlo="google", dzial=dzial))

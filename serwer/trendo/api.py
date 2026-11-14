@@ -12,7 +12,7 @@ from urllib.parse import parse_qs, urlparse
 from . import lacznik_google, lacznik_zara
 from .wspolne import historia, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
 
-WERSJA = "0.3.0"
+WERSJA = "0.3.1"
 LACZNIKI = [lacznik_zara, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 6 * 3600
@@ -20,7 +20,7 @@ WIEK_PAMIECI = 6 * 3600
 
 def szukaj(q, dzial):
     q = " ".join(q.split())[:80]
-    klucz = f"szukaj|{q.lower()}|{dzial}"
+    klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}"
     zap = pamiec_czytaj(klucz, WIEK_PAMIECI)
     if zap:
         zap["z_pamieci"] = True
@@ -29,6 +29,7 @@ def szukaj(q, dzial):
     zad = {PULA.submit(l.szukaj, q, dzial): l.NAZWA for l in LACZNIKI}
     gotowe, _ = wait(zad, timeout=50)
     sklepy, produkty, widziane = [], [], set()
+    wlasne = {l.NAZWA.lower() for l in LACZNIKI if l is not lacznik_google}
     for f, nazwa in zad.items():
         if f not in gotowe:
             sklepy.append({"nazwa": nazwa, "stan": "za długo", "ile": 0}); continue
@@ -40,7 +41,7 @@ def szukaj(q, dzial):
         ile = 0
         for p in lista:
             k = (p["sklep"].lower(), p["nazwa"].lower(), p["cena"])
-            if k in widziane or not p.get("url"):
+            if k in widziane or not p.get("url") or (p["zrodlo"] == "google" and p["sklep"].lower() in wlasne):
                 continue
             widziane.add(k)
             zapisz_cene(p)
