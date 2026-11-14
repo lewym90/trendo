@@ -50,3 +50,7 @@ Najlepsza droga dla każdego sklepu:
 ## 0.4.1 (15.11.2026)
 - Google Shopping: Serper (POST https://google.serper.dev/shopping, nagłówek X-API-KEY, klucz /root/.trendo-serper, limit 300 dziennie; darmowe 2500 na start, potem pakiet 50 000 za 50 USD ważny 6 miesięcy), SerpApi jako zapas (limit 8 dziennie). Serper zwraca ok. 15 wyników na zapytanie, linki do karty oferty w Google.
 - Wspólna pamięć wyników: 12 godzin.
+
+## 0.5.0 (15.11.2026)
+- Okazja z ekranu wyszukiwania wreszcie trafia do serwera (wcześniej była tylko przyciskiem — zgłoszenie użytkownika: koszula w palmy na wieczór). api.py: OKAZJE (wieczor, wesele, sylwester, randka, praca) — lista „nie” (plażowe, sportowe, nadruki, krata, len, krótki rękaw na wieczór/wesele…) wyklucza, lista „tak” (elegancka, satyna, jedwab, wełna, slim…) daje punkty i kolejność. Odpowiedź ma okazja i pominiete. codzien/wyjazd = bez filtra.
+- Linki z Google Shopping (karta Google pokazuje „Szczegółowe informacje o tym produkcie są niedostępne” poza Google): /link?nazwa=&sklep= szuka strony produktu w sklepie przez Serper (wyszukiwanie zwykłe, 1 kredyt, pamięć 7 dni); gdy nie znajdzie domeny sklepu → zwykłe wyszukiwanie Google. Aplikacja: akcja doSklepu.

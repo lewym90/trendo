@@ -7,12 +7,12 @@ Endpointy (za Caddy pod /trendo-api/):
 import json, os, re, time, traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote_plus, urlparse
 
 from . import lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara
 from .wspolne import historia, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
 
-WERSJA = "0.4.1"
+WERSJA = "0.5.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -51,9 +51,38 @@ def trafnosc(p, tok):
     return 0
 
 
-def szukaj(q, dzial):
+# Okazje: czego na pewno nie pokazywać i co premiować. Słowa szukane w nazwie i opisie produktu (małe litery).
+NIEFORMALNE = ["palm", "hawaj", "plaż", "plaz", "tropik", "flaming", "dres", "sportow", "jogger", "bojówk", "cargo",
+               "z kapturem", "kapturem", "nadruk", "print", "graficzn", "dziur", "przetarc", "ripped", "kąpiel", "piżam",
+               "polar", "trekking", "biegow", "treningow", "kraciaste szorty", "szorty", "klapk", "japonk", "crocs"]
+ELEGANCKIE = ["elegan", "wizytow", "satyn", "jedwab", "smoking", "garnitur", "koronk", "aksamit", "welur", "wełn",
+              "kaszmir", "slim", "gładk", "klasycz", "taliowan", "marynar", "szpilk", "lakierk", "oxford", "derby"]
+OKAZJE = {
+    "wieczor": {"nazwa": "Wieczór", "nie": NIEFORMALNE + ["krótkim rękaw", "krótki rękaw", "lnian", "lnu", "flanel", "jeans", "denim", "krat", "wzorzyst", "kolorow", "w paski", "workowat"],
+                "tak": ELEGANCKIE + ["cekin", "brokat", "czarn"]},
+    "wesele": {"nazwa": "Wesele", "nie": NIEFORMALNE + ["krótkim rękaw", "krótki rękaw", "lnian", "lnu", "flanel", "jeans", "denim", "sneaker", "trampk", "krat", "wzorzyst", "w paski", "workowat"],
+               "tak": ELEGANCKIE},
+    "sylwester": {"nazwa": "Sylwester", "nie": NIEFORMALNE + ["lnian", "flanel"], "tak": ELEGANCKIE + ["cekin", "brokat", "metaliczn", "złot", "srebrn"]},
+    "randka": {"nazwa": "Randka", "nie": NIEFORMALNE, "tak": ELEGANCKIE + ["koronk"]},
+    "praca": {"nazwa": "Praca", "nie": NIEFORMALNE + ["cekin", "brokat", "prześwit", "crop", "mini "], "tak": ["biur", "klasycz", "wizytow", "oxford", "garnitur", "marynar", "gładk", "slim", "taliowan"]},
+}
+
+
+def ocen_okazje(p, okazja):
+    """Zwraca None, gdy produkt nie pasuje do okazji, inaczej liczbę punktów (więcej = lepiej)."""
+    o = OKAZJE.get(okazja)
+    if not o:
+        return 0
+    t = (p["nazwa"] + " " + (p.get("material") or "")).lower()
+    if any(x in t for x in o["nie"]):
+        return None
+    return sum(1 for x in o["tak"] if x in t)
+
+
+def szukaj(q, dzial, okazja=""):
     q = " ".join(q.split())[:80]
-    klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}"
+    okazja = okazja if okazja in OKAZJE else ""
+    klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}|{okazja}"
     zap = pamiec_czytaj(klucz, WIEK_PAMIECI)
     if zap:
         zap["z_pamieci"] = True
@@ -61,7 +90,7 @@ def szukaj(q, dzial):
     t0 = time.time()
     zad = {PULA.submit(l.szukaj, q, dzial): l.NAZWA for l in LACZNIKI}
     gotowe, _ = wait(zad, timeout=55)
-    sklepy, produkty, widziane = [], [], set()
+    sklepy, produkty, widziane, pominiete = [], [], set(), 0
     tok = tokeny(q)
     wlasne = {s.lower() for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}
     for f, nazwa in zad.items():
@@ -80,13 +109,19 @@ def szukaj(q, dzial):
             p["trafnosc"] = trafnosc(p, tok) if tok else 2
             if not p["trafnosc"]:
                 continue
+            pkt = ocen_okazje(p, okazja)
+            if pkt is None:
+                pominiete += 1
+                continue
+            p["punkty"] = pkt
             widziane.add(k)
             zapisz_cene(p)
             p["weryf"] = weryfikuj(p)
             produkty.append(p); ile += 1
         sklepy.append({"nazwa": nazwa, "stan": stan, "ile": ile})
     wynik = {"zapytanie": q, "dzial": dzial, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
-             "sklepy": sklepy, "produkty": produkty}
+             "sklepy": sklepy, "produkty": sorted(produkty, key=lambda p: -p.get("punkty", 0)),
+             "okazja": OKAZJE[okazja]["nazwa"] if okazja else "", "pominiete": pominiete}
     if produkty:
         pamiec_zapisz(klucz, wynik)
     return wynik
@@ -122,7 +157,19 @@ class Obsluga(BaseHTTPRequestHandler):
                 if len(q) < 2:
                     return self._wyslij(400, {"blad": "Wpisz, czego szukasz."})
                 dzial = "meskie" if a.get("dzial") == "meskie" else "damskie"
-                return self._wyslij(200, szukaj(q, dzial))
+                return self._wyslij(200, szukaj(q, dzial, a.get("okazja", "")))
+            if u.path == "/link":
+                nazwa, sklep = a.get("nazwa", "")[:200], a.get("sklep", "")[:80]
+                klucz = f"link|{nazwa.lower()}|{sklep.lower()}"
+                zap = pamiec_czytaj(klucz, 7 * 86400)
+                if zap:
+                    return self._wyslij(200, zap)
+                url, pewny = lacznik_google.link_do_sklepu(nazwa, sklep)
+                wyn = {"url": url, "pewny": pewny} if url else {
+                    "url": "https://www.google.com/search?q=" + quote_plus(f"{nazwa} {sklep}"), "pewny": False, "wyszukiwanie": True}
+                if url:
+                    pamiec_zapisz(klucz, wyn)
+                return self._wyslij(200, wyn)
             if u.path == "/historia":
                 return self._wyslij(200, {"id": a.get("id"), "ceny": historia(a.get("id", ""))})
             return self._wyslij(404, {"blad": "Nie ma takiej ścieżki."})

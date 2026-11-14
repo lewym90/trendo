@@ -110,3 +110,38 @@ def stan():
         out["serpapi"] = {"klucz": True, "zostalo_w_miesiacu": (d or {}).get("plan_searches_left") or (d or {}).get("total_searches_left"),
                           "dzis_uzyto": licznik(f"serpapi-{dzien}"), "limit_dzienny": LIMIT_SERPAPI}
     return out or {"klucz": False}
+
+
+def _domena(u):
+    m = re.match(r"https?://([^/]+)", u or "")
+    return (m.group(1).lower().replace("www.", "") if m else "")
+
+
+def _znak(t):
+    return re.sub(r"[^a-z0-9]", "", (t or "").lower().replace("&", "and"))
+
+
+def wybierz_link(organic, sklep):
+    """Z wyników wyszukiwania wybiera stronę produktu w sklepie. Zwraca (url, pewny)."""
+    s = _znak(sklep)
+    kandydaci = [r.get("link") for r in organic or [] if r.get("link") and "google." not in _domena(r.get("link"))]
+    for u in kandydaci:
+        d = _znak(_domena(u).split(".")[0] if not _domena(u).startswith("shop.") else _domena(u).split(".")[1])
+        if s and d and (s in _znak(_domena(u)) or d in s):
+            return u, True
+    return None, False
+
+
+def link_do_sklepu(nazwa, sklep):
+    """Szuka bezpośredniej strony produktu (1 wyszukiwanie Serper). Zwraca (url, pewny) albo (None, False)."""
+    k = _klucz(".trendo-serper", "SERPER_KEY")
+    dzien = time.strftime("%Y-%m-%d")
+    if not k or licznik(f"serper-{dzien}") >= LIMIT_SERPER:
+        return None, False
+    licznik(f"serper-{dzien}", 1)
+    kod, d = pobierz_json("https://google.serper.dev/search", czas=25,
+                          naglowki={"X-API-KEY": k, "Content-Type": "application/json"},
+                          dane=json.dumps({"q": f"{nazwa} {sklep}", "gl": "pl", "hl": "pl", "num": 10}))
+    if not d:
+        return None, False
+    return wybierz_link(d.get("organic"), sklep)

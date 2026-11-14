@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.4.0';
+  const WERSJA = '0.5.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -175,9 +175,9 @@
         let i = 0, gotowe = false;
         const ctrl = new AbortController();
         const czas = setTimeout(() => ctrl.abort(), 60000);
-        fetch(`${API}/szukaj?q=${encodeURIComponent(st.zapytanie)}&dzial=${st.dzial}`, { signal: ctrl.signal })
+        fetch(`${API}/szukaj?q=${encodeURIComponent(st.zapytanie)}&dzial=${st.dzial}&okazja=${st.okazja || ''}`, { signal: ctrl.signal })
           .then((r) => r.json())
-          .then((d) => { wynik = d && d.produkty ? d : null; })
+          .then((d) => { wynik = d && d.produkty ? d : null; if (wynik) wynik.kodOkazji = st.okazja || ''; })
           .catch(() => { wynik = null; komunikat('Serwer nie odpowiada. Pokazuję przykład.'); })
           .finally(() => {
             clearTimeout(czas); gotowe = true;
@@ -199,7 +199,7 @@
   let zakladka = 'stylizacje', strefa = 'budzet', tylkoPrawdziwe = false;
   EKRANY.wyniki = () => {
     const q = st.zapytanie || 'Skórzane spodnie';
-    if (wynik && wynik.zapytanie.toLowerCase() === q.trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 80) && wynik.dzial === st.dzial) return wynikiPrawdziwe(q);
+    if (wynik && wynik.zapytanie.toLowerCase() === q.trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 80) && wynik.dzial === st.dzial && (wynik.kodOkazji || '') === (st.okazja || '')) return wynikiPrawdziwe(q);
     const baza = DEMO.P.filter((p) => p.id.startsWith('p'));
     let lista;
     if (strefa === 'tanio') lista = baza.filter((p) => p.strefa !== 'second').slice().sort((a, b) => a.cena - b.cena);
@@ -254,7 +254,7 @@
     const P = wynik.produkty;
     const ile = (z) => P.filter((p) => strefaProduktu(p) === z).length;
     const nowe = P.filter((p) => strefaProduktu(p) !== 'second');
-    let lista = strefa === 'tanio' ? nowe.slice().sort((a, b) => a.cena - b.cena) : P.filter((p) => strefaProduktu(p) === strefa).sort((a, b) => (b.stara ? 1 : 0) - (a.stara ? 1 : 0) || a.cena - b.cena);
+    let lista = strefa === 'tanio' ? nowe.slice().sort((a, b) => a.cena - b.cena) : P.filter((p) => strefaProduktu(p) === strefa).sort((a, b) => (b.punkty || 0) - (a.punkty || 0) || (b.stara ? 1 : 0) - (a.stara ? 1 : 0) || a.cena - b.cena);
     if (tylkoPrawdziwe) lista = lista.filter((p) => p.stara);
     let zamiast = '';
     if (!lista.length && strefa === 'budzet' && !tylkoPrawdziwe && nowe.length) {
@@ -269,6 +269,7 @@
       akt: 'szukaj',
       html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
       <p class="szary maly" style="text-align:center;margin:-6px 0 14px">${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
+      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> Najpierw rzeczy eleganckie.${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} do tej okazji nie pasują (np. plażowe, sportowe, z nadrukiem).` : ''}</p></div>` : ''}
       <div class="przelacznik" role="tablist" aria-label="Wyniki">
         <button role="tab" aria-selected="${zakladka === 'sklepy'}" data-akcja="zakladka" data-v="sklepy">W sklepach (${P.length})</button>
         <button role="tab" aria-selected="${zakladka === 'stylizacje'}" data-akcja="zakladka" data-v="stylizacje">Stylizacje</button>
@@ -350,7 +351,7 @@
       </div>
       <div class="produkt-tresc">
         ${prawdziwy(p) ? '' : demoZnak()}
-        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500">${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener">${viaGoogle(p) ? 'Otwórz ofertę' : 'Otwórz w sklepie'} ${ikonaW('link', 15)}</a></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500">${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Otwórz w sklepie ${ikonaW('link', 15)}</a></div>
         <h1 style="font-size:30px;margin-top:-8px">${esc(p.nazwa)}</h1>
         <div class="ceny"><span class="cena" style="font-size:38px">${zl(p.cena)}</span>${p.stara ? `<span class="stara" style="font-size:16px">${zl(p.stara)}</span><span class="rabat">−${r}%</span>` : ''}</div>
         ${werInfo}
@@ -359,8 +360,8 @@
         ${p.rozmiary ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
           <div class="rozmiary">${p.rozmiary.map((r) => `<button aria-pressed="${wybr === r}" ${(p.brak || []).includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
-          <a class="btn" href="${p.url}" target="_blank" rel="noopener">${viaGoogle(p) ? `Przejdź do oferty ${esc(p.sklep)}` : `Kup w sklepie ${esc(p.sklep)}`}</a>
-          ${viaGoogle(p) ? '<p class="maly szary" style="margin:-4px 2px 0">Ten produkt znaleźliśmy przez Google Shopping. Otworzy się karta oferty z przyciskiem do sklepu.</p>' : ''}
+          <a class="btn" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Kup w sklepie ${esc(p.sklep)}</a>
+          ${viaGoogle(p) ? '<p class="maly szary" style="margin:-4px 2px 0">Ten produkt znaleźliśmy przez Google Shopping. Po dotknięciu wyszukamy jego stronę w sklepie.</p>' : ''}
           <button class="btn drugi" data-akcja="alert" data-id="${p.id}">${IK.dzwonek} ${alert ? `Alert ustawiony: ${zl(alert.cel)}` : 'Powiadom, gdy stanieje'}</button>
           <button class="btn drugi" data-akcja="dodajProdukt" data-id="${p.id}">${IK.torba} ${st.koszyk.includes(p.id) ? 'Jest w zakupach' : 'Dodaj do zakupów'}</button>
           ${prawdziwy(p) ? '' : `<a class="btn drugi" href="#/wyniki" data-akcja="dobierz">${IK.iskra} Dobierz do tego stylizację</a>`}
@@ -431,7 +432,7 @@
       const darmo = d && s >= d.prog;
       if (d && !darmo) sumaD += d.koszt;
       return `<section class="grupa" aria-label="${esc(sk)}">
-        <div class="grupa-gora"><b>${esc(sk)}</b><a class="link" href="${ps[0].url}" target="_blank" rel="noopener">Zamów w sklepie ${ikonaW('link', 14)}</a></div>
+        <div class="grupa-gora"><b>${esc(sk)}</b><a class="link" href="${ps[0].sklepUrl || ps[0].url}" target="_blank" rel="noopener" ${viaGoogle(ps[0]) && !ps[0].sklepUrl ? `data-akcja="doSklepu" data-id="${ps[0].id}"` : ''}>Zamów w sklepie ${ikonaW('link', 14)}</a></div>
         ${ps.map((p) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
           <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${st.rozmiar[p.id] ? 'Rozmiar ' + esc(st.rozmiar[p.id]) : 'Rozmiar wybierzesz w sklepie'}</div>
           <div class="ceny"><span class="cena" style="font-size:19px">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</div></div>
@@ -589,6 +590,20 @@
     zakladka(el) { zakladka = el.dataset.v; render(); },
     strefa(el) { strefa = el.dataset.v; render(); },
     tylkoPrawdziwe() { tylkoPrawdziwe = !tylkoPrawdziwe; render(); },
+    doSklepu(el, e) {
+      e.preventDefault();
+      const p = prod(el.dataset.id); if (!p) return;
+      if (p.sklepUrl) { location.href = p.sklepUrl; return; }
+      komunikat(`Szukam strony produktu w sklepie ${p.sklep}…`);
+      fetch(`${API}/link?nazwa=${encodeURIComponent(p.nazwa)}&sklep=${encodeURIComponent(p.sklep)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.url && d.pewny) { p.sklepUrl = d.url; zapamietaj(p); zapisz(); }
+          if (d.wyszukiwanie) komunikat('Nie znalazłem strony w sklepie. Otwieram wyszukiwanie.');
+          location.href = d.url || p.url;
+        })
+        .catch(() => { location.href = 'https://www.google.com/search?q=' + encodeURIComponent(p.nazwa + ' ' + p.sklep); });
+    },
     dodajProdukt(el) {
       const id = el.dataset.id;
       if (st.koszyk.includes(id)) { location.hash = '#/koszyk'; return; }
