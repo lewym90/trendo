@@ -323,3 +323,11 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .kategoria{flex:none;width:108px;display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:none;padding:0;color:var(--tekst);font:400 13px var(--sans);scroll-snap-align:start}
 .kat-foto{width:108px;height:128px;border-radius:20px;border:1px solid var(--linia);background:radial-gradient(80% 70% at 50% 35%,rgba(150,60,92,.28),transparent 70%),linear-gradient(160deg,#2C1A22,#1A1015);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .kat-foto img{width:80%;height:84%;object-fit:contain;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5))}
+/* prawdziwe zdjęcia ze sklepów */
+.produkt .foto img.zdj,.miniatura img.zdj{width:100%;height:100%;object-fit:cover;filter:none}
+.produkt .foto{background:#EDE7E3}
+.produkt-foto img.zdj-duze{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.produkt-foto .gora{z-index:2}
+.produkt-foto:has(img.zdj-duze){height:520px}
+.produkt .foto:not(:has(img.zdj)){background:linear-gradient(160deg,#2C1A22,#1A1015)}
+.produkt-foto .gora .ikonka{background:rgba(14,9,12,.62);border-color:rgba(255,236,230,.18);color:#F6ECE7;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}

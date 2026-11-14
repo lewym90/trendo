@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.2.0';
+  const WERSJA = '0.3.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -12,7 +12,7 @@
   const DOMYSLNE = {
     witaj: false, dzial: 'damskie', zapytanie: 'Skórzane spodnie', b1: 300, b2: 500,
     okazja: 'codzien', tryb: 'outfit', koszyk: [], ulubione: [], zapisane: [], alerty: [],
-    ostatnie: [], rozmiar: {}, ust: { gora: '', dol: '', buty: '' }
+    ostatnie: [], rozmiar: {}, ust: { gora: '', dol: '', buty: '' }, znane: {}
   };
   let st;
   try { st = Object.assign({}, DOMYSLNE, JSON.parse(localStorage.getItem('trendo') || '{}')); } catch (e) { st = Object.assign({}, DOMYSLNE); }
@@ -21,7 +21,17 @@
   /* ---------- pomocnicze ---------- */
   const zl = (n) => n.toLocaleString('pl-PL', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' zł';
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const prod = (id) => DEMO.P.find((p) => p.id === id);
+  const API = (() => { try { return localStorage.getItem('trendo-api'); } catch (e) { return null; } })() || 'https://188-68-247-201.sslip.io/trendo-api';
+  let wynik = null; // ostatni prawdziwy wynik z serwera
+  try { wynik = JSON.parse(sessionStorage.getItem('trendo-wynik') || 'null'); } catch (e) { wynik = null; }
+  const prod = (id) => DEMO.P.find((p) => p.id === id) || (wynik && wynik.produkty.find((p) => p.id === id)) || (st.znane || {})[id];
+  function zapamietaj(p) {
+    if (!p || !p.zrodlo) return;
+    st.znane = st.znane || {}; st.znane[p.id] = p;
+    const k = Object.keys(st.znane);
+    if (k.length > 300) k.slice(0, k.length - 300).forEach((x) => { if (!st.koszyk.includes(x) && !st.ulubione.includes(x)) delete st.znane[x]; });
+  }
+  const prawdziwy = (p) => !!(p && p.zrodlo);
   const rabat = (p) => (p.stara ? Math.round((1 - p.cena / p.stara) * 100) : 0);
   const demoZnak = () => `<div class="demo">${IK.info.replace('<svg', '<svg width="15" height="15"')}Wersja próbna: dane przykładowe</div>`;
   const sezon = () => {
@@ -34,7 +44,9 @@
     KOM.textContent = t; KOM.classList.add('widac');
     clearTimeout(komunikat.t); komunikat.t = setTimeout(() => KOM.classList.remove('widac'), 3200);
   }
-  const foto = (p) => (p.img ? `<img src="img/wzorce/${p.img}.webp" alt="" loading="lazy" decoding="async">` : G.ubranie(p.typ, p.k[0], p.k[1]));
+  const foto = (p) => (p.zdjecie ? `<img class="zdj" src="${esc(p.zdjecie)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+    : p.img ? `<img src="img/wzorce/${p.img}.webp" alt="" loading="lazy" decoding="async">`
+    : p.k ? G.ubranie(p.typ, p.k[0], p.k[1]) : `<span style="color:var(--szary2);width:40%">${IK.wieszak}</span>`);
   const ikonaW = (n, w) => IK[n].replace('<svg', `<svg width="${w}" height="${w}"`);
 
   /* ---------- menu ---------- */
@@ -146,7 +158,7 @@
     const s = sezon();
     const kroki = [
       ['Aktualne trendy', `sezon ${s.nazwa.toLowerCase()} ${s.rok}`],
-      ['Ceny i dostępność w sklepach', `${DEMO.sklepow} sklepy i second-hand`],
+      ['Ceny i dostępność w sklepach', 'sklepy internetowe i Google Shopping'],
       ['Promocje i wyprzedaże', 'porównanie z najniższą ceną z 30 dni'],
       ['Dobór stylizacji i dodatków', 'w ramach Twojego budżetu']
     ];
@@ -159,12 +171,24 @@
       </section>`,
       po: () => {
         const li = [...document.querySelectorAll('#kroki li')];
-        let i = 0;
+        let i = 0, gotowe = false;
+        const ctrl = new AbortController();
+        const czas = setTimeout(() => ctrl.abort(), 60000);
+        fetch(`${API}/szukaj?q=${encodeURIComponent(st.zapytanie)}&dzial=${st.dzial}`, { signal: ctrl.signal })
+          .then((r) => r.json())
+          .then((d) => { wynik = d && d.produkty ? d : null; })
+          .catch(() => { wynik = null; komunikat('Serwer nie odpowiada. Pokazuję przykład.'); })
+          .finally(() => {
+            clearTimeout(czas); gotowe = true;
+            try { sessionStorage.setItem('trendo-wynik', JSON.stringify(wynik)); } catch (e) { /* pełna pamięć */ }
+          });
         const krok = () => {
+          if (location.hash !== '#/analiza') return;
+          if (i === 2 && !gotowe) { EKRANY.analiza.timer = setTimeout(krok, 300); return; }
           if (i > 0) { li[i - 1].classList.remove('aktywny'); li[i - 1].classList.add('gotowy'); li[i - 1].querySelector('.znak').innerHTML = IK.ok; }
           if (i === li.length) { setTimeout(() => { location.hash = '#/wyniki'; }, 450); return; }
           li[i].classList.add('aktywny'); i++;
-          EKRANY.analiza.timer = setTimeout(krok, 850);
+          EKRANY.analiza.timer = setTimeout(krok, 700);
         };
         krok();
       }
@@ -174,6 +198,7 @@
   let zakladka = 'stylizacje', strefa = 'budzet', tylkoPrawdziwe = false;
   EKRANY.wyniki = () => {
     const q = st.zapytanie || 'Skórzane spodnie';
+    if (wynik && wynik.zapytanie.toLowerCase() === q.trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 80) && wynik.dzial === st.dzial) return wynikiPrawdziwe(q);
     const baza = DEMO.P.filter((p) => p.id.startsWith('p'));
     let lista;
     if (strefa === 'tanio') lista = baza.filter((p) => p.strefa !== 'second').slice().sort((a, b) => a.cena - b.cena);
@@ -204,6 +229,52 @@
         ${lista.length ? `<div class="siatka">${lista.map(kartaProduktu).join('')}</div>` : `<div class="pusty"><p>Brak potwierdzonych promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystkie produkty.</p></div>`}`}`
     };
   };
+
+  const SECOND = /vinted|olx|allegro lokalnie|sprzedajemy|depop|remixshop/i;
+  function strefaProduktu(p) {
+    if (SECOND.test(p.sklep)) return 'second';
+    if (p.cena <= st.b1 * 1.15) return 'budzet';
+    if (p.cena <= st.b1 * 1.8) return 'wiecej';
+    return 'drozej';
+  }
+  function wynikiPrawdziwe(q) {
+    const P = wynik.produkty;
+    const ile = (z) => P.filter((p) => strefaProduktu(p) === z).length;
+    const nowe = P.filter((p) => strefaProduktu(p) !== 'second');
+    let lista = strefa === 'tanio' ? nowe.slice().sort((a, b) => a.cena - b.cena) : P.filter((p) => strefaProduktu(p) === strefa).sort((a, b) => (b.stara ? 1 : 0) - (a.stara ? 1 : 0) || a.cena - b.cena);
+    if (tylkoPrawdziwe) lista = lista.filter((p) => p.stara);
+    let zamiast = '';
+    if (!lista.length && strefa === 'budzet' && !tylkoPrawdziwe && nowe.length) {
+      const min = Math.min(...nowe.map((p) => p.cena));
+      zamiast = `<div class="info neutral" style="margin-bottom:14px">${IK.info}<p>W okolicy ${zl(st.b1)} nic nie znaleźliśmy. Najtańsza sensowna opcja kosztuje ${zl(min)}, poniżej pokazujemy wszystko od najtańszego.</p></div>`;
+      lista = nowe.slice().sort((a, b) => a.cena - b.cena);
+    }
+    const ileSklepow = new Set(P.map((p) => p.sklep)).size;
+    const kiedy = new Date(wynik.sprawdzono * 1000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    const uwagi = (wynik.sklepy || []).filter((x) => x.stan !== 'ok').map((x) => `${x.nazwa}: ${x.stan}`).join(', ');
+    return {
+      akt: 'szukaj',
+      html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
+      <p class="szary maly" style="text-align:center;margin:-6px 0 14px">${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
+      <div class="przelacznik" role="tablist" aria-label="Wyniki">
+        <button role="tab" aria-selected="${zakladka === 'sklepy'}" data-akcja="zakladka" data-v="sklepy">W sklepach (${P.length})</button>
+        <button role="tab" aria-selected="${zakladka === 'stylizacje'}" data-akcja="zakladka" data-v="stylizacje">Stylizacje</button>
+      </div>
+      ${zakladka === 'stylizacje' ? `
+        <div class="info uwaga" style="margin:14px 0">${IK.info}<p>Stylizacje z prawdziwych produktów to następny etap budowy. Poniżej przykład, jak będą wyglądać.</p></div>
+        <div class="karuzela">${DEMO.S.map(kartaStylizacji).join('')}</div>` : `
+        <div class="chipy" style="margin-top:14px">
+          <button class="chip" aria-pressed="${strefa === 'budzet'}" data-akcja="strefa" data-v="budzet">W budżecie <span class="ile">${ile('budzet')}</span></button>
+          <button class="chip" aria-pressed="${strefa === 'wiecej'}" data-akcja="strefa" data-v="wiecej">Warto dołożyć <span class="ile">${ile('wiecej')}</span></button>
+          <button class="chip" aria-pressed="${strefa === 'tanio'}" data-akcja="strefa" data-v="tanio">Najtaniej</button>
+          <button class="chip" aria-pressed="${strefa === 'second'}" data-akcja="strefa" data-v="second">${ikonaW('second', 15)} Z drugiej ręki <span class="ile">${ile('second')}</span></button>
+        </div>
+        <div class="chipy" style="margin-top:8px"><button class="chip" aria-pressed="${tylkoPrawdziwe}" data-akcja="tylkoPrawdziwe">${ikonaW('okazje', 14)} Tylko promocje</button></div>
+        <p class="szary maly" style="margin:12px 0">${strefa === 'wiecej' ? `Od ${zl(Math.round(st.b1 * 1.15))} do ${zl(Math.round(st.b1 * 1.8))}: trochę ponad Twój cel.` : strefa === 'second' ? 'Ogłoszenia z serwisów z używaną odzieżą. Stan opisuje sprzedający.' : strefa === 'tanio' ? 'Wszystkie nowe produkty od najtańszego.' : `Do ${zl(Math.round(st.b1 * 1.15))}, czyli w okolicy Twojej kwoty.`}</p>
+        ${zamiast}
+        ${lista.length ? `<div class="siatka">${lista.map(kartaProduktu).join('')}</div>` : `<div class="pusty"><p>${strefa === 'second' ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPrawdziwe ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Brak produktów w tej grupie. Zajrzyj do „Najtaniej”.'}</p></div>`}`}`
+    };
+  }
 
   EKRANY.stylizacja = (id) => {
     const s = DEMO.S.find((x) => x.id === id) || DEMO.S[0];
@@ -241,28 +312,44 @@
     if (p.weryf === 'ok') werInfo = `<div class="info ok">${IK.ok}<p><b>Obniżka jest prawdziwa.</b> Najniższa cena z 30 dni przed obniżką: ${zl(p.omnibus)}.</p></div>`;
     else if (p.weryf === 'pozorna') werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> Przez ostatnie 30 dni produkt kosztował tyle samo (${zl(p.omnibus)}). Przekreślona cena nie była aktualna.</p></div>`;
     else if (p.weryf === 'second') werInfo = `<div class="info neutral">${IK.info}<p>Ogłoszenie z drugiej ręki. Stan i opis podaje sprzedający, sprawdź zdjęcia przed zakupem.</p></div>`;
+    else if (p.weryf === 'sklep') werInfo = `<div class="info neutral">${IK.info}<p><b>Obniżkę podaje sklep</b> (wcześniej ${zl(p.stara)}). Historię ceny tego produktu zbieramy od ${new Date(p.sprawdzono * 1000).toLocaleDateString('pl-PL')}. Po 30 dniach ocenimy, czy obniżka jest prawdziwa.</p></div>`;
+    if (p.weryf === 'pozorna' && prawdziwy(p)) werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> W ostatnich 30 dniach ten produkt kosztował już tyle samo albo mniej. Przekreślona cena nie była aktualna.</p></div>`;
     return {
       akt: 'szukaj', menu: false, klasa: 'bez-menu',
+      po: () => {
+        if (!prawdziwy(p)) return;
+        fetch(`${API}/historia?id=${encodeURIComponent(p.id)}`).then((r) => r.json()).then((d) => {
+          const el = document.getElementById('hist'); if (!el) return;
+          const c = (d.ceny || []).filter((x) => Date.now() / 1000 - x[1] < 31 * 86400);
+          if (c.length >= 2 && (c[c.length - 1][1] - c[0][1]) > 86400) {
+            el.innerHTML = wykresCeny(c.map((x) => x[0]));
+            document.getElementById('hist-opis').textContent = c.every((x) => x[0] === c[0][0]) ? 'bez zmian' : 'zmieniała się';
+          } else {
+            el.innerHTML = `<p class="maly szary">Historię ceny tego produktu zbieramy od ${new Date((c[0] ? c[0][1] : p.sprawdzono) * 1000).toLocaleDateString('pl-PL')}. Wykres pojawi się po kilku dniach, a ocena promocji po 30 dniach.</p>`;
+          }
+        }).catch(() => { const el = document.getElementById('hist'); if (el) el.innerHTML = '<p class="maly szary">Historia ceny chwilowo niedostępna.</p>'; });
+      },
       html: `<div class="produkt-foto">
         <div class="gora"><button class="ikonka" data-akcja="wstecz" aria-label="Wróć">${IK.wstecz}</button>
           <button class="ikonka" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj produkt'}">${ul ? IK.sercePelne : IK.serce}</button></div>
-        <svg class="ubranie" viewBox="0 0 10 10" style="display:none"></svg>
-        <div class="wejscie" style="width:56%;height:66%;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 22px 28px rgba(0,0,0,.6))">${foto(p)}</div>
+        ${p.zdjecie ? `<img class="zdj-duze wejscie" src="${esc(p.zdjecie)}" alt="${esc(p.nazwa)}" referrerpolicy="no-referrer">`
+          : `<div class="wejscie" style="width:56%;height:66%;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 22px 28px rgba(0,0,0,.6))">${foto(p)}</div>`}
       </div>
       <div class="produkt-tresc">
-        ${demoZnak()}
+        ${prawdziwy(p) ? '' : demoZnak()}
         <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500">${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener">Otwórz w sklepie ${ikonaW('link', 15)}</a></div>
         <h1 style="font-size:30px;margin-top:-8px">${esc(p.nazwa)}</h1>
         <div class="ceny"><span class="cena" style="font-size:38px">${zl(p.cena)}</span>${p.stara ? `<span class="stara" style="font-size:16px">${zl(p.stara)}</span><span class="rabat">−${r}%</span>` : ''}</div>
         ${werInfo}
-        <div class="karta"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font-weight:500">Cena przez 30 dni</b><span class="maly szary">${p.historia.every((v) => v === p.historia[0]) ? 'bez zmian' : 'zmieniała się'}</span></div>
-          ${wykresCeny(p.historia)}</div>
-        <div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material)}</span></div>
-          <div class="rozmiary">${p.rozmiary.map((r) => `<button aria-pressed="${wybr === r}" ${p.brak.includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>
+        <div class="karta"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font-weight:500">Cena przez 30 dni</b><span class="maly szary" id="hist-opis">${p.historia ? (p.historia.every((v) => v === p.historia[0]) ? 'bez zmian' : 'zmieniała się') : ''}</span></div>
+          <div id="hist">${p.historia ? wykresCeny(p.historia) : '<p class="maly szary">Sprawdzam historię ceny…</p>'}</div></div>
+        ${p.rozmiary ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
+          <div class="rozmiary">${p.rozmiary.map((r) => `<button aria-pressed="${wybr === r}" ${p.brak.includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
           <a class="btn" href="${p.url}" target="_blank" rel="noopener">Kup w sklepie ${esc(p.sklep)}</a>
           <button class="btn drugi" data-akcja="alert" data-id="${p.id}">${IK.dzwonek} ${alert ? `Alert ustawiony: ${zl(alert.cel)}` : 'Powiadom, gdy stanieje'}</button>
-          <a class="btn drugi" href="#/wyniki" data-akcja="dobierz">${IK.iskra} Dobierz do tego stylizację</a>
+          <button class="btn drugi" data-akcja="dodajProdukt" data-id="${p.id}">${IK.torba} ${st.koszyk.includes(p.id) ? 'Jest w zakupach' : 'Dodaj do zakupów'}</button>
+          ${prawdziwy(p) ? '' : `<a class="btn drugi" href="#/wyniki" data-akcja="dobierz">${IK.iskra} Dobierz do tego stylizację</a>`}
         </div>
       </div>`
     };
@@ -321,31 +408,32 @@
     if (!el.length) return { akt: 'koszyk', html: `<div class="naglowek"><span class="puste"></span><h1>Zakupy</h1><span class="puste"></span></div><div class="pusty">${ikonaW('torba', 40)}<p>Koszyk jest pusty. Dodaj cały zestaw ze stylizacji albo pojedyncze rzeczy.</p><a class="btn maly" href="#/szukaj">Znajdź stylizację</a></div>` };
     const grupy = {};
     el.forEach((p) => { (grupy[p.sklep] = grupy[p.sklep] || []).push(p); });
-    let sumaP = 0, sumaD = 0;
+    let sumaP = 0, sumaD = 0, nieznana = false;
     const html = Object.keys(grupy).map((sk) => {
       const ps = grupy[sk];
       const s = ps.reduce((a, p) => a + p.cena, 0); sumaP += s;
-      const d = ps.find((p) => p.dostawa) ? ps.find((p) => p.dostawa).dostawa : { prog: 199, koszt: 12.99 };
-      const darmo = s >= d.prog;
-      if (!darmo) sumaD += d.koszt;
+      const d = ps.find((p) => p.dostawa) ? ps.find((p) => p.dostawa).dostawa : (prawdziwy(ps[0]) ? null : { prog: 199, koszt: 12.99 });
+      if (!d) nieznana = true;
+      const darmo = d && s >= d.prog;
+      if (d && !darmo) sumaD += d.koszt;
       return `<section class="grupa" aria-label="${esc(sk)}">
         <div class="grupa-gora"><b>${esc(sk)}</b><a class="link" href="${ps[0].url}" target="_blank" rel="noopener">Zamów w sklepie ${ikonaW('link', 14)}</a></div>
         ${ps.map((p) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
           <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${st.rozmiar[p.id] ? 'Rozmiar ' + esc(st.rozmiar[p.id]) : 'Rozmiar wybierzesz w sklepie'}</div>
           <div class="ceny"><span class="cena" style="font-size:19px">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</div></div>
           <button class="ikonka bez" data-akcja="usunZKoszyka" data-id="${p.id}" aria-label="Usuń ${esc(p.nazwa)}">${IK.kosz}</button></div>`).join('')}
-        <div class="dostawa">${darmo ? `<span style="color:var(--ok)">Darmowa dostawa</span>` : `<div class="pasek"><span style="width:${Math.min(100, s / d.prog * 100)}%"></span></div><span>Do darmowej dostawy brakuje ${zl(Math.round((d.prog - s) * 100) / 100)}. Dostawa ${zl(d.koszt)}.</span>`}</div>
+        <div class="dostawa">${!d ? '<span>Koszt dostawy poda sklep przy zamówieniu.</span>' : darmo ? `<span style="color:var(--ok)">Darmowa dostawa</span>` : `<div class="pasek"><span style="width:${Math.min(100, s / d.prog * 100)}%"></span></div><span>Do darmowej dostawy brakuje ${zl(Math.round((d.prog - s) * 100) / 100)}. Dostawa ${zl(d.koszt)}.</span>`}</div>
       </section>`;
     }).join('');
     return {
       akt: 'koszyk',
       html: `<div class="naglowek"><span class="puste"></span><h1>Zakupy</h1><span class="puste"></span></div>
-      ${demoZnak()}
+      ${el.some((p) => !prawdziwy(p)) ? demoZnak() : ''}
       <p class="szary" style="margin:-4px 0 14px;text-align:center">${el.length} ${el.length === 1 ? 'rzecz' : el.length < 5 ? 'rzeczy' : 'rzeczy'} z ${Object.keys(grupy).length} ${Object.keys(grupy).length === 1 ? 'sklepu' : 'sklepów'}</p>
       ${html}
       <div class="karta podsumowanie" style="margin-top:16px">
         <div><span class="szary">Produkty</span><span>${zl(Math.round(sumaP * 100) / 100)}</span></div>
-        <div><span class="szary">Dostawa ze wszystkich sklepów</span><span>${sumaD ? zl(Math.round(sumaD * 100) / 100) : 'gratis'}</span></div>
+        <div><span class="szary">Dostawa ze wszystkich sklepów</span><span>${nieznana ? (sumaD ? zl(Math.round(sumaD * 100) / 100) + ' + wg sklepów' : 'wg sklepów') : sumaD ? zl(Math.round(sumaD * 100) / 100) : 'gratis'}</span></div>
         <div class="razem"><span>Razem</span><b>${zl(Math.round((sumaP + sumaD) * 100) / 100)}</b></div>
       </div>
       <p class="maly szary" style="margin-top:12px">Każdy sklep zamawiasz osobno, na jego stronie. Przyciski „Zamów w sklepie” przenoszą Cię prosto do niego.</p>
@@ -411,7 +499,8 @@
     const r = rabat(p), ul = st.ulubione.includes(p.id);
     const wer = p.weryf === 'ok' ? `<div class="weryf ok">${IK.ok}Obniżka potwierdzona</div>`
       : p.weryf === 'pozorna' ? `<div class="weryf uwaga">${IK.uwaga}Promocja pozorna: przez 30 dni było ${zl(p.omnibus)}</div>`
-      : p.weryf === 'second' ? `<div class="weryf" style="color:var(--szary)">${IK.second}Z drugiej ręki</div>` : '';
+      : p.weryf === 'second' ? `<div class="weryf" style="color:var(--szary)">${IK.second}Z drugiej ręki</div>`
+      : p.weryf === 'sklep' ? `<div class="weryf" style="color:var(--promo)">${IK.okazje}Promocja według sklepu</div>` : '';
     return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
       <button class="serce" style="position:relative;margin:-50px 8px 14px auto;width:36px;height:36px;border-radius:18px;background:rgba(14,9,12,.6);border:none;display:flex;align-items:center;justify-content:center" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj'}">${(ul ? IK.sercePelne : IK.serce).replace('<svg', '<svg width="18" height="18"')}</button>
       <a href="#/produkt/${p.id}" style="text-decoration:none;color:var(--tekst);display:flex;flex-direction:column;gap:4px">
@@ -477,7 +566,7 @@
       if (!q && st.tryb !== 'outfit') { komunikat('Wpisz, czego szukasz.'); document.getElementById('q').focus(); return; }
       st.zapytanie = q || 'Cały outfit';
       st.ostatnie = [st.zapytanie].concat(st.ostatnie.filter((x) => x.toLowerCase() !== st.zapytanie.toLowerCase())).slice(0, 8);
-      zakladka = st.tryb === 'rzecz' ? 'sklepy' : 'stylizacje'; strefa = 'budzet';
+      zakladka = 'sklepy'; strefa = 'budzet'; tylkoPrawdziwe = false;
       zapisz(); location.hash = '#/analiza';
     },
     kategoria(el) { st.zapytanie = el.dataset.q; st.tryb = 'rzecz'; zapisz(); location.hash = '#/szukaj'; },
@@ -486,8 +575,14 @@
     zakladka(el) { zakladka = el.dataset.v; render(); },
     strefa(el) { strefa = el.dataset.v; render(); },
     tylkoPrawdziwe() { tylkoPrawdziwe = !tylkoPrawdziwe; render(); },
+    dodajProdukt(el) {
+      const id = el.dataset.id;
+      if (st.koszyk.includes(id)) { location.hash = '#/koszyk'; return; }
+      zapamietaj(prod(id)); st.koszyk.push(id); zapisz(); render(true); komunikat('Dodano do zakupów');
+    },
     ulubiony(el) {
       const id = el.dataset.id, i = st.ulubione.indexOf(id);
+      zapamietaj(prod(id));
       if (i >= 0) { st.ulubione.splice(i, 1); komunikat('Usunięto z obserwowanych'); } else { st.ulubione.push(id); komunikat('Obserwujesz ten produkt'); }
       zapisz(); render(true);
     },
@@ -510,6 +605,7 @@
       const id = el.dataset.id, cel = +document.getElementById('cel').value;
       st.alerty = st.alerty.filter((a) => a.id !== id).concat([{ id, cel }]);
       if (!st.ulubione.includes(id)) st.ulubione.push(id);
+      zapamietaj(prod(id));
       zapisz(); ARK.hidden = true; render(true);
       komunikat(`Alert ustawiony na ${zl(cel)}`);
     },
