@@ -7,15 +7,18 @@ os.makedirs(DANE, exist_ok=True)
 _baza_blokada = threading.Lock()
 
 
-def pobierz(url, naglowki=None, limit=8_000_000, czas=25):
-    """Pobiera adres przez curl (HTTP/2, kompresja). Zwraca (kod, bajty)."""
+def pobierz(url, naglowki=None, limit=8_000_000, czas=25, dane=None):
+    """Pobiera adres przez curl (HTTP/2, kompresja). dane = treść POST (bajty/tekst). Zwraca (kod, bajty)."""
     cmd = ["curl", "-sS", "-L", "--compressed", "--http2", "--max-time", str(czas), "--max-filesize", str(limit),
            "-A", UA, "-H", "Accept-Language: pl-PL,pl;q=0.9,en;q=0.6"]
     for k, v in (naglowki or {}).items():
         cmd += ["-H", f"{k}: {v}"]
+    if dane is not None:
+        cmd += ["-X", "POST", "--data-binary", "@-"]
     cmd += ["-w", "\n%{http_code}", url]
     try:
-        r = subprocess.run(cmd, capture_output=True, timeout=czas + 10)
+        wej = dane.encode() if isinstance(dane, str) else dane
+        r = subprocess.run(cmd, capture_output=True, timeout=czas + 10, input=wej)
         d = r.stdout
         i = d.rfind(b"\n")
         kod = int(d[i + 1:].strip() or 0)
@@ -30,8 +33,8 @@ def pobierz(url, naglowki=None, limit=8_000_000, czas=25):
         return 0, b""
 
 
-def pobierz_json(url, naglowki=None, czas=25):
-    kod, b = pobierz(url, dict({"Accept": "application/json, text/plain, */*"}, **(naglowki or {})), czas=czas)
+def pobierz_json(url, naglowki=None, czas=25, dane=None):
+    kod, b = pobierz(url, dict({"Accept": "application/json, text/plain, */*"}, **(naglowki or {})), czas=czas, dane=dane)
     if kod != 200:
         return kod, None
     try:

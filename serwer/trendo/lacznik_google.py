@@ -1,16 +1,16 @@
-"""Łącznik Google Shopping przez SerpApi. Obejmuje sklepy, których nie czytamy bezpośrednio.
-Klucz: plik ~/.trendo-serpapi albo zmienna SERPAPI_KEY. Dzienny limit chroni darmowy plan."""
-import os, re, time
+"""Łącznik Google Shopping. Główny dostawca: Serper (klucz ~/.trendo-serper), zapasowy: SerpApi (~/.trendo-serpapi).
+Dzienne limity chronią kredyty; wyniki dzieli wspólna pamięć serwera (api.py)."""
+import json, os, re, time
 from urllib.parse import urlencode
 from .wspolne import pobierz_json, produkt, liczba, licznik
 
 NAZWA = "Google Shopping"
-LIMIT_DZIENNY = int(os.environ.get("SERPAPI_LIMIT_DZIENNY", "8"))
-
+LIMIT_SERPER = int(os.environ.get("SERPER_LIMIT_DZIENNY", "300"))
+LIMIT_SERPAPI = int(os.environ.get("SERPAPI_LIMIT_DZIENNY", "8"))
 
 NAZWY = {"zara polska": "Zara", "h&m pl": "H&M", "h&m": "H&M", "modivo": "Modivo", "shop.mango.com": "Mango",
          "zalando.pl": "Zalando", "answear.com": "Answear", "eobuwie.pl": "eobuwie", "eobuwie.com.pl": "eobuwie",
-         "bonprix.pl": "bonprix", "reserved": "Reserved", "allegro": "Allegro", "cos": "COS"}
+         "bonprix.pl": "bonprix", "reserved": "Reserved", "allegro": "Allegro", "cos": "COS", "mango": "Mango"}
 
 
 def nazwa_sklepu(n):
@@ -25,11 +25,11 @@ def nazwa_sklepu(n):
     return n
 
 
-def klucz():
-    k = os.environ.get("SERPAPI_KEY")
+def _klucz(plik, zmienna):
+    k = os.environ.get(zmienna)
     if k:
         return k.strip()
-    for p in ("/root/.trendo-serpapi", os.path.expanduser("~/.trendo-serpapi")):
+    for p in (f"/root/{plik}", os.path.expanduser(f"~/{plik}")):
         try:
             return open(p).read().strip()
         except OSError:
@@ -37,42 +37,76 @@ def klucz():
     return None
 
 
-def szukaj(q, dzial):
-    k = klucz()
-    if not k:
-        return [], "brak klucza"
-    dzien = time.strftime("serpapi-%Y-%m-%d")
-    if licznik(dzien) >= LIMIT_DZIENNY:
-        return [], "dzienny limit wyczerpany"
-    fraza = q + (" męskie" if dzial == "meskie" else " damskie")
+def _fraza(q, dzial):
+    return q + (" męskie" if dzial == "meskie" else " damskie")
+
+
+def _serper(q, dzial, k):
+    kod, d = pobierz_json("https://google.serper.dev/shopping", czas=30,
+                          naglowki={"X-API-KEY": k, "Content-Type": "application/json"},
+                          dane=json.dumps({"q": _fraza(q, dzial), "gl": "pl", "hl": "pl", "location": "Poland", "num": 40}))
+    if not d:
+        return None, f"Serper: brak odpowiedzi ({kod})"
+    if d.get("message") and not d.get("shopping"):
+        return None, "Serper: " + str(d["message"])[:60]
+    wyn = []
+    for r in d.get("shopping") or []:
+        cena = liczba(r.get("price"))
+        if not cena or not r.get("link"):
+            continue
+        wyn.append(produkt(nazwa_sklepu(r.get("source")), r.get("title", ""), cena, r["link"], r.get("imageUrl"),
+                           stara=liczba(r.get("oldPrice") or r.get("originalPrice")), zrodlo="google", dzial=dzial))
+    return wyn, "ok"
+
+
+def _serpapi(q, dzial, k):
     url = "https://serpapi.com/search.json?" + urlencode({
-        "engine": "google_shopping", "q": fraza, "gl": "pl", "hl": "pl", "google_domain": "google.pl",
+        "engine": "google_shopping", "q": _fraza(q, dzial), "gl": "pl", "hl": "pl", "google_domain": "google.pl",
         "location": "Poland", "api_key": k})
-    licznik(dzien, 1)
     kod, d = pobierz_json(url, czas=40)
     if not d:
-        return [], f"brak odpowiedzi ({kod})"
+        return None, f"SerpApi: brak odpowiedzi ({kod})"
     if d.get("error"):
-        return [], d["error"][:80]
+        return None, "SerpApi: " + d["error"][:60]
     wyn = []
     for r in (d.get("shopping_results") or []) + (d.get("inline_shopping_results") or []):
         cena = r.get("extracted_price") or liczba(r.get("price"))
         if not cena:
             continue
         link = r.get("link") or r.get("product_link")
-        sklep = nazwa_sklepu(r.get("source"))
         stara = r.get("extracted_old_price") or liczba(r.get("old_price"))
-        wyn.append(produkt(sklep, r.get("title", ""), cena, link, r.get("thumbnail"), stara=stara,
-                           zrodlo="google", dzial=dzial))
+        wyn.append(produkt(nazwa_sklepu(r.get("source")), r.get("title", ""), cena, link, r.get("thumbnail"),
+                           stara=stara, zrodlo="google", dzial=dzial))
     return wyn, "ok"
 
 
+def szukaj(q, dzial):
+    dzien = time.strftime("%Y-%m-%d")
+    uwagi = []
+    for nazwa, plik, zm, limit, f in (("serper", ".trendo-serper", "SERPER_KEY", LIMIT_SERPER, _serper),
+                                      ("serpapi", ".trendo-serpapi", "SERPAPI_KEY", LIMIT_SERPAPI, _serpapi)):
+        k = _klucz(plik, zm)
+        if not k:
+            continue
+        if licznik(f"{nazwa}-{dzien}") >= limit:
+            uwagi.append(f"{nazwa}: dzienny limit wyczerpany")
+            continue
+        licznik(f"{nazwa}-{dzien}", 1)
+        wyn, stan = f(q, dzial, k)
+        if wyn is not None:
+            return wyn, "ok"
+        uwagi.append(stan)
+    return [], ("; ".join(uwagi) if uwagi else "brak klucza")
+
+
 def stan():
-    k = klucz()
-    if not k:
-        return {"klucz": False}
-    kod, d = pobierz_json("https://serpapi.com/account.json?" + urlencode({"api_key": k}))
-    if not d:
-        return {"klucz": True, "konto": f"brak odpowiedzi ({kod})"}
-    return {"klucz": True, "plan": d.get("plan_name"), "zostalo_w_miesiacu": d.get("plan_searches_left") or d.get("total_searches_left"),
-            "dzis_uzyto": licznik(time.strftime("serpapi-%Y-%m-%d")), "limit_dzienny": LIMIT_DZIENNY}
+    dzien = time.strftime("%Y-%m-%d")
+    out = {}
+    if _klucz(".trendo-serper", "SERPER_KEY"):
+        out["serper"] = {"klucz": True, "dzis_uzyto": licznik(f"serper-{dzien}"), "limit_dzienny": LIMIT_SERPER}
+    k = _klucz(".trendo-serpapi", "SERPAPI_KEY")
+    if k:
+        kod, d = pobierz_json("https://serpapi.com/account.json?" + urlencode({"api_key": k}))
+        out["serpapi"] = {"klucz": True, "zostalo_w_miesiacu": (d or {}).get("plan_searches_left") or (d or {}).get("total_searches_left"),
+                          "dzis_uzyto": licznik(f"serpapi-{dzien}"), "limit_dzienny": LIMIT_SERPAPI}
+    return out or {"klucz": False}

@@ -12,10 +12,10 @@ from urllib.parse import parse_qs, urlparse
 from . import lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara
 from .wspolne import historia, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
 
-WERSJA = "0.4.0"
+WERSJA = "0.4.1"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
-WIEK_PAMIECI = 6 * 3600
+WIEK_PAMIECI = 12 * 3600
 
 
 POMIJANE = {"damskie", "damski", "damska", "męskie", "męski", "męska", "meskie", "meski", "dla", "modne", "modny", "nowe", "tanie"}
