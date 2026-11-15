@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.13.0';
+  const WERSJA = '0.13.1';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -851,7 +851,29 @@
   /* Dwa światy w jednej aplikacji: dział zmienia cały wygląd (kolory, akcenty, grafiki).
      Grafiki świata męskiego leżą w img/m/ pod tą samą ścieżką co damskie. Do czasu ich przygotowania
      damskie przedmioty w różowym złocie są w świecie męskim przemalowywane filtrem na mosiądz (styles.css, --przemaluj). */
-  const GOTOWE_M = new Set([]); // ścieżki względem img/, np. 'ikony/tryb-rzecz.webp'
+  const GOTOWE_M = new Set([ // ścieżki względem img/ (pliki leżą w img/m/)
+    'ikony/krok-promocje.webp',
+    'ikony/krok-sklepy.webp',
+    'ikony/krok-stylizacje.webp',
+    'ikony/krok-trendy.webp',
+    'ikony/pusty-obserwowane.webp',
+    'ikony/pusty-okazje.webp',
+    'ikony/pusty-trendy.webp',
+    'ikony/pusty-wyniki.webp',
+    'ikony/rozmiary.webp',
+    'ikony/tryb-dodatki.webp',
+    'ikony/tryb-outfit.webp',
+    'ikony/tryb-rzecz.webp',
+    'ikony/tryb-zdjecie.webp',
+    'puste/pusty-alerty.webp',
+    'puste/pusty-koszyk.webp',
+    'sezon-jz.jpg',
+    'sezon-wl.jpg',
+    'status/nadchodzi.webp',
+    'status/rosnie.webp',
+    'status/szczyt.webp',
+    'status/wygasa.webp'
+  ]);
   const swiatM = () => document.documentElement.dataset.swiat === 'm';
   const obrazSwiata = (r) => 'img/' + (swiatM() && GOTOWE_M.has(r) ? 'm/' + r : r);
   function podmienGrafikiSwiata(root) {
@@ -876,6 +898,7 @@
     let [nazwa, arg] = location.hash.replace(/^#\/?/, '').split('/');
     if (!nazwa) nazwa = st.witaj ? 'start' : 'witaj';
     if (nazwa === 'witaj' && st.witaj && !location.hash.includes('witaj')) nazwa = 'start';
+    ustawSwiat(nazwa === 'witaj' ? 'damskie' : st.dzial); // przed budową ekranu: grafiki i okładki zależą od świata
     const f = EKRANY[nazwa] || EKRANY.start;
     let ekran;
     try { ekran = f(arg); } catch (e) {
@@ -883,7 +906,6 @@
       ekran = { akt: 'start', menu: false, klasa: 'bez-menu', html: `<div class="naglowek"><a class="ikonka bez" href="javascript:history.back()" aria-label="Wróć">${IK.wstecz}</a><h1>Coś poszło nie tak</h1><span class="puste"></span></div>
         <div class="info uwaga">${IK.uwaga}<p>Nie udało się otworzyć tego ekranu. Wróć i spróbuj jeszcze raz. Jeśli to się powtarza, zgłoś to przy produkcie przyciskiem „Nie pasuje? Zgłoś”.</p></div>` };
     }
-    ustawSwiat(nazwa === 'witaj' ? 'damskie' : st.dzial);
     const y = window.scrollY;
     E.className = ekran.klasa || '';
     E.innerHTML = ekran.html;

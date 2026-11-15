@@ -191,3 +191,8 @@ Najlepsza droga dla każdego sklepu:
 - app.js: ustawSwiat() przy każdym renderze (powitanie zawsze damskie), theme-color; przełącznik działu w trendach i ustawieniach zmienia świat; ostatni slajd powitania: „Dla niej / Dla niego”.
 - Grafiki męskie: img/m/<ta sama ścieżka> + GOTOWE_M (lista gotowych) + podmienGrafikiSwiata() po renderze (klasa wlasna-m wyłącza przemalowanie). Do czasu grafik: --przemaluj (hue-rotate 24°, saturate .62) na przedmiotach w różowym złocie. Wykresy biorą kolory ze zmiennych (grafika.js kol()).
 - tnij_arkusz.py: dowolna siatka z plan.json „siatki”: {"12": [2,3]}. Plan arkuszy 11 (3×3 tryby+puste), 12 (2×3 kroki analizy+koszyk+alerty), 13 (2×2 medaliony), okładki sezonu m/sezon-jz.jpg i m/sezon-wl.jpg.
+
+## 0.13.1 (15.11.2026): męskie grafiki
+- Arkusze 11 (3×3) i 12 (2×3) wycięte do img/m/ikony i img/m/puste, medaliony (2×2, wycięcie kołowe) do img/m/status, okładki sezonu img/m/sezon-jz.jpg i sezon-wl.jpg (1024 px). 21 ścieżek w GOTOWE_M.
+- Poprawka: ustawSwiat() przed budową ekranu (okładka i grafiki zależą od świata już w szablonie).
+- W świecie męskim przemalowywana filtrem zostaje tylko moneta w menu (ikona użytkownika).
