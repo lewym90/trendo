@@ -10,14 +10,54 @@
     "mokasyny": "wzorce/d-buty-7",
     "spodnice midi": "wzorce/d-sukienki-7",
     "zloty kolor": "wzorce/d-dodatki-1",
-    "szerokie spodnie": "wzorce/d-spodnie-8"
+    "szerokie spodnie": "wzorce/d-spodnie-8",
+    "olowkowe spodnice": "trendy/d-olowkowa-spodnica",
+    "zwiewne sukienki maxi": "trendy/d-zwiewna-sukienka-maxi",
+    "ubrania w duze kwiaty": "trendy/d-duze-kwiaty",
+    "welurowe spodnie": "trendy/d-welurowe-spodnie",
+    "biale jeansy": "trendy/d-biale-jeansy",
+    "brazowe jeansy": "trendy/d-brazowe-jeansy",
+    "zielone spodnie i spodnice khaki": "trendy/d-zielone-spodnie-khaki",
+    "garnitury z szerokimi ramionami": "trendy/d-garnitur-szerokie-ramiona",
+    "spodnie capri": "trendy/d-spodnie-capri",
+    "baletki chanel": "trendy/d-baleriny-dwukolorowe",
+    "pudrowy roz i zolty": "trendy/d-pudrowy-roz-zolty",
+    "torby w stylu y2k": "trendy/d-torebka-y2k",
+    "fredzle": "trendy/d-fredzle",
+    "kurtki z koronkowymi kolnierzami": "trendy/d-kolnierz-koronkowy",
+    "strukturalna odziez wierzchnia": "trendy/d-strukturalny-plaszcz",
+    "wysokie kolnierze": "trendy/d-wysoki-kolnierz",
+    "welurowe dresy": "trendy/d-welurowy-dres",
+    "koronkowe bufiaste spodnie": "trendy/d-koronkowe-bufiaste-szorty",
+    "wzory zwierzece": "trendy/d-wzory-zwierzece",
+    "buty celine reebok": "trendy/retro-sneakersy"
   },
   "m": {
     "krata": "wzorce/m-koszule-3",
     "proste jeansy": "wzorce/m-spodnie-1",
     "zamszowa odziez wierzchnia": "wzorce/m-okrycia-4",
     "skorzana odziez wierzchnia": "wzorce/m-okrycia-3",
-    "mokasyny": "wzorce/m-buty-5"
+    "mokasyny": "wzorce/m-buty-5",
+    "buty celine reebok": "trendy/retro-sneakersy",
+    "brazowe jeansy": "trendy/m-brazowe-jeansy",
+    "garnitury z szerokimi ramionami": "trendy/m-garnitur-szerokie-ramiona",
+    "futro": "trendy/m-futro",
+    "wysokie kolnierze": "trendy/m-wysoki-kolnierz",
+    "ubrania w duze kwiaty": "trendy/m-duze-kwiaty",
+    "kurtki typu barn jacket": "trendy/m-barn-jacket",
+    "zamszowe sneakersy": "trendy/m-zamszowe-sneakersy",
+    "fredzle": "trendy/m-fredzle",
+    "sztruksowe spodnie": "trendy/m-sztruksowe-spodnie"
   },
-  "cechy": { "wzor": {} }
+  "cechy": {
+    "wzor": {
+      "krata": "trendy/wzor-krata",
+      "paski": "trendy/wzor-paski",
+      "kropki": "trendy/wzor-kropki",
+      "kwiaty": "trendy/wzor-kwiaty",
+      "zwierzecy": "trendy/wzor-zwierzecy",
+      "jodelka_pepitka": "trendy/wzor-pepitka",
+      "geometryczny": "trendy/wzor-geometryczny"
+    }
+  }
 }
