@@ -61,6 +61,8 @@ def _marka(arg):
         foto = (h.get("photos") or {}).get("categoryPhoto")
         wyn.append(produkt(marka, h.get("name", ""), cena, h["url"], foto, stara=stara, zrodlo="sklep", dzial=dzial,
                            extra={"omnibus": omnibus, "rozmiary": h.get("sizes") or None,
+                                  "plec_sklepu": "damskie" if plec.startswith("kobiet") else "meskie" if plec.startswith("mężczy")
+                                  else "unisex" if "unisex" in plec else None,
                                   "material": ", ".join((h.get("features") or {}).get("Materiał", [])) or None}))
     return marka, wyn, "ok"
 

@@ -5,6 +5,7 @@ Uruchomienie na serwerze:  cd /opt/trendo && /root/trendo-scraper/bin/python -m 
 Błąd krytyczny = rzecz, która na daną okazję NIE pasuje, a trafiła do głównych wyników."""
 import hashlib, json, os, sys, time
 from . import klasyfikator, nadzor
+from .wspolne import plec_ze_sklepu
 
 PLIK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kontrola", "zloty.json")
 
@@ -12,6 +13,8 @@ PLIK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kontrola"
 def produkty_wzorcowe():
     lista = json.load(open(PLIK, encoding="utf-8"))
     for e in lista:
+        e["zrodlo"] = "sklep"
+        e["plec_sklepu"] = plec_ze_sklepu(e, e["dzial"])
         e["id"] = "k-" + hashlib.sha1(f"{e['sklep']}|{e['nazwa']}|{e['zdjecie']}".encode()).hexdigest()[:14]
     return lista
 
@@ -24,36 +27,34 @@ def ocen_model(model, lista):
     ile = klasyfikator.klasyfikuj(lista, maks=len(lista), swiezo=True, model=model, zapisuj=False)
     koszt = klasyfikator.koszt_dzis() - przed
     r = {"model": model, "ocenione": ile, "wszystkie": len(lista), "czas_s": round(time.time() - t0), "koszt_usd": round(koszt, 3),
-         "krytyczne": [], "w_moze_pasowac": [], "ukryte_dobre": [], "plec": [], "plec_moze": [], "trafione": 0, "sprawdzen": 0}
+         "krytyczne": [], "ukryte_dobre": [], "plec": [], "trafione": 0, "sprawdzen": 0}
     for p in lista:
         k = p.get("klasa")
         if not k:
             continue
         dobra_plec = p["plec"] == p["dzial"] or p["plec"] == "unisex"
-        plec_ai = nadzor.zgodna_plec(k, p["dzial"])
-        if not dobra_plec and plec_ai:
-            r["plec"].append(f"{p['nazwa']} ({p['sklep']}): AI {k['p']}, powinno {p['plec']} (pokazane w złym dziale)")
-        elif dobra_plec and not plec_ai:
-            r["plec_moze"].append(f"{p['nazwa']} ({p['sklep']}): AI {k['p']}, powinno {p['plec']} (trafi do „Może pasować”)")
+        pokazana = nadzor.zgodna_plec(p, p["dzial"])
+        if dobra_plec != pokazana:
+            zr = "sklep" if p.get("plec_sklepu") else "AI"
+            r["plec"].append(f"{p['nazwa']} ({p['sklep']}): {zr} {nadzor.plec(p)}, powinno {p['plec']}"
+                             f" ({'pokazane w złym dziale' if pokazana else 'ukryte'})")
         for okazja, ma_pasowac in p["oczekiwane"].items():
             w, powod = nadzor.decyzja(p, okazja)
-            if w == "tak" and not plec_ai:
-                w = "moze"
+            if not pokazana:
+                w = "nie"
             if not dobra_plec:
                 ma_pasowac = False
             r["sprawdzen"] += 1
             opis = f"{okazja}: {p['nazwa']} ({p['sklep']}) [{powod or 'AI: ' + ','.join(k['o'])}; wzór {k.get('wzor')}; f={k.get('f')}]"
             if not ma_pasowac and w == "tak":
                 r["krytyczne"].append(opis)
-            elif not ma_pasowac and w == "moze":
-                r["w_moze_pasowac"].append(opis)
             elif ma_pasowac and w == "nie":
                 r["ukryte_dobre"].append(opis)
             else:
                 r["trafione"] += 1
     nieocenione = len(lista) - ile
-    r["punkty_karne"] = (len(r["krytyczne"]) * 5 + len(r["plec"]) * 3 + len(r["plec_moze"]) + len(r["w_moze_pasowac"])
-                         + len(r["ukryte_dobre"]) + nieocenione * 2)
+    r["punkty_karne"] = len(r["krytyczne"]) * 5 + len(r["plec"]) * 3 + len(r["ukryte_dobre"]) + nieocenione * 2
+    r["szczegoly"] = [{"nr": p["nr"], "klasa": p.get("klasa")} for p in lista]
     return r
 
 
@@ -67,15 +68,11 @@ def drukuj(r):
     print(f"  BŁĘDY KRYTYCZNE (zła rzecz w głównych wynikach): {len(r['krytyczne'])}")
     for x in r["krytyczne"][:25]:
         print("    -", x)
-    print(f"  Złe rzeczy tylko w „Może pasować”: {len(r['w_moze_pasowac'])}")
     print(f"  Dobre rzeczy ukryte: {len(r['ukryte_dobre'])}")
-    for x in r["ukryte_dobre"][:12]:
+    for x in r["ukryte_dobre"][:6]:
         print("    -", x)
-    print(f"  Błędy płci (rzecz w złym dziale): {len(r['plec'])}")
+    print(f"  Błędy płci: {len(r['plec'])}")
     for x in r["plec"][:8]:
-        print("    -", x)
-    print(f"  Niepewna płeć (dobra rzecz tylko w „Może pasować”): {len(r['plec_moze'])}")
-    for x in r["plec_moze"][:6]:
         print("    -", x)
     print(f"  Punkty karne: {r['punkty_karne']} (mniej = lepiej)")
 
@@ -115,6 +112,7 @@ def main():
     naj = min(wyniki, key=lambda r: (r["punkty_karne"], klasyfikator._cena(r["model"])))
     if len(modele) > 1 or not klasyfikator.ustawienie("model_ai"):
         klasyfikator.ustawienie("model_ai", naj["model"])
+    klasyfikator.ustawienie("kontrola_szczegoly", json.dumps(naj["szczegoly"], ensure_ascii=False))
     klasyfikator.ustawienie("kontrola_wynik", json.dumps({
         "czas": int(time.time()), "model": naj["model"], "krytyczne": len(naj["krytyczne"]), "sprawdzen": naj["sprawdzen"],
         "trafione": naj["trafione"], "ukryte_dobre": len(naj["ukryte_dobre"]), "plec": len(naj["plec"])}))

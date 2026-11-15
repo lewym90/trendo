@@ -64,8 +64,8 @@ if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; the
   curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie&okazja=wieczor" | "$PY" -c "
 import json,sys; d=json.load(sys.stdin)
 [print(' ', s['nazwa'], '-', s['stan'], '-', s['ile'], 'produktów') for s in d['sklepy']]
-print('  Ocena:', d.get('klasyfikacja'), '| pokazane:', len(d['produkty']), '| w tym Może pasować:', d.get('moze'), '| pominięte:', d.get('pominiete'), '| czas:', d.get('czas'), 's')
-for p in [p for p in d['produkty'] if p.get('pewnosc') == 'tak'][:8]: print('   +', p['sklep'], '-', p['nazwa'][:70])
+print('  Ocena:', d.get('klasyfikacja'), '| pokazane:', len(d['produkty']), '| pominięte:', d.get('pominiete'), '| czas:', d.get('czas'), 's')
+for p in d['produkty'][:8]: print('   +', p['sklep'], '-', p['nazwa'][:70])
 " || echo "Próbne wyszukiwanie: brak odpowiedzi."
 else
   echo "Status: BŁĄD, https://$HOST/trendo-api/zdrowie nie odpowiada."

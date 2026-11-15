@@ -184,9 +184,11 @@ def _wywolaj(model, czesci, schemat, budzet=True):
 def miniatura(url):
     if not url:
         return None
-    u = re.sub(r"([?&])w=\d+", r"\1w=400", url)
-    kod, b = pobierz(u, czas=15, limit=4_000_000)
-    if kod != 200 or not b or len(b) < 800:
+    for u in dict.fromkeys([re.sub(r"([?&])w=\d+", r"\1w=400", url), url, url.split("?")[0]]):
+        kod, b = pobierz(u, czas=15, limit=4_000_000)
+        if kod == 200 and b and len(b) >= 800 and (b[:4] == b"\x89PNG" or b[8:12] == b"WEBP" or b[:3] == b"\xff\xd8\xff"):
+            break
+    else:
         return None
     if b[:4] == b"\x89PNG":
         typ = "image/png"
@@ -247,12 +249,15 @@ def klasyfikuj(produkty, maks=240, swiezo=False, model=None, zapisuj=True):
     brak = brak[:maks]
     if brak and dostepny():
         kolejka = [model] if model else [m for m in modele() if m not in _martwe]
-        for m in kolejka:
-            partie = [brak[i:i + PACZKA] for i in range(0, len(brak), PACZKA)]
+        # Podejścia: główny model paczkami po 10, ponownie po 4 (gdy paczka się nie udała), potem model zapasowy.
+        proby = [(kolejka[0], PACZKA), (kolejka[0], 4)] + [(m, PACZKA) for m in kolejka[1:2]] if kolejka else []
+        for m, wielkosc in proby:
+            brak = [p for p in brak if p["id"] not in znane]
+            if not brak:
+                break
+            partie = [brak[i:i + wielkosc] for i in range(0, len(brak), wielkosc)]
             with ThreadPoolExecutor(max_workers=8) as ex:
                 wyniki = list(ex.map(lambda pa: _partia(pa, m), partie))
-            if all(k == 404 for k, _ in wyniki):
-                continue  # nie ma takiego modelu, próbujemy następnego
             for _, w in wyniki:
                 if not w:
                     continue
@@ -262,7 +267,6 @@ def klasyfikuj(produkty, maks=240, swiezo=False, model=None, zapisuj=True):
                         DB.executemany("INSERT OR REPLACE INTO klasy2 VALUES (?,?,?,?)",
                                        [(pid_, json.dumps(v, ensure_ascii=False), m, int(time.time())) for pid_, v in w.items()])
                         DB.commit()
-            break
     for p in produkty:
         if p["id"] in znane:
             p["klasa"] = znane[p["id"]]

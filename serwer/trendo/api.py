@@ -14,9 +14,9 @@ from urllib.parse import parse_qs, quote_plus, urlparse
 
 import threading
 from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor
-from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
+from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.7.1"
+WERSJA = "0.7.2"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -90,6 +90,7 @@ def pobierz_produkty(q, dzial, laczniki):
             if not p["trafnosc"]:
                 continue
             widziane.add(k)
+            p["plec_sklepu"] = plec_ze_sklepu(p, dzial)
             logo.poznaj(p)
             zapisz_cene(p)
             p["weryf"] = weryfikuj(p)
@@ -120,41 +121,27 @@ def szukaj(q, dzial, okazja=""):
         nieocenione = len(produkty) - ocenione
         if ocenione:
             klasyfikacja = "ai"
-            zostaja = []
-            for p in produkty:
-                k = p.get("klasa")
-                if k and (k["p"] == "dzieciece" or not klasyfikator.zgodny_rodzaj(r_hasla, k["r"])):
-                    continue
-                if k and not nadzor.zgodna_plec(k, dzial):
-                    # Płeć z samego zdjęcia bywa niepewna (np. buty, kurtki): nie ukrywamy, tylko odsuwamy do „Może pasować”.
-                    p["pewnosc"], p["powod"] = "moze", "może być z drugiego działu"
-                zostaja.append(p)
-            produkty = zostaja
+            produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)
+                        and (not p.get("klasa") or klasyfikator.zgodny_rodzaj(r_hasla, p["klasa"]["r"]))]
+    else:
+        produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)]
     pominiete = 0
-    moze = sum(1 for p in produkty if p.get("pewnosc") == "moze")
     if okazja:
-        moze = 0
         wyk = wykluczone()
         zostaja = []
         for p in produkty:
             if klasyfikacja == "ai" and not p.get("klasa"):
                 continue  # jeszcze nieoceniona: nie pokazujemy (wynik nie trafi do pamięci, następne wyszukiwanie oceni resztę)
             werdykt, powod = nadzor.decyzja(p, okazja, wyk)
-            if werdykt == "tak" and p.get("pewnosc") == "moze":
-                werdykt, powod = "moze", p.get("powod", "")
             if werdykt == "nie":
                 pominiete += 1
                 continue
-            p["pewnosc"] = werdykt
-            if werdykt == "moze":
-                p["powod"] = powod
-                moze += 1
             p["punkty"] = nadzor.punkty(p, okazja)
             zostaja.append(p)
         produkty = zostaja
     wynik = {"zapytanie": q, "dzial": dzial, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
-             "sklepy": sklepy, "produkty": sorted(produkty, key=lambda p: (p.get("pewnosc") == "moze", -p.get("punkty", 0))),
-             "okazja": OKAZJE.get(okazja, ""), "pominiete": pominiete, "moze": moze, "nieocenione": nieocenione,
+             "sklepy": sklepy, "produkty": sorted(produkty, key=lambda p: -p.get("punkty", 0)),
+             "okazja": OKAZJE.get(okazja, ""), "pominiete": pominiete, "nieocenione": nieocenione,
              "klasyfikacja": klasyfikacja}
     # Bez pełnej oceny nie zapamiętujemy wyniku na 12 godzin, żeby następne wyszukiwanie spróbowało ocenić resztę.
     if produkty and (nieocenione == 0 or not klasyfikator.dostepny()):
@@ -247,6 +234,9 @@ class Obsluga(BaseHTTPRequestHandler):
                     DB.execute("DELETE FROM pamiec WHERE klucz LIKE 'szukaj|%'")  # wyniki od razu bez tej rzeczy
                     DB.commit()
                 return self._wyslij(200, {"ok": True})
+            if u.path == "/kontrola":
+                return self._wyslij(200, {"wynik": json.loads(klasyfikator.ustawienie("kontrola_wynik") or "null"),
+                                          "szczegoly": json.loads(klasyfikator.ustawienie("kontrola_szczegoly") or "[]")})
             if u.path == "/zgloszenia":
                 with _baza_blokada:
                     r = DB.execute("SELECT * FROM zgloszenia ORDER BY czas DESC LIMIT 300").fetchall()

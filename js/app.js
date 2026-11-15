@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.7.1';
+  const WERSJA = '0.7.2';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -239,20 +239,13 @@
     return 'drozej';
   }
   function siatkaWynikow(lista, q) {
-    const moze = lista.filter((p) => p.pewnosc === 'moze');
-    const dokladne = lista.filter((p) => p.trafnosc !== 1 && p.pewnosc !== 'moze');
-    const podobne = lista.filter((p) => p.trafnosc === 1 && p.pewnosc !== 'moze');
-    let h = dokladne.length ? `<div class="siatka">${dokladne.map(kartaProduktu).join('')}</div>`
-      : moze.length ? `<div class="info neutral" style="margin-bottom:14px">${IK.info}<p>W tej grupie nie ma rzeczy, które przeszły pełne sprawdzenie. Poniżej te, co do których nie mamy pewności.</p></div>` : '';
+    const dokladne = lista.filter((p) => p.trafnosc !== 1);
+    const podobne = lista.filter((p) => p.trafnosc === 1);
+    let h = dokladne.length ? `<div class="siatka">${dokladne.map(kartaProduktu).join('')}</div>` : '';
     if (podobne.length) {
       h += `<div class="sekcja-tytul" style="margin:${dokladne.length ? 28 : 4}px 0 12px"><h2>Podobne</h2><span class="maly szary">${podobne.length}</span></div>
         <p class="maly szary" style="margin:-6px 0 14px">Ten sam rodzaj rzeczy, ale nie każde słowo z hasła „${esc(q)}” jest w opisie sklepu.</p>
         <div class="siatka">${podobne.map(kartaProduktu).join('')}</div>`;
-    }
-    if (moze.length) {
-      h += `<div class="sekcja-tytul" style="margin:28px 0 12px"><h2>Może pasować</h2><span class="maly szary">${moze.length}</span></div>
-        <p class="maly szary" style="margin:-6px 0 14px">Tu trafiają rzeczy, przy których coś się nie zgadza: na przykład sklep pisze „z nadrukiem”, a na zdjęciu jest gładka rzecz, albo nie da się pewnie ocenić, czy to damskie, czy męskie. Obejrzyj je, zanim wybierzesz.</p>
-        <div class="siatka">${moze.map(kartaProduktu).join('')}</div>`;
     }
     return h;
   }
@@ -276,7 +269,7 @@
       akt: 'szukaj',
       html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
       <p class="szary maly" style="text-align:center;margin:-6px 0 14px">${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
-      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> ${wynik.klasyfikacja === 'ai' ? 'Każdą rzecz sprawdził stylista AI na zdjęciu, a potem nasze stałe zasady (np. bez dużych nadruków, bluz i dresów). Małe logo marki na piersi nie jest przeszkodą.' : 'Stylista AI jest chwilowo niedostępny, więc nic nie przeszło pełnego sprawdzenia. Wszystko trafiło do sekcji „Może pasować”.'}${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} na tę okazję się nie nadają.` : ''} Coś nie pasuje? Otwórz produkt i dotknij „Nie pasuje”.</p></div>` : ''}
+      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> ${wynik.klasyfikacja === 'ai' ? 'Każdą rzecz sprawdził stylista AI na zdjęciu, a potem nasze stałe zasady (np. bez dużych nadruków, bluz i dresów). Małe logo marki na piersi nie jest przeszkodą.' : 'Stylista AI jest chwilowo niedostępny, więc pokazujemy tylko rzeczy, które według opisu sklepu są jednoznacznie eleganckie.'}${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} na tę okazję się nie nadają.` : ''} Coś nie pasuje? Otwórz produkt i dotknij „Nie pasuje”.</p></div>` : ''}
       <div class="przelacznik" role="tablist" aria-label="Wyniki">
         <button role="tab" aria-selected="${zakladka === 'sklepy'}" data-akcja="zakladka" data-v="sklepy">W sklepach (${P.length})</button>
         <button role="tab" aria-selected="${zakladka === 'stylizacje'}" data-akcja="zakladka" data-v="stylizacje">Stylizacje</button>

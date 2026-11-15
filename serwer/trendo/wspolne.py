@@ -153,8 +153,38 @@ def produkt(sklep, nazwa, cena, url, zdjecie, stara=None, zrodlo="", dzial="", e
     return p
 
 
-MESKIE = re.compile(r"męsk|meski|meskie|mężczy|mezczy|\bmen\b|\bman\b", re.I)
+MESKIE = re.compile(r"męsk|mesk|mężczy|mezczy|\bmen\b|\bman\b", re.I)
 DAMSKIE = re.compile(r"damsk|kobiet|\bwomen\b|\bwoman\b|\blady\b", re.I)
+
+
+# Sklepy, w których szukamy wprost w dziale damskim albo męskim: płeć produktu = dział wyszukiwania.
+DZIAL_ZE_SKLEPU = {"Zara", "Modivo", "eobuwie", "Born2Be", "Renee", "Reserved", "House", "Cropp", "Sinsay", "Mohito"}
+TYLKO_DAMSKIE_SKLEPY = {"Bizuu", "Mohito"}
+
+
+def plec_ze_sklepu(p, dzial):
+    """Płeć produktu według sklepu (dział, kod produktu, opis). None, gdy sklep jej nie podaje."""
+    if p.get("plec_sklepu"):
+        return p["plec_sklepu"]
+    sklep, nazwa = p.get("sklep", ""), p.get("nazwa", "")
+    if sklep in TYLKO_DAMSKIE_SKLEPY:
+        return "damskie"
+    if sklep in DZIAL_ZE_SKLEPU and p.get("zrodlo") != "google":
+        return dzial
+    if sklep == "Ochnik":
+        # kody Ochnika: KOSMT = koszula męska, KURDS = kurtka damska, BUTYM = buty męskie, SUKDT = sukienka damska
+        m = re.search(r"\b([A-Z]{4,5})-[0-9A-Z]", nazwa)
+        if m:
+            k = m.group(1)
+            z = k[3] if len(k) == 5 and k[4] in "TS" else k[-1]
+            if z in "MD":
+                return "meskie" if z == "M" else "damskie"
+    if sklep in ("Kazar", "Bialcon"):  # sklepy głównie damskie: męskie tylko z opisem „męskie”
+        return "meskie" if MESKIE.search(nazwa) else "damskie"
+    m, d = bool(MESKIE.search(nazwa)), bool(DAMSKIE.search(nazwa))
+    if m != d:
+        return "meskie" if m else "damskie"
+    return None
 
 
 def pasuje_dzial(tekst, dzial):

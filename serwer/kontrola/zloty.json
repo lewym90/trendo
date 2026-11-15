@@ -570,7 +570,7 @@
   "material": "",
   "szukano": "buty",
   "dzial": "damskie",
-  "plec": "damskie",
+  "plec": "meskie",
   "oczekiwane": {
    "wieczor": false,
    "wesele": false,
@@ -602,7 +602,7 @@
   "material": "",
   "szukano": "buty",
   "dzial": "damskie",
-  "plec": "damskie",
+  "plec": "meskie",
   "oczekiwane": {
    "wieczor": false,
    "wesele": false,
@@ -745,7 +745,7 @@
   "material": "",
   "szukano": "buty",
   "dzial": "damskie",
-  "plec": "damskie",
+  "plec": "meskie",
   "oczekiwane": {
    "wieczor": false,
    "wesele": false,

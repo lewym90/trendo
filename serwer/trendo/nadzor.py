@@ -1,10 +1,8 @@
 """Nadzór nad oceną produktów pod okazję. AI jest tu tylko jednym z głosów: decyzję podejmują sztywne zasady poniżej.
 Zasada nadrzędna: lepiej ukryć dobrą rzecz niż pokazać złą.
 
-decyzja(p, okazja) -> ("tak" | "moze" | "nie", powód)
-  tak  - główne wyniki,
-  moze - sekcja „Może pasować” (coś się nie zgadza albo brak pewności),
-  nie  - nie pokazujemy.
+decyzja(p, okazja) -> ("tak" | "nie", powód). Każdy produkt dostaje jednoznaczną decyzję.
+Płeć: najpierw według sklepu (dział, kod produktu), dopiero gdy sklep jej nie podaje, według oceny zdjęcia.
 """
 import re
 
@@ -37,8 +35,9 @@ NAZWA_ZAKAZ = {
     "randka": [r"hoodie", r"z kapturem"],
 }
 
-# Słowa, które każą sprawdzić zdjęcie: jeśli AI na zdjęciu widzi gładką rzecz, a sklep pisze „z nadrukiem”, to niezgodność.
-MIEKKIE = ["nadruk", "print", "napis", "graficzn", "grafik", "motyw", "aplikacj", "naszyw"]
+# Nadruk w opisie, a na zdjęciu (z przodu) gładka rzecz = nadruk jest gdzie indziej (np. na plecach) → nie na eleganckie okazje.
+# Gdy zdjęcie pokazuje wzór, opis „print” po prostu opisuje ten wzór i decyduje ocena zdjęcia.
+MIEKKIE = ["nadruk", "napis", "graficzn", "grafik", "aplikacj", "naszyw", "print"]
 
 WZOR_ZAKAZANY = {"duze_logo_lub_nadruk", "motyw_tematyczny"}
 MIN_ELEGANCJA = {"wesele": 4, "wieczor": 3, "sylwester": 3, "praca": 3, "randka": 2}
@@ -91,7 +90,7 @@ def decyzja(p, okazja, wykluczone=()):
         return "nie", f"zakaz: {s}"
     k = p.get("klasa")
     if not k:
-        return "moze", "brak oceny"
+        return decyzja_slowna(p, okazja)
     if k.get("r") in RODZAJ_ZAKAZANY.get(okazja, ()):
         return "nie", f"rodzaj: {k.get('r')}"
     if okazja not in (k.get("o") or []):
@@ -101,27 +100,42 @@ def decyzja(p, okazja, wykluczone=()):
         return "nie", f"zdjęcie: {wz}"
     if (k.get("f") or 0) < MIN_ELEGANCJA[okazja]:
         return "nie", f"elegancja {k.get('f')}"
-    # Od tego miejsca rzecz przeszła wszystkie zakazy. Sprawdzamy pewność.
-    if not k.get("zdj"):
-        return "moze", "ocena bez zdjęcia"
-    if k.get("zgodne") is False:
-        return "moze", "zdjęcie nie zgadza się z nazwą"
-    if wz == "wzor_wyrazisty":
-        return "moze", "wyrazisty wzór"
-    if okazja in ("wieczor", "wesele", "sylwester") and "krat" in _tekst(p) and k.get("r") not in ("marynarka", "garnitur", "spodnie", "płaszcz"):
-        return "moze", "krata"
+    if wz == "wzor_wyrazisty" and okazja == "praca":
+        return "nie", "wyrazisty wzór do pracy"
     m = _ma(_tekst(p), MIEKKIE)
-    if m and wz in ("gladki", "male_logo"):
-        return "moze", f"sklep pisze „{m}”, zdjęcie pokazuje gładką rzecz"
+    if m and wz in ("gladki", "male_logo") and okazja != "randka":
+        return "nie", f"opis: {m}, nadruk poza zdjęciem"
     return "tak", ""
 
 
-def zgodna_plec(k, dzial):
-    if not k:
-        return True
+ELEGANCKIE = ["elegan", "wizytow", "satyn", "jedwab", "smoking", "garnitur", "koronk", "aksamit", "welur", "wełn", "kaszmir",
+              "taliowan", "marynar", "szpilk", "lakierk", "oxford", "derby", "cekin", "czółen", "w kant"]
+LUZNE = ["wzorzyst", "kolorow", "krat", "jeans", "denim", "lnian", "workowat", "oversize", "t-shirt", "koszulk", "bluz"]
+
+
+def decyzja_slowna(p, okazja):
+    """Gdy stylista AI jest niedostępny (np. wyczerpany miesięczny budżet): tylko rzeczy jednoznacznie eleganckie z opisu."""
+    t = _tekst(p)
+    if _ma(t, MIEKKIE) or _ma(t, LUZNE):
+        return "nie", "opis (bez AI)"
+    if okazja == "randka" or _ma(t, ELEGANCKIE):
+        return "tak", "opis (bez AI)"
+    return "nie", "opis (bez AI): brak cech eleganckich"
+
+
+def plec(p):
+    """Ostateczna płeć produktu: sklep ma pierwszeństwo, ocena zdjęcia tylko gdy sklep jej nie podaje."""
+    k = p.get("klasa") or {}
     if k.get("p") == "dzieciece":
+        return "dzieciece"
+    return p.get("plec_sklepu") or k.get("p")
+
+
+def zgodna_plec(p, dzial):
+    pl = plec(p)
+    if pl == "dzieciece":
         return False
-    return not ((dzial == "damskie" and k.get("p") == "meskie") or (dzial == "meskie" and k.get("p") == "damskie"))
+    return not ((dzial == "damskie" and pl == "meskie") or (dzial == "meskie" and pl == "damskie"))
 
 
 def punkty(p, okazja):

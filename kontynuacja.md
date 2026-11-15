@@ -76,3 +76,12 @@ Najlepsza droga dla każdego sklepu:
 - Płeć według AI sprzeczna z działem → „Może pasować” zamiast ukrycia (błędy AI dotyczyły głównie butów sportowych i kurtek).
 - Showroom: zdjęcia z parametrami width=600&height=900 dawały 404 (ocena bez zdjęcia, w aplikacji pusty obraz) → pełny adres bez parametrów.
 - Rozgrzewka: do 0,1 USD na noc i do 30% budżetu miesięcznego.
+
+## 0.7.2 (15.11.2026): bez „Może pasować”, płeć ze sklepu
+- Użytkownik: nie chce sekcji „Może pasować” ani odrzucania z niepewności, nie chce tracić ofert; płeć ma być ustalona precyzyjnie.
+- Płeć produktu: najpierw sklep (wspolne.plec_ze_sklepu): sklepy szukane w dziale (Zara, Modivo, eobuwie, Born2Be, Renee, LPP) = dział; LPP pole sex; Showroom z kategorii; Ochnik z kodu produktu (KOSMT = męska, KURDS = damska, BUTYM = męskie buty: wyszukiwarka Ochnika zwraca też męskie przy damskich); Kazar i Bialcon damskie, chyba że opis „męsk”; Bizuu, Mohito damskie; opis „damsk/męsk”. AI decyduje tylko, gdy sklep nie podaje (ok. 15 z 271 we wzorcu).
+- Wzorzec: 3 pary butów Ochnika BUTYM poprawione na męskie (AI miało rację).
+- Decyzja tylko tak/nie. Opis „nadruk/napis/grafika/print”, a na zdjęciu gładko → nadruk poza zdjęciem → nie (poza randką). Wyrazisty wzór → nie tylko do pracy. Krata, brak zdjęcia, niezgodne zdjęcie → decyduje ocena zdjęcia/AI.
+- Klasyfikacja ponawiana: paczki po 10, potem po 4, potem model zapasowy; zdjęcie: w=400 → oryginał → bez parametrów.
+- AI niedostępne (np. budżet) → decyzja_slowna: tylko jednoznacznie eleganckie z opisu.
+- Kontrola zapisuje szczegóły ocen wzorca (/kontrola) → kalibracja zasad u mnie na prawdziwych odpowiedziach modelu bez kolejnych kosztów.
