@@ -1,5 +1,5 @@
 {
-  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor. Arkusze 5–6: kafelki okazji (img/okazje/okazja-<d|m>-<okazja>.webp) i ilustracje pustych ekranów (img/puste/).",
+  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor. Arkusze 5–6: kafelki okazji (img/okazje/okazja-<d|m>-<okazja>.webp) i ilustracje pustych ekranów (img/puste/). Arkusz 7: przedmioty w różowym złocie (img/ikony/): tryby wyszukiwania i puste ekrany. Grafiki 8–9: slajdy powitania (img/powitanie-2.jpg, img/powitanie-3.jpg, pionowe, całe).",
   "arkusze": {
     "1": [
       {
@@ -288,6 +288,44 @@
       {
         "plik": "pusty-alerty",
         "katalog": "puste"
+      }
+    ],
+    "7": [
+      {
+        "plik": "tryb-outfit",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "tryb-rzecz",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "tryb-dodatki",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "tryb-zdjecie",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "pusty-obserwowane",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "pusty-wyniki",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "pusty-trendy",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "pusty-okazje",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "rozmiary",
+        "katalog": "ikony"
       }
     ]
   }
