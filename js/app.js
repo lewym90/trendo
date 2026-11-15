@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.19.0';
+  const WERSJA = '0.19.1';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -262,7 +262,7 @@
     };
   };
 
-  /* ---------- stylizacje z prawdziwych produktów (0.19.0, wariant B wybrany przez użytkownika) ----------
+  /* ---------- stylizacje z prawdziwych produktów (0.19.1, wariant B wybrany przez użytkownika) ----------
      Serwer zwraca dla każdego miejsca w zestawie uszeregowanych kandydatów; suwak ceny przy rzeczy podmienia ją na bieżąco
      (najlepiej pasująca rzecz do tej kwoty), suwak całości obniża zestaw tam, gdzie tańszy zamiennik traci najmniej. */
   const STYL_ID = {};
@@ -394,6 +394,12 @@
     return `<div class="wnetrze"><div class="razem"><span>Zestaw: ${n} ${n === 1 ? 'rzecz' : n < 5 ? 'rzeczy' : 'rzeczy'}${d.baza && d.baza.cena ? ' z Twoją' : ''}</span><b>${zl(Math.round(razem * 100) / 100)}</b></div>
       <button class="btn maly" data-akcja="stylDoKoszyka">${IK.torba} Do zakupów</button></div>`;
   }
+  // znaczki trendów tylko dla rzeczy w oglądanym zestawie
+  function stylTrendy(d) {
+    const { wyn } = stylWybor(d, stylWidok.tryb, stylWidok.z), byly = {};
+    Object.values(wyn).forEach((w) => { const t = w.id && !w.s.wyl && d.produkty[w.id].trend; if (t) byly[t.nazwa] = t; });
+    return Object.values(byly).map((t) => `<a href="#/trendy">${esc(t.nazwa)} · ${STATUS_TRENDU[t.status] || esc(t.status)}</a>`).join('');
+  }
   function stylOdswiez(cale) {
     const d = STYL && STYL.dane; if (!d) return;
     const tr = stylWidok.tryb;
@@ -402,6 +408,7 @@
     document.querySelectorAll('.kropki i').forEach((x, i) => x.classList.toggle('on', i === stylWidok.z));
     if (cale) document.getElementById('styl-lista').innerHTML = stylLista(d);
     const ps = document.getElementById('styl-pasek'); if (ps) ps.innerHTML = stylPasek(d);
+    const ts = document.getElementById('styl-trendy'); if (ts) ts.innerHTML = stylTrendy(d);
     podmienGrafikiSwiata(E);
   }
   const KROKI_STYL = [['Analizuję Twoją rzecz', 'kolor, materiał, styl', 'krok-stylizacje'], ['Szukam w sklepach', 'w rozmiarach z Ustawień', 'krok-sklepy'],
@@ -460,7 +467,7 @@
       html: `<div class="naglowek"><a class="ikonka bez" href="#/komponuj" aria-label="Wróć">${IK.wstecz}</a><h1>Stylizacja</h1><span class="puste"></span></div>
       <p class="szary styl-pod">${esc(NAZWA_OKAZJI[d.okazja] || '')}${d.baza ? ' · do: ' + esc(d.baza.nazwa) : ''}</p>
       ${d.opis ? `<div class="styl-hero">${d.baza && d.baza.zdjecie ? `<span class="fot">${foto(d.baza)}</span>` : ''}<p>${esc(d.opis)}</p></div>` : ''}
-      ${d.trendy && d.trendy.length ? `<div class="styl-trendy">${d.trendy.map((t) => `<a href="#/trendy">${esc(t.nazwa)} · ${STATUS_TRENDU[t.status] || esc(t.status)}</a>`).join('')}</div>` : ''}
+      <div class="styl-trendy" id="styl-trendy">${stylTrendy(d)}</div>
       <div class="styl-roz"><span>Szukam w rozmiarach: ${opisR}</span><a class="link" href="#/profil">Zmień</a></div>
       ${d.tryby.sklep ? `<div class="styl-filtr"><div class="przelacznik" role="tablist">
         <button role="tab" aria-selected="${tr === 'sklep'}" data-akcja="stylTrybW" data-v="sklep">Tylko ${esc(d.tryby.sklep.sklep)}</button>

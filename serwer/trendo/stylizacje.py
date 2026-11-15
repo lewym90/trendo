@@ -11,13 +11,14 @@ produktów ze sklepów podłączonych bezpośrednio (bez Google Shopping i Vinte
   potwierdzonej przez co najmniej dwa źródła (ta sama reguła co udziały trendów w sklepach). Opis stylisty pisze AI wyłącznie
   z podanych faktów; opis wspominający modę bez trendu z zestawu jest odrzucany i zastępowany opisem z reguł.
 - AI ocenia tylko wybranych kandydatów (każdy produkt raz na zawsze); koszt liczony osobno (licznik styl-koszt)."""
-import hashlib, json, re, time, traceback
+import hashlib, json, math, re, time, traceback
 from concurrent.futures import ThreadPoolExecutor
 
 from . import klasyfikator as K, nadzor, trendy
 from .wspolne import licznik, lista_rozmiarow, pamiec_czytaj, pamiec_zapisz
 
 WIEK = 12 * 3600
+WERSJA_DOBORU = 2  # zmiana zasad doboru = nowe stylizacje zamiast zapamiętanych
 NA_MIEJSCE = 24        # ilu kandydatów z wszystkich sklepów oceniamy na jedno miejsce w zestawie
 ZE_SKLEPU = 10         # i ilu dodatkowo ze sklepu rzeczy wyjściowej
 W_RANKINGU = 16        # ilu kandydatów na miejsce wraca do aplikacji (dla suwaków)
@@ -58,17 +59,25 @@ def miejsca(dzial, okazja, tryb, r_bazy):
                {"marynarka", "płaszcz"} if formalnie else OKRYCIE}
     buty = {"k": "buty", "rodzaje": BUTY - {"klapki", "kapcie"}}
     sukienka = {"k": "sukienka", "rodzaje": SUKIENKA}
+    krawat = {"k": "krawat", "rodzaje": {"krawat"}}
+    if not d and okazja == "wesele":  # kodeks 15: garnitur, koszula, krawat lub mucha, skórzane buty
+        lista = [gora, buty, krawat, dodatek] if r_bazy == "garnitur" else None
+        if lista:
+            return lista
     if r_bazy == "garnitur":
         return [gora, buty, dodatek]
     if d and r_bazy in SUKIENKA:
         return [okrycie, buty, dodatek]
+    k_w = [krawat] if not d and okazja == "wesele" else []
     if r_bazy in GORA:
-        return [dol, buty, okrycie, dodatek]
+        return [dol, buty, okrycie] + k_w + [dodatek]
     if r_bazy in DOL:
-        return [gora, buty, okrycie, dodatek]
+        return [gora, buty, okrycie] + k_w + [dodatek]
     if r_bazy in OKRYCIE:
         return [sukienka, buty, dodatek] if d and formalnie else [gora, dol, buty, dodatek]
     lista = [sukienka, okrycie, buty, dodatek] if d and formalnie else [gora, dol, buty, okrycie, dodatek]
+    if not d and okazja == "wesele":
+        lista.insert(-1, krawat)
     if r_bazy in BUTY:
         lista = [m for m in lista if m["k"] != "buty"]
     elif r_bazy in {"torebka", "pasek"}:
@@ -98,6 +107,7 @@ HASLA = {
                          "formal": ["półbuty eleganckie"]},
     ("meskie", "dodatek"): {"casual": ["pasek męski"], "smart": ["pasek męski skórzany"], "formal": ["pasek męski skórzany"]},
     ("meskie", "bizuteria"): {"casual": ["zegarek męski"], "smart": ["zegarek męski"], "formal": ["krawat"]},
+    ("meskie", "krawat"): {"casual": ["krawat"], "smart": ["krawat"], "formal": ["krawat jedwabny", "krawat"]},
 }
 
 
@@ -106,7 +116,7 @@ def _grupa_okazji(o):
 
 
 NAZWY_MIEJSC = {"gora": "Góra", "dol": "Dół", "sukienka": "Sukienka", "okrycie": "Okrycie", "buty": "Buty", "dodatek": "Dodatek",
-                "bizuteria": "Biżuteria"}
+                "bizuteria": "Biżuteria", "krawat": "Krawat"}
 
 
 # ---------- rozmiary ----------
@@ -319,7 +329,9 @@ def opis_stylisty(baza_nazwa, baza, okazja, zestaw, uzyte):
              "okazja": NAZWY_OKAZJI.get(okazja), "dobrane": [{"miejsce": m, "nazwa": n, "kolor": c, "material": mt} for m, n, c, mt in zestaw],
              "trendy_wolno_wspomniec": [x["nazwa"] for x in uzyte]}
     tekst = ("Jesteś stylistką sklepu z modą. Napisz po polsku 2–3 krótkie zdania (najwyżej 60 słów) dla klientki albo klienta: "
-             "dlaczego do rzeczy wyjściowej pasuje dobrany zestaw na tę okazję (kolory, materiały, proporcje, poziom elegancji). "
+             "czym i dlaczego zestawić rzecz wyjściową na tę okazję (rodzaje rzeczy, kolory, materiały, proporcje, poziom elegancji). "
+             "Dobrane rzeczy są tylko przykładem kierunku: NIE opisuj konkretnych produktów, ich nazw ani pojedynczych kolorów, "
+             "bo klient może je zmieniać; pisz o zasadach zestawienia. "
              "Korzystaj WYŁĄCZNIE z faktów poniżej. Nie podawaj cen, marek ani sklepów. O modzie, trendach i sezonie wolno pisać "
              "tylko używając nazw z listy trendy_wolno_wspomniec; jeśli lista jest pusta, nie wspominaj o modzie, trendach ani sezonie. "
              "Zwracaj się bezosobowo albo w 2. osobie, ciepło i konkretnie.\nFakty: " + json.dumps(fakty, ensure_ascii=False))
@@ -349,7 +361,7 @@ def _rozmiary_klucz(rozm):
 def zloz(baza_p, baza_q, dzial, okazja, tryb, rozm, szukaj_fn, okazje_fn, wykluczone_fn):
     """baza_p: produkt wyjściowy (słownik z bazy) albo None; baza_q: opis rzeczy wyjściowej („mam czarne spodnie”) albo ''.
     szukaj_fn(q, dzial) -> lista produktów ze sklepów; okazje_fn(p, wyk) -> okazje produktu (nadzor)."""
-    klucz = f"styl|{(baza_p or {}).get('id') or baza_q.lower()}|{dzial}|{okazja}|{tryb}|{_rozmiary_klucz(rozm)}"
+    klucz = f"styl{WERSJA_DOBORU}|{(baza_p or {}).get('id') or baza_q.lower()}|{dzial}|{okazja}|{tryb}|{_rozmiary_klucz(rozm)}"
     zap = pamiec_czytaj(klucz, WIEK)
     if zap:
         return zap
@@ -450,6 +462,8 @@ def zloz(baza_p, baza_q, dzial, okazja, tryb, rozm, szukaj_fn, okazje_fn, wykluc
                     else:
                         braki[m] = "rozmiar" if odrzucone_rozm.get(m) else "brak"
                     continue
+                ceny = sorted(p["cena"] for p, _, _ in kandydaci.get(m, []))
+                mediana = ceny[len(ceny) // 2] if ceny else 0
                 oc = []
                 for p, k, rz in lista:
                     tr = trend_rzeczy(k, tr_lista)
@@ -461,6 +475,8 @@ def zloz(baza_p, baza_q, dzial, okazja, tryb, rozm, szukaj_fn, okazje_fn, wykluc
                     if p["id"] in top_wczesniej[m]:
                         s -= 1.5  # różne zestawy, nie trzy podobne
                     s += (1 if rz else 0) * 0.2
+                    if mediana and p["cena"] > 1.5 * mediana:
+                        s -= 0.8 * math.log2(p["cena"] / mediana)  # nie podsuwamy na start rzeczy kilka razy droższej niż typowa
                     oc.append((s, p, k, rz, tr))
                 oc.sort(key=lambda x: -x[0])
                 ranking = []

@@ -469,6 +469,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .styl-hero .fot img{width:100%;height:100%;object-fit:cover}
 .styl-hero p{margin:0;font-size:14.5px;line-height:1.55;color:var(--tekst2)}
 .styl-trendy{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0}
+.styl-trendy:empty{display:none}
 .styl-trendy a,.znacz-trend{font-size:12px;padding:4px 10px;border-radius:999px;background:rgba(var(--akcent-rgb),.12);color:var(--akcent-jasny);border:1px solid rgba(var(--akcent-rgb),.3);text-decoration:none}
 .znacz-trend{display:inline-block;margin-top:6px}
 .styl-roz{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;color:var(--szary);margin:14px 2px 0}
