@@ -12,7 +12,7 @@ RODZAJE = ["koszula", "bluzka", "t-shirt", "polo", "top", "sweter", "kardigan", 
            "buty", "botki", "kozaki", "sneakersy", "półbuty", "szpilki", "czółenka", "mokasyny", "baleriny", "sandały", "klapki", "kapcie",
            "torebka", "plecak", "portfel", "pasek", "biżuteria", "zegarek", "okulary", "czapka", "kapelusz", "szal", "rękawiczki",
            "krawat", "bielizna", "piżama", "strój kąpielowy", "skarpety", "rajstopy", "kosmetyk", "dom", "inne"]
-OKAZJE = ["codzien", "praca", "randka", "wieczor", "wesele", "sylwester", "wyjazd", "sport", "plaza", "dom"]
+OKAZJE = ["codzien", "smartcasual", "praca", "randka", "wieczor", "wesele", "sylwester", "wyjazd", "sport", "plaza", "dom"]
 PLEC = ["damskie", "meskie", "unisex", "dzieciece"]
 WZORY = ["gladki", "male_logo", "duze_logo_lub_nadruk", "wzor_stonowany", "wzor_wyrazisty", "motyw_tematyczny"]
 BUTY = {"botki", "kozaki", "sneakersy", "półbuty", "szpilki", "czółenka", "mokasyny", "baleriny", "sandały", "klapki", "kapcie"}
@@ -24,16 +24,16 @@ CENY = [("3.8-flash", 0.75, 3.75), ("3.7-flash", 0.75, 3.75), ("3.5-flash-lite",
         ("3.1-flash-lite", 0.25, 1.50), ("2.5-flash-lite", 0.10, 0.40), ("2.5-flash", 0.30, 2.50)]
 BUDZET = float(os.environ.get("GEMINI_BUDZET_MIESIECZNY", "12"))
 PACZKA = 10
-OCENA_WERSJA = 2  # zmiana zasad = ponowna ocena produktów
+OCENA_WERSJA = 3  # zmiana zasad = ponowna ocena produktów
 
-ZASADY = """Jesteś doświadczoną, surową stylistką. Oceniasz produkty ze sklepów odzieżowych na podstawie ZDJĘCIA i nazwy.
-Zdjęcie jest ważniejsze niż nazwa, bo sklepy nadają mylące nazwy. Oceniasz WYŁĄCZNIE produkt z nazwy, a nie resztę
-stylizacji modela (przy spodniach nie oceniaj koszuli modela). Marka nie podnosi ani nie obniża oceny.
+ZASADY = """Jesteś doświadczoną, surową stylistką. Stosujesz zasady ubioru według Emily Post, Debrett's i polskiego protokołu
+(Orłowski, PISM). Oceniasz produkty ze sklepów na podstawie ZDJĘCIA i nazwy. Zdjęcie jest ważniejsze niż nazwa, bo sklepy
+nadają mylące nazwy. Oceniasz WYŁĄCZNIE produkt z nazwy, a nie resztę stylizacji modela. Marka nie podnosi ani nie obniża oceny.
 
 Dla każdego produktu zwróć:
 r = rodzaj rzeczy (jedna wartość z listy).
 p = dla kogo: damskie / meskie / unisex / dzieciece (po zdjęciu, kroju i nazwie). Gdy zdjęcie pokazuje sam produkt bez osoby
-    (np. buty sportowe, kurtka, sweter) i z wyglądu nie da się rozstrzygnąć, wybierz unisex. Nie zgaduj płci po kolorze.
+    i z wyglądu nie da się rozstrzygnąć, wybierz unisex. Nie zgaduj płci po kolorze.
 f = elegancja 1-5: 1 = sport, dres, plaża, dom, zabawne nadruki; 2 = luźna codzienność (t-shirty, bluzy, jeansy, sneakersy);
     3 = smart casual (gładkie bluzki i koszule, golfy i topy z cienkiej dzianiny, chinosy, swetry, skórzane botki);
     4 = elegancko (satyna, jedwab, koronka, koszule wizytowe, marynarki, spodnie w kant, szpilki); 5 = wizytowo, gala.
@@ -47,34 +47,40 @@ wzor = jak wygląda powierzchnia rzeczy:
   wzor_wyrazisty: duże, kolorowe lub krzykliwe wzory: zwierzęce, moro, duże kwiaty, kolorowa krata, etniczne;
   motyw_tematyczny: postaci, bajki, marki niemodowe (np. Coca-Cola), motywy świąteczne, zwierzątka, żartobliwe napisy.
 zgodne = true, gdy zdjęcie pokazuje rzecz z nazwy; false, gdy zdjęcie pokazuje wyraźnie co innego.
-o = okazje, na które ta rzecz NAPRAWDĘ się nadaje według dobrej stylistki (może być pusta lista).
-  Oceniasz rzecz jako ELEMENT stroju: zakładasz, że reszta stroju zostanie dobrana właściwie. Pytanie brzmi: czy ta rzecz
-  może być częścią dobrego stroju na tę okazję? Przykłady: satynowa bluzka + elegancka spódnica = wesele, wieczor, sylwester;
-  gładki dopasowany golf z cienkiej dzianiny + skórzane spodnie = wieczor, praca, randka; czarne skórzane kozaki + sukienka =
-  wieczor, randka; koszula wizytowa + garnitur = wesele, wieczor, praca.
-  codzien = na co dzień;
-  praca = biuro, smart lub business casual: stonowanie i schludnie;
-  randka = zadbanie i stylowo, smart casual dozwolony, ale nie sportowo ani niechlujnie;
-  wieczor = kolacja w dobrej restauracji, teatr, drink w eleganckim lokalu: elegancko lub dopracowany smart casual.
-    Mężczyźni: koszula z długim rękawem, marynarka, elegancki sweter lub golf z cienkiej dzianiny, spodnie materiałowe
-    lub eleganckie ciemne, skórzane półbuty, mokasyny, sztyblety. Gładka polówka z dobrego materiału najwyżej jako smart casual.
-    Kobiety: sukienka, elegancka bluzka (satyna, jedwab, koronka), spódnica, eleganckie spodnie, szpilki, czółenka, botki,
-    mała elegancka torebka. Satynowe, jedwabne, koronkowe i szyfonowe bluzki oraz koszule nadają się na wieczor, wesele,
-    sylwester i randkę. Gładkie dopasowane golfy i topy z cienkiej dzianiny: wieczor, praca, randka;
-  wesele = gość na weselu: garnitur, marynarka, koszula z długim rękawem, eleganckie spodnie, skórzane buty wizytowe;
-    sukienka, kombinezon, elegancka spódnica i bluzka, szpilki, czółenka, mała torebka. Kobiety NIE na biało;
-  sylwester = impreza: elegancko i efektownie, cekiny, satyna, skóra, błysk, czerń;
+bialy = true, gdy rzecz jest w przeważającej części biała, ecru, kremowa lub w kolorze złamanej bieli.
+o = okazje, na które ta rzecz NAPRAWDĘ się nadaje (może być pusta lista). Oceniasz rzecz jako ELEMENT stroju: zakładasz,
+  że reszta stroju zostanie dobrana właściwie. Wypisz WSZYSTKIE okazje, na które rzecz pasuje, nie tylko najlepszą.
+  codzien = na co dzień (casual).
+  smartcasual = smart casual: elegancja połączona ze swobodą, luźniej niż biuro, dozwolone kolory i ciekawsze wzory.
+    TAK: koszule (także casualowe i overshirt), polówki, swetry, golfy, marynarki, chinosy, spodnie materiałowe, ciemne
+    dżinsy, bluzki, spódnice, sukienki dzienne, skórzane kurtki, płaszcze, mokasyny, sztyblety, botki, czyste
+    minimalistyczne skórzane sneakersy. NIE: dresy, bluzy z kapturem, legginsy, koszulki z nadrukiem, buty sportowe
+    (biegowe, do koszykówki, na siłownię), klapki, sportowe kurtki puchowe, rzeczy podarte, suknie wieczorowe i cekiny.
+  praca = business casual w biurze: spodnie, chinosy lub spódnica z koszulą, bluzką, polo lub swetrem, sukienki, marynarki.
+    NIE: sneakersy, głębokie dekolty, ramiączka-spaghetti, cekiny, rzeczy prześwitujące, nadruki.
+  randka = smart casual lub dressy casual: zadbanie i styl, nie sportowo ani niechlujnie. Wszystko, co pasuje na
+    wieczor albo do pracy, pasuje też na randkę.
+  wieczor = kolacja w dobrej restauracji, teatr, drink w eleganckim lokalu (cocktail / semi-formal). Mężczyźni: ciemny
+    garnitur lub marynarka, koszula z długim rękawem, elegancki sweter lub golf z cienkiej dzianiny, spodnie materiałowe,
+    skórzane półbuty, mokasyny, sztyblety. Kobiety: sukienka koktajlowa, mała czarna, elegancka bluzka (satyna, jedwab,
+    koronka), spódnica, eleganckie spodnie, szpilki, czółenka, botki, kozaki, mała elegancka torebka. Czerń jest kolorem
+    wieczoru.
+  wesele = gość weselny (strój wizytowy / cocktail): garnitur, marynarka, koszula z długim rękawem, eleganckie spodnie,
+    skórzane buty wizytowe; sukienka (zwykle do kolana lub midi), kombinezon, elegancka spódnica z bluzką, szpilki,
+    czółenka, mała torebka. Kobiety NIGDY na biało, ecru ani kremowo (to kolory panny młodej). Czerń jest dozwolona.
+    NIE: dżins, t-shirty, polówki, swetry codzienne, sneakersy, skóra, duże torby, zbyt odważne lub balowe kreacje.
+  sylwester = impreza (festive / cocktail z błyskiem): cekiny, satyna, aksamit, metaliczne tkaniny, skóra, czerń,
+    eleganckie marynarki, koszule i spodnie.
   wyjazd, sport, plaza, dom.
 Nigdy na wieczor, wesele, sylwester ani praca: bluzy (zwłaszcza z kapturem), dresy, legginsy, t-shirty z nadrukiem,
 flanela i kolorowa krata, moro, rzeczy plażowe i hawajskie, sneakersy sportowe, biegowe i do koszykówki, kurtki puchowe,
-parki, wiatrówki, plecaki, duże torby na zakupy, rzeczy z dziurami i przetarciami.
-Na wesele nigdy: dżins, len, t-shirty, polówki, swetry codzienne, sneakersy, krótki rękaw w koszulach męskich."""
+parki, wiatrówki, plecaki, duże torby na zakupy, rzeczy z dziurami i przetarciami."""
 
 SCHEMAT_PROD = {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
     "i": {"type": "INTEGER"}, "r": {"type": "STRING", "enum": RODZAJE}, "p": {"type": "STRING", "enum": PLEC},
-    "f": {"type": "INTEGER"}, "wzor": {"type": "STRING", "enum": WZORY}, "zgodne": {"type": "BOOLEAN"},
+    "f": {"type": "INTEGER"}, "wzor": {"type": "STRING", "enum": WZORY}, "zgodne": {"type": "BOOLEAN"}, "bialy": {"type": "BOOLEAN"},
     "o": {"type": "ARRAY", "items": {"type": "STRING", "enum": OKAZJE}}},
-    "required": ["i", "r", "p", "f", "wzor", "zgodne", "o"]}}
+    "required": ["i", "r", "p", "f", "wzor", "zgodne", "bialy", "o"]}}
 SCHEMAT_HASLO = {"type": "OBJECT", "properties": {"r": {"type": "STRING", "enum": RODZAJE}}, "required": ["r"]}
 
 
@@ -222,7 +228,7 @@ def _partia(lista, model):
             i = int(x["i"])
             if 0 <= i < len(lista) and lista[i]["id"] not in out:
                 out[lista[i]["id"]] = {"v": OCENA_WERSJA, "r": x["r"], "p": x["p"], "f": max(1, min(5, int(x["f"]))), "wzor": x.get("wzor", "gladki"),
-                                       "zgodne": bool(x.get("zgodne", True)), "o": [o for o in (x.get("o") or []) if o in OKAZJE],
+                                       "zgodne": bool(x.get("zgodne", True)), "bialy": bool(x.get("bialy", False)), "o": [o for o in (x.get("o") or []) if o in OKAZJE],
                                        "zdj": obrazy[i] is not None}
         except Exception:
             continue

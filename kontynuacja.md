@@ -96,3 +96,11 @@ Najlepsza droga dla każdego sklepu:
 - Nowe reguły sprawdzane na DWÓCH przebiegach naraz: wieczor f≥4 (nie sweter) ⇒ sylwester; wieczor f≥4 nie skóra ⇒ wesele; sukienka f≥3 z wieczorem ⇒ wesele; praca albo wieczor/sylwester f≥3 ⇒ randka; codzien f≥2, gładkie/małe logo, ubrania (sweter, polo, sukienka, bluzka, spódnica, spodnie, top) ⇒ randka; marynarka/garnitur f≥3 (nie wyrazisty, nie skóra) ⇒ wieczor, randka, praca. Usunięte: praca+randka ⇒ wieczor (wpuszczało len i kratę), wieczor f3 ⇒ sylwester.
 - Wynik: przebieg 1: 0 krytycznych / 27 ukrytych; przebieg 2: 0 / 32 (z 1016). Kontrola zapisuje teraz do 6 ostatnich przebiegów (/kontrola → przebiegi), kalibracja.py liczy każdy osobno.
 - Ocena w aplikacji jest stała: każdy produkt oceniony raz i zapamiętany, więc wyniki się nie „przełączają”.
+
+## 0.8.0 (15.11.2026): kodeks ubioru ze źródłami + Smart casual
+- Użytkownik: zasady okazji i trendy mają opierać się na profesjonalnych źródłach, nie na naszych pomysłach; więcej źródeł, także polskie; tylko darmowe; dodać okazję Smart casual.
+- serwer/kontrola/kodeks.md: kodeks ubioru Trendo z regułami i źródłami (Emily Post Institute, Debrett's, T. Orłowski „Protokół dyplomatyczny” PISM, A. Szteliga UŚ, I. Kamińska-Radomska, A. Pakuła, Forbes PL; pomocniczo Breuninger PL, C&A PL, Suitsupply). Sporne: czerń na weselu (przyjęto: dozwolona). Biel/ecru/kremowy dla kobiet na wesele: zakaz (pole AI „bialy” + kolor w nazwie, bez „z białym …”).
+- Polecenie dla AI przepisane według kodeksu (definicje okazji, smart casual, wypisywać WSZYSTKIE pasujące okazje), nowe pole bialy, OCENA_WERSJA=3 (ponowna ocena wszystkich produktów).
+- Okazja smartcasual: w aplikacji (kafelek „Smart casual”), serwerze i nadzorze (min. elegancja 2, zakazy: dres, bluza, kaptur, legginsy, szorty, klapki, puchowe; wyprowadzenie: praca albo randka+codzien, f 2–4).
+- Wzorzec: kolumna smartcasual (141 tak / 70 nie), poprawki wg kodeksu (kremowe/ecru bluzki i zamszowa marynarka nie na wesele). Kalibracja na starych przebiegach: zostały 2 błędy (kremowe bluzki), które wyłapie dopiero nowe pole „bialy” — do sprawdzenia po instalacji.
+- Lniany garnitur/marynarka dozwolone na wesele (kodeks 16).

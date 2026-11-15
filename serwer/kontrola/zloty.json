@@ -13,8 +13,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 1,
@@ -30,8 +32,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 2,
@@ -47,8 +51,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 3,
@@ -64,8 +70,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 4,
@@ -81,8 +89,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 5,
@@ -95,8 +105,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 6,
@@ -112,8 +124,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 7,
@@ -129,8 +143,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 8,
@@ -146,8 +162,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 9,
@@ -163,8 +181,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 10,
@@ -180,8 +200,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 11,
@@ -194,8 +216,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 12,
@@ -211,8 +235,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 13,
@@ -228,8 +254,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 14,
@@ -244,8 +272,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 15,
@@ -261,8 +291,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 16,
@@ -276,7 +308,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 17,
@@ -289,11 +322,13 @@
   "plec": "damskie",
   "oczekiwane": {
    "wieczor": true,
-   "wesele": true,
+   "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 18,
@@ -306,10 +341,12 @@
   "plec": "damskie",
   "oczekiwane": {
    "wieczor": true,
-   "wesele": true,
+   "wesele": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 19,
@@ -325,8 +362,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 20,
@@ -341,8 +380,10 @@
    "wieczor": true,
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 21,
@@ -358,8 +399,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 22,
@@ -375,8 +418,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 23,
@@ -391,8 +436,10 @@
    "wieczor": true,
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 24,
@@ -405,8 +452,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 25,
@@ -419,8 +468,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 26,
@@ -435,8 +486,10 @@
    "wieczor": true,
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 27,
@@ -449,10 +502,12 @@
   "plec": "damskie",
   "oczekiwane": {
    "wieczor": true,
-   "wesele": true,
+   "wesele": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 28,
@@ -466,8 +521,10 @@
   "oczekiwane": {
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 29,
@@ -481,8 +538,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 30,
@@ -498,8 +557,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 31,
@@ -514,8 +575,10 @@
    "wieczor": true,
    "wesele": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 32,
@@ -531,7 +594,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 33,
@@ -546,8 +610,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 34,
@@ -559,8 +625,10 @@
   "dzial": "damskie",
   "plec": "damskie",
   "oczekiwane": {
-   "wesele": false
-  }
+   "wesele": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 35,
@@ -575,8 +643,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 36,
@@ -592,7 +662,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 37,
@@ -607,8 +678,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 38,
@@ -621,7 +694,8 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 39,
@@ -637,8 +711,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 40,
@@ -654,7 +730,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 41,
@@ -670,8 +747,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 42,
@@ -687,8 +766,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 43,
@@ -701,8 +782,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wieczor": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 44,
@@ -718,8 +801,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 45,
@@ -735,7 +820,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 46,
@@ -750,8 +836,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 47,
@@ -767,7 +855,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 48,
@@ -783,8 +872,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 49,
@@ -799,8 +890,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 50,
@@ -815,8 +908,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 51,
@@ -832,7 +927,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 52,
@@ -846,8 +942,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 53,
@@ -862,8 +960,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 54,
@@ -879,8 +979,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 55,
@@ -896,7 +998,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 56,
@@ -912,8 +1015,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 57,
@@ -929,8 +1034,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 58,
@@ -946,8 +1053,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 59,
@@ -961,8 +1070,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 60,
@@ -977,8 +1088,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 61,
@@ -994,7 +1107,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 62,
@@ -1010,7 +1124,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 63,
@@ -1026,7 +1141,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 64,
@@ -1040,8 +1156,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 65,
@@ -1056,8 +1174,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 66,
@@ -1072,8 +1192,10 @@
    "wieczor": true,
    "wesele": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 67,
@@ -1088,8 +1210,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 68,
@@ -1105,8 +1229,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 69,
@@ -1122,8 +1248,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 70,
@@ -1137,7 +1265,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 71,
@@ -1152,8 +1281,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 72,
@@ -1167,8 +1298,10 @@
   "oczekiwane": {
    "wieczor": true,
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 73,
@@ -1183,8 +1316,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 74,
@@ -1199,7 +1334,8 @@
    "wieczor": false,
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 75,
@@ -1215,8 +1351,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 76,
@@ -1230,8 +1368,10 @@
   "oczekiwane": {
    "wieczor": true,
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 77,
@@ -1244,8 +1384,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 78,
@@ -1261,7 +1403,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 79,
@@ -1274,8 +1417,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 80,
@@ -1291,8 +1436,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 81,
@@ -1305,8 +1452,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 82,
@@ -1322,8 +1471,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 83,
@@ -1339,8 +1490,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 84,
@@ -1356,8 +1509,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 85,
@@ -1373,7 +1528,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 86,
@@ -1389,8 +1545,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 87,
@@ -1403,8 +1561,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 88,
@@ -1418,8 +1578,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 89,
@@ -1432,8 +1594,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 90,
@@ -1449,8 +1613,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 91,
@@ -1464,7 +1630,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 92,
@@ -1480,8 +1647,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 93,
@@ -1495,8 +1664,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 94,
@@ -1512,7 +1683,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 95,
@@ -1528,7 +1700,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 96,
@@ -1541,8 +1714,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 97,
@@ -1558,8 +1733,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 98,
@@ -1573,8 +1750,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 99,
@@ -1590,8 +1769,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 100,
@@ -1607,8 +1788,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 101,
@@ -1623,8 +1806,10 @@
    "wieczor": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 102,
@@ -1638,8 +1823,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 103,
@@ -1655,8 +1842,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 104,
@@ -1669,8 +1858,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 105,
@@ -1683,8 +1874,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 106,
@@ -1700,8 +1893,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 107,
@@ -1714,8 +1909,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 108,
@@ -1731,8 +1928,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 109,
@@ -1746,7 +1945,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 110,
@@ -1759,8 +1959,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 111,
@@ -1773,8 +1975,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 112,
@@ -1790,8 +1994,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 113,
@@ -1804,8 +2010,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 114,
@@ -1821,7 +2029,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 115,
@@ -1837,8 +2046,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 116,
@@ -1854,8 +2065,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 117,
@@ -1869,8 +2082,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 118,
@@ -1886,8 +2101,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 119,
@@ -1902,8 +2119,10 @@
    "wieczor": true,
    "wesele": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 120,
@@ -1917,8 +2136,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 121,
@@ -1932,8 +2153,10 @@
   "oczekiwane": {
    "wieczor": true,
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 122,
@@ -1947,8 +2170,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 123,
@@ -1964,8 +2189,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 124,
@@ -1981,8 +2208,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 125,
@@ -1998,8 +2227,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 126,
@@ -2015,8 +2246,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 127,
@@ -2030,8 +2263,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 128,
@@ -2046,8 +2281,10 @@
    "wieczor": true,
    "wesele": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 129,
@@ -2061,8 +2298,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 130,
@@ -2078,8 +2317,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 131,
@@ -2093,8 +2334,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 132,
@@ -2109,8 +2352,10 @@
    "wieczor": true,
    "wesele": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 133,
@@ -2126,8 +2371,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 134,
@@ -2141,8 +2388,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 135,
@@ -2156,8 +2405,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 136,
@@ -2173,8 +2424,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 137,
@@ -2188,8 +2441,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 138,
@@ -2203,8 +2458,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 139,
@@ -2218,8 +2475,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 140,
@@ -2235,8 +2494,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 141,
@@ -2250,8 +2511,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 142,
@@ -2265,8 +2528,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 143,
@@ -2280,8 +2545,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 144,
@@ -2296,8 +2563,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 145,
@@ -2312,8 +2581,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 146,
@@ -2329,8 +2600,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 147,
@@ -2345,8 +2618,10 @@
    "wieczor": true,
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 148,
@@ -2361,8 +2636,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 149,
@@ -2378,8 +2655,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 150,
@@ -2393,8 +2672,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 151,
@@ -2408,8 +2689,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 152,
@@ -2423,8 +2706,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 153,
@@ -2438,8 +2723,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 154,
@@ -2454,8 +2741,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 155,
@@ -2469,8 +2758,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 156,
@@ -2484,8 +2775,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 157,
@@ -2501,8 +2794,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 158,
@@ -2518,7 +2813,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 159,
@@ -2532,7 +2828,8 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 160,
@@ -2548,8 +2845,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 161,
@@ -2565,7 +2864,8 @@
    "wesele": true,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 162,
@@ -2580,8 +2880,10 @@
    "wieczor": true,
    "wesele": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 163,
@@ -2597,8 +2899,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 164,
@@ -2612,8 +2916,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 165,
@@ -2627,8 +2933,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 166,
@@ -2643,8 +2951,10 @@
    "wieczor": true,
    "wesele": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 167,
@@ -2660,8 +2970,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 168,
@@ -2677,8 +2989,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 169,
@@ -2692,8 +3006,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 170,
@@ -2707,8 +3023,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 171,
@@ -2724,8 +3042,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 172,
@@ -2741,8 +3061,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 173,
@@ -2758,8 +3080,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 174,
@@ -2772,8 +3096,10 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 175,
@@ -2787,7 +3113,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 176,
@@ -2803,8 +3130,10 @@
    "wesele": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 177,
@@ -2818,8 +3147,10 @@
   "oczekiwane": {
    "wieczor": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 178,
@@ -2835,8 +3166,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 179,
@@ -2852,7 +3185,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 180,
@@ -2868,8 +3202,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 181,
@@ -2883,7 +3219,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 182,
@@ -2898,8 +3235,10 @@
    "wieczor": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 183,
@@ -2914,7 +3253,8 @@
    "wieczor": false,
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 184,
@@ -2927,8 +3267,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 185,
@@ -2943,8 +3285,10 @@
    "wieczor": true,
    "wesele": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 186,
@@ -2960,7 +3304,8 @@
    "wesele": true,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 187,
@@ -2976,7 +3321,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 188,
@@ -2991,8 +3337,10 @@
    "wieczor": true,
    "wesele": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 189,
@@ -3008,7 +3356,8 @@
    "wesele": true,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 190,
@@ -3024,7 +3373,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 191,
@@ -3037,8 +3387,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 192,
@@ -3052,8 +3404,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 193,
@@ -3068,8 +3422,10 @@
    "wieczor": true,
    "praca": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 194,
@@ -3084,8 +3440,10 @@
    "wieczor": true,
    "wesele": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 195,
@@ -3100,8 +3458,10 @@
    "wieczor": true,
    "wesele": false,
    "praca": false,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 196,
@@ -3117,7 +3477,8 @@
    "wesele": true,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 197,
@@ -3131,8 +3492,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 198,
@@ -3146,8 +3509,10 @@
   "oczekiwane": {
    "wesele": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 199,
@@ -3163,7 +3528,8 @@
    "wesele": false,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 200,
@@ -3177,8 +3543,10 @@
   "oczekiwane": {
    "wesele": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 201,
@@ -3193,8 +3561,10 @@
    "wieczor": true,
    "praca": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 202,
@@ -3208,7 +3578,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 203,
@@ -3224,7 +3595,8 @@
    "wesele": true,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 204,
@@ -3238,7 +3610,8 @@
   "oczekiwane": {
    "wesele": true,
    "randka": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 205,
@@ -3254,7 +3627,8 @@
    "praca": false,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 206,
@@ -3269,8 +3643,10 @@
    "wieczor": true,
    "praca": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 207,
@@ -3284,7 +3660,8 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 208,
@@ -3297,8 +3674,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 209,
@@ -3312,8 +3691,10 @@
   "oczekiwane": {
    "wesele": true,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 210,
@@ -3329,8 +3710,10 @@
    "wesele": true,
    "praca": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 211,
@@ -3346,8 +3729,10 @@
    "wesele": true,
    "praca": false,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 212,
@@ -3363,8 +3748,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 213,
@@ -3380,7 +3767,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 214,
@@ -3395,8 +3783,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 215,
@@ -3411,7 +3801,8 @@
    "wesele": false,
    "randka": true,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 216,
@@ -3426,8 +3817,10 @@
    "wieczor": true,
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 217,
@@ -3442,8 +3835,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 218,
@@ -3458,8 +3853,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 219,
@@ -3475,8 +3872,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 220,
@@ -3491,8 +3890,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 221,
@@ -3506,8 +3907,10 @@
   "oczekiwane": {
    "wieczor": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 222,
@@ -3523,8 +3926,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 223,
@@ -3539,8 +3944,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 224,
@@ -3556,7 +3963,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 225,
@@ -3571,7 +3979,8 @@
    "wieczor": false,
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 226,
@@ -3585,8 +3994,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 228,
@@ -3600,8 +4011,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 229,
@@ -3615,8 +4028,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 230,
@@ -3632,7 +4047,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 231,
@@ -3648,8 +4064,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 232,
@@ -3663,8 +4081,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 233,
@@ -3679,8 +4099,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 234,
@@ -3695,8 +4117,10 @@
    "wesele": false,
    "praca": true,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 235,
@@ -3710,8 +4134,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 236,
@@ -3725,8 +4151,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 237,
@@ -3742,8 +4170,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 238,
@@ -3757,8 +4187,10 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 239,
@@ -3773,8 +4205,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 240,
@@ -3788,8 +4222,10 @@
   "oczekiwane": {
    "wesele": false,
    "praca": true,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 241,
@@ -3805,8 +4241,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 242,
@@ -3820,7 +4258,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 243,
@@ -3836,8 +4275,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 244,
@@ -3851,7 +4292,8 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 245,
@@ -3867,7 +4309,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 246,
@@ -3881,7 +4324,8 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 247,
@@ -3897,8 +4341,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 248,
@@ -3912,7 +4358,8 @@
   "oczekiwane": {
    "wesele": false,
    "randka": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 250,
@@ -3928,7 +4375,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 251,
@@ -3944,7 +4392,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 252,
@@ -3960,8 +4409,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 253,
@@ -3977,8 +4428,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 254,
@@ -3994,7 +4447,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 255,
@@ -4009,8 +4463,10 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 256,
@@ -4025,7 +4481,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 257,
@@ -4038,8 +4495,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "praca": true
-  }
+   "praca": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 258,
@@ -4052,8 +4511,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "praca": true
-  }
+   "praca": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 259,
@@ -4066,8 +4527,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 260,
@@ -4080,8 +4543,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 261,
@@ -4097,8 +4562,10 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 262,
@@ -4114,7 +4581,8 @@
    "wesele": false,
    "praca": true,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 263,
@@ -4130,7 +4598,8 @@
    "wesele": true,
    "randka": true,
    "sylwester": true
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 264,
@@ -4144,7 +4613,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 265,
@@ -4160,7 +4630,8 @@
    "wesele": false,
    "praca": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 266,
@@ -4175,8 +4646,10 @@
    "wieczor": true,
    "wesele": true,
    "randka": true,
-   "sylwester": true
-  }
+   "sylwester": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 267,
@@ -4189,8 +4662,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "praca": true
-  }
+   "praca": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 268,
@@ -4205,7 +4680,8 @@
    "wieczor": false,
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 269,
@@ -4218,8 +4694,10 @@
   "plec": "damskie",
   "oczekiwane": {
    "wesele": false,
-   "randka": true
-  }
+   "randka": true,
+   "smartcasual": true
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 270,
@@ -4233,7 +4711,8 @@
   "oczekiwane": {
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 271,
@@ -4248,7 +4727,8 @@
    "wieczor": false,
    "wesele": false,
    "sylwester": false
-  }
+  },
+  "kodeks": "2026-11-15"
  },
  {
   "nr": 272,
@@ -4264,7 +4744,9 @@
    "wesele": false,
    "praca": false,
    "randka": false,
-   "sylwester": false
-  }
+   "sylwester": false,
+   "smartcasual": false
+  },
+  "kodeks": "2026-11-15"
  }
 ]

@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.7.4';
+  const WERSJA = '0.8.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -114,7 +114,7 @@
 
   EKRANY.szukaj = () => {
     const tryby = [['outfit', 'outfit', 'Cały outfit'], ['rzecz', 'wieszak', 'Jedna rzecz'], ['dodatki', 'dodatki', 'Dodatki'], ['zdjecie', 'zdjecie', 'Ze zdjęcia']];
-    const okazje = [['codzien', 'Na co dzień'], ['praca', 'Do pracy'], ['randka', 'Randka'], ['wesele', 'Wesele'], ['wieczor', 'Wieczór'], ['sylwester', 'Sylwester'], ['wyjazd', 'Wyjazd']];
+    const okazje = [['codzien', 'Na co dzień'], ['smartcasual', 'Smart casual'], ['praca', 'Do pracy'], ['randka', 'Randka'], ['wesele', 'Wesele'], ['wieczor', 'Wieczór'], ['sylwester', 'Sylwester'], ['wyjazd', 'Wyjazd']];
     const p1 = (st.b1 - 30) / (3000 - 30) * 100, p2 = st.b2 / 5000 * 100;
     return {
       akt: 'szukaj',

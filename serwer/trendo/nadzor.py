@@ -6,7 +6,7 @@ Płeć: najpierw według sklepu (dział, kod produktu), dopiero gdy sklep jej ni
 """
 import re
 
-FORMALNE = ("wieczor", "wesele", "sylwester", "praca", "randka")
+FORMALNE = ("wieczor", "wesele", "sylwester", "praca", "randka", "smartcasual")  # okazje z filtrem (kodeks.md)
 
 # Twarde zakazy (nazwa i opis ze sklepu). AI nie może ich obejść.
 # UWAGA: samo słowo „logo” NIE jest zakazem. Mały haft marki na piersi (EA7, Calvin Klein, Lacoste, BOSS) nie wyklucza
@@ -33,14 +33,18 @@ NAZWA_ZAKAZ = {
     "sylwester": [r"flanel", r"\bbluz(a|ę|y|ie)\b", r"sweatshirt", r"hoodie", r"\bbuty sportowe", r"sportowe buty", r"\bpuchow", r"\bplecak"],
     "praca": [r"\bbluz(a|ę|y|ie)\b", r"sweatshirt", r"hoodie", r"\bpuchow", r"wiatrówk"],
     "randka": [r"hoodie", r"z kapturem"],
+    "smartcasual": [r"\bbluz(a|ę|y|ie)\b", r"sweatshirt", r"hoodie", r"z kapturem", r"\bpuchow", r"wiatrówk"],
 }
+# Kodeks, reguła 12: biel, ecru i kremowy są zarezerwowane dla panny młodej.
+# Kolor rzeczy w nazwie („Biała sukienka”, „Bluzka … Biały Slim Fit”), ale nie dodatki („z białym kołnierzykiem”).
+BIEL_RE = re.compile(r"(?<!z )(?<!ze )\b(biał\w*|bial[aey]\b|ecru|écru|kremow\w*|śmietankow\w*|smietankow\w*|mleczn\w*|off-white|white)")
 
 # Nadruk w opisie, a na zdjęciu (z przodu) gładka rzecz = nadruk jest gdzie indziej (np. na plecach) → nie na eleganckie okazje.
 # Gdy zdjęcie pokazuje wzór, opis „print” po prostu opisuje ten wzór i decyduje ocena zdjęcia.
 MIEKKIE = ["nadruk", "napis", "graficzn", "grafik", "aplikacj", "naszyw", "print"]
 
 WZOR_ZAKAZANY = {"duze_logo_lub_nadruk", "motyw_tematyczny"}
-MIN_ELEGANCJA = {"wesele": 4, "wieczor": 3, "sylwester": 2, "praca": 3, "randka": 2}  # sylwester 2: tylko gdy AI sam go wypisał
+MIN_ELEGANCJA = {"wesele": 4, "wieczor": 3, "sylwester": 2, "praca": 3, "randka": 2, "smartcasual": 2}  # sylwester 2: tylko gdy AI sam go wypisał
 RANDKA_RODZAJE = {"sweter", "kardigan", "polo", "sukienka", "bluzka", "spódnica", "spodnie", "top", "kombinezon"}
 # Rzeczy, które nigdy nie pasują do danej okazji (rodzaj z klasyfikacji).
 RODZAJ_ZAKAZANY = {
@@ -50,6 +54,7 @@ RODZAJ_ZAKAZANY = {
     "sylwester": {"bluza", "dres", "szorty", "klapki", "kapcie", "plecak", "piżama", "strój kąpielowy"},
     "praca": {"dres", "szorty", "klapki", "kapcie", "piżama", "strój kąpielowy", "bluza"},
     "randka": {"dres", "klapki", "kapcie", "piżama", "strój kąpielowy"},
+    "smartcasual": {"dres", "bluza", "legginsy", "szorty", "klapki", "kapcie", "piżama", "strój kąpielowy", "plecak"},
 }
 
 
@@ -74,7 +79,10 @@ def zakaz_slowny(p, okazja):
         if m:
             return m.group(0)
     if okazja == "wesele":
-        return _ma(t, TWARDE_WESELE)
+        s = _ma(t, TWARDE_WESELE)
+        if s in ("lnian", "lnu") and (p.get("klasa") or {}).get("r") in ("garnitur", "marynarka"):
+            return None  # lniany garnitur latem jest dopuszczalny (kodeks, reguła 16)
+        return s
     if okazja == "praca":
         return _ma(t, TWARDE_PRACA)
     return None
@@ -101,7 +109,9 @@ def okazje(p, k):
     if "codzien" in o0 and f >= 2 and wz in ("gladki", "male_logo") and r in RANDKA_RODZAJE:
         o.add("randka")  # gładki sweter, polo, sukienka, bluzka, spodnie = smart casual na randkę
     if r in ("marynarka", "garnitur") and f >= 3 and wz != "wzor_wyrazisty" and not skorzane(p):
-        o |= {"wieczor", "randka", "praca"}  # marynarka to zawsze strój na wyjście
+        o |= {"wieczor", "randka", "praca", "smartcasual"}  # marynarka to zawsze strój na wyjście
+    if ("praca" in o0 or {"randka", "codzien"} <= o0) and f >= 2 and f <= 4 and wz not in WZOR_ZAKAZANY:
+        o.add("smartcasual")  # kodeks 5–6: smart casual = elegancja ze swobodą (bez rzeczy typowo imprezowych)
     return o
 
 
@@ -127,6 +137,9 @@ def decyzja(p, okazja, wykluczone=()):
     minimum = 3 if (okazja == "wesele" and k.get("r") == "sukienka") else MIN_ELEGANCJA[okazja]
     if (k.get("f") or 0) < minimum:
         return "nie", f"elegancja {k.get('f')}"
+    # kolor z oceny zdjęcia albo z początku nazwy („Biała sukienka…”, „Kremowy sweter…”), nie z dodatków („…z białym kołnierzykiem”)
+    if okazja == "wesele" and plec(p) == "damskie" and (k.get("bialy") or BIEL_RE.search(p.get("nazwa", "").lower())):
+        return "nie", "biel zarezerwowana dla panny młodej"
     m = _ma(_tekst(p), MIEKKIE)
     if m and wz in ("gladki", "male_logo") and okazja != "randka":
         return "nie", f"opis: {m}, nadruk poza zdjęciem"
