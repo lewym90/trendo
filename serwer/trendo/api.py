@@ -151,6 +151,7 @@ def szukaj(q, dzial, okazja=""):
 
 
 # Ocena w tle: raz na dobę popularne hasła (bez Google Shopping, żeby nie zużywać kredytów), żeby wyszukiwania były szybkie.
+# Tylko rozgrzewka ma własny hamulec (do 0,3 USD dziennie i do połowy budżetu miesięcznego), wyszukiwania użytkowników nie mają limitu dziennego.
 ROZGRZEWKA = {
     "damskie": ["sukienka", "bluzka", "koszula", "spódnica", "spodnie", "jeansy", "marynarka", "sweter", "płaszcz", "kurtka",
                 "kombinezon", "szpilki", "botki", "kozaki", "sneakersy", "torebka", "t-shirt", "kardigan", "sukienka wieczorowa",
@@ -170,7 +171,7 @@ def rozgrzewka():
                 bez_google = [l for l in LACZNIKI if l is not lacznik_google]
                 for dzial, hasla in ROZGRZEWKA.items():
                     for q in hasla:
-                        if klasyfikator.koszt_dzis() >= klasyfikator.BUDZET * 0.6:
+                        if klasyfikator.koszt_miesiac() >= klasyfikator.BUDZET * 0.5 or klasyfikator.koszt_dzis() >= 0.3:
                             break
                         try:
                             _, produkty = pobierz_produkty(q, dzial, bez_google)

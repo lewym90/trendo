@@ -75,7 +75,7 @@ def main():
     if not klasyfikator.dostepny():
         print("Kontrola: brak klucza Gemini, pomijam.")
         return
-    klasyfikator.BUDZET = max(klasyfikator.BUDZET, klasyfikator.koszt_dzis() + 3.0)  # kontrola nie liczy się do limitu dziennego
+    klasyfikator.BUDZET = max(klasyfikator.BUDZET, klasyfikator.koszt_miesiac() + 3.0)  # kontrola zawsze może się wykonać
     arg = sys.argv[1:]
     if "--model" in arg:
         modele = [arg[arg.index("--model") + 1]]
