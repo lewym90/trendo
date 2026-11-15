@@ -209,3 +209,7 @@ Najlepsza droga dla każdego sklepu:
 - **Aplikacja:** Okazje dnia i ekran Okazji z serwera (zakładki: Sprawdzone obniżki / Obserwowane), alerty: odświeżenie przy otwarciu, „Cena spadła poniżej …”, kropka na dzwonku tylko przy spadku, powiadomienie (za zgodą, po otwarciu aplikacji; sw.js notificationclick → #/alerty). Usunięta nieprawdziwa obietnica „damy znać, gdy wróci rozmiar”. „Wersja próbna” zastąpiona informacją, że stylizacje są przykładowe.
 - install.sh: tabela sklepów (damskie/męskie), okazje dnia, próba zdjęcia na zdjęciu produktu z wyników.
 - Koszt AI: ok. 0,0007 USD za nowo oceniany produkt (raz na zawsze). Więcej sklepów = więcej pierwszych ocen; limit miesięczny chroni budżet.
+
+## 0.14.1 (15.11.2026): bez własnych limitów (decyzja użytkownika)
+- Użytkownik: granicą budżetu są środki wpłacone na klucz, aplikacja nie ogranicza. Usunięte: budżet miesięczny AI (BUDZET, 402), hamulec oceny nocnej (0,1 USD/noc, 30% miesiąca), limit 400 ocen na wyszukiwanie (teraz wszystkie), limit 200 zdjęć/dobę, dzienne limity Serper (300) i SerpApi (8), limit 90 artykułów trendów/dobę. Koszty nadal liczone do wglądu w /zdrowie; błąd 403/429 od Gemini zapisywany jako ocena.ostatni_blad (np. brak środków).
+- Test przeglądarką (z IP centrum danych): Zalando, H&M, Mango, Bershka, Massimo Dutti, Answear, Allegro blokują ochroną antybotową nawet prawdziwą przeglądarkę → tylko Google. Do podłączenia (dane widać albo trzeba znaleźć wewnętrzne API): Vinted (przeglądarka: 312 cen), CCC, Deichmann, C&A, About You, Vistula/Wólczanka/Bytom, 4F, Big Star, Wittchen.

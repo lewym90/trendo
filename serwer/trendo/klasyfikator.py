@@ -2,7 +2,8 @@
 rodzaj rzeczy, dla kogo, elegancję, wzór (gładki, małe logo, duży nadruk...) i okazje. Niczego nie dopisuje do oferty.
 Ocena jest tylko jednym głosem: ostateczną decyzję podejmuje nadzor.py.
 Każdy produkt oceniamy raz i zapisujemy na stałe (tabela klasy2).
-Klucz: /root/.trendo-gemini (albo zmienna GEMINI_KEY). Budżet miesięczny: GEMINI_BUDZET_MIESIECZNY (USD, domyślnie 12, czyli trochę poniżej limitu 50 zł ustawionego w Google)."""
+Klucz: /root/.trendo-gemini (albo zmienna GEMINI_KEY). Bez własnych limitów kosztów (decyzja użytkownika 15.11): granicą są środki wpłacone na konto klucza.
+Koszt liczymy tylko do wglądu (/zdrowie)."""
 import base64, json, os, re, time
 from concurrent.futures import ThreadPoolExecutor
 from .wspolne import DB, _baza_blokada, licznik, pobierz, pobierz_json
@@ -31,7 +32,6 @@ KANDYDACI_TESTU = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8
 # Cena USD za milion tokenów (wejście, wyjście). Nieznany model liczymy drożej, żeby budżet był bezpieczny.
 CENY = [("3.8-flash", 0.75, 3.75), ("3.7-flash", 0.75, 3.75), ("3.5-flash-lite", 0.30, 2.50), ("flash-lite-latest", 0.30, 2.50),
         ("3.1-flash-lite", 0.25, 1.50), ("2.5-flash-lite", 0.10, 0.40), ("2.5-flash", 0.30, 2.50)]
-BUDZET = float(os.environ.get("GEMINI_BUDZET_MIESIECZNY", "12"))
 PACZKA = 10
 OCENA_WERSJA = 4  # zmiana zasad = ponowna ocena produktów
 
@@ -174,13 +174,11 @@ def _konfiguracje(model):
 _martwe = set()
 
 
-def _wywolaj(model, czesci, schemat, budzet=True):
+def _wywolaj(model, czesci, schemat):
     """Zwraca (kod, odpowiedź JSON albo None)."""
     k = _klucz()
     if not k:
         return 0, None
-    if budzet and koszt_miesiac() >= BUDZET:
-        return 402, None
     for cfg in _konfiguracje(model):
         cfg = dict(cfg, responseSchema=schemat)
         cialo = json.dumps({"contents": [{"role": "user", "parts": czesci}], "generationConfig": cfg})
@@ -193,6 +191,8 @@ def _wywolaj(model, czesci, schemat, budzet=True):
         if kod == 404:
             _martwe.add(model)
             return 404, None
+        if kod in (403, 429):
+            ustawienie("ai_ostatni_blad", json.dumps({"kod": kod, "czas": int(time.time())}))  # np. brak środków na koncie
         if kod == 400:
             continue  # model nie zna któregoś ustawienia, próbujemy prostszej konfiguracji
         if not d:
@@ -387,7 +387,8 @@ def stan():
     with _baza_blokada:
         ile = DB.execute("SELECT COUNT(*) FROM klasy2").fetchone()[0]
     return {"klucz": dostepny(), "model": modele()[0], "ocenione_produkty": ile,
-            "koszt_dzis_usd": round(koszt_dzis(), 4), "koszt_miesiac_usd": round(koszt_miesiac(), 3), "budzet_miesieczny_usd": BUDZET,
+            "koszt_dzis_usd": round(koszt_dzis(), 4), "koszt_miesiac_usd": round(koszt_miesiac(), 3), "limit": "brak (granicą są środki na koncie klucza)",
+            "ostatni_blad": json.loads(ustawienie("ai_ostatni_blad") or "null"),
             "kontrola": json.loads(ustawienie("kontrola_wynik") or "null")}
 
 

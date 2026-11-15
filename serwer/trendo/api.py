@@ -143,7 +143,7 @@ def szukaj(q, dzial, okazja=""):
     klasyfikacja, nieocenione = "slowa", 0
     if produkty and klasyfikator.dostepny():
         f_haslo = PULA.submit(klasyfikator.cechy_hasla, q)
-        ocenione = klasyfikator.klasyfikuj(produkty, maks=400)
+        ocenione = klasyfikator.klasyfikuj(produkty, maks=None)  # bez limitu: oceniamy wszystko
         try:
             c_hasla = f_haslo.result(timeout=40)
         except Exception:
@@ -203,16 +203,14 @@ def rozgrzewka():
         dzien = time.strftime("rozgrzewka-%Y-%m-%d")
         if not licznik(dzien):
             licznik(dzien, 1)
-            # Pobieranie ze sklepów jest darmowe i robimy je zawsze (ceny do historii, okazje dnia).
-            # Ocena AI tylko w ramach hamulca: do 0,1 USD na noc i do 30% budżetu miesięcznego.
+            # Nocny przegląd sklepów: ceny do historii, okazje dnia i ocena AI nowych produktów (bez limitu kosztów).
             bez_google = [l for l in LACZNIKI if l is not lacznik_google]
             for dzial, hasla in ROZGRZEWKA.items():
                 for q in hasla:
                     try:
                         _, produkty = pobierz_produkty(q, dzial, bez_google)
-                        if klasyfikator.dostepny() and klasyfikator.koszt_miesiac() < klasyfikator.BUDZET * 0.3 \
-                                and klasyfikator.koszt_dzis() < 0.1:
-                            klasyfikator.klasyfikuj(produkty, maks=400)
+                        if klasyfikator.dostepny():
+                            klasyfikator.klasyfikuj(produkty, maks=None)
                         obserwowane.zapamietaj([p for p in produkty if nadzor.zgodna_plec(p, dzial)])
                     except Exception:
                         traceback.print_exc()
@@ -265,11 +263,10 @@ class Obsluga(BaseHTTPRequestHandler):
                 return self._wyslij(415, {"blad": "To nie wygląda na zdjęcie (JPEG, PNG albo WebP)."})
             if not klasyfikator.dostepny():
                 return self._wyslij(503, {"blad": "Rozpoznawanie zdjęć jest teraz niedostępne."})
-            if licznik(time.strftime("zdjecia-%Y-%m-%d"), 1) > 200:
-                return self._wyslij(429, {"blad": "Na dziś wyczerpał się limit zdjęć. Spróbuj jutro albo wpisz, czego szukasz."})
+            licznik(time.strftime("zdjecia-%Y-%m-%d"), 1)  # tylko do wglądu, bez limitu
             kod, wyn = klasyfikator.opis_zdjecia(b, typ)
-            if kod == 402:
-                return self._wyslij(402, {"blad": "W tym miesiącu wyczerpał się budżet na rozpoznawanie zdjęć. Wpisz, czego szukasz."})
+            if kod in (403, 429):
+                return self._wyslij(503, {"blad": "Rozpoznawanie zdjęć chwilowo nie działa. Wpisz, czego szukasz."})
             if not wyn:
                 return self._wyslij(502, {"blad": "Nie udało się rozpoznać zdjęcia. Spróbuj jeszcze raz."})
             return self._wyslij(200, wyn)

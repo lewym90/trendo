@@ -1,12 +1,11 @@
 """Łącznik Google Shopping. Główny dostawca: Serper (klucz ~/.trendo-serper), zapasowy: SerpApi (~/.trendo-serpapi).
-Dzienne limity chronią kredyty; wyniki dzieli wspólna pamięć serwera (api.py)."""
+Bez własnych limitów dziennych (decyzja użytkownika 15.11): granicą są kredyty na kontach dostawców.
+Wyniki dzieli wspólna pamięć serwera (api.py), więc to samo hasło nie zużywa kredytów drugi raz."""
 import json, os, re, time
 from urllib.parse import urlencode
 from .wspolne import pobierz_json, produkt, liczba, licznik
 
 NAZWA = "Google Shopping"
-LIMIT_SERPER = int(os.environ.get("SERPER_LIMIT_DZIENNY", "300"))
-LIMIT_SERPAPI = int(os.environ.get("SERPAPI_LIMIT_DZIENNY", "8"))
 
 NAZWY = {"zara polska": "Zara", "h&m pl": "H&M", "h&m": "H&M", "modivo": "Modivo", "shop.mango.com": "Mango",
          "zalando.pl": "Zalando", "answear.com": "Answear", "eobuwie.pl": "eobuwie", "eobuwie.com.pl": "eobuwie",
@@ -83,13 +82,10 @@ def _serpapi(q, dzial, k):
 def szukaj(q, dzial):
     dzien = time.strftime("%Y-%m-%d")
     uwagi = []
-    for nazwa, plik, zm, limit, f in (("serper", ".trendo-serper", "SERPER_KEY", LIMIT_SERPER, _serper),
-                                      ("serpapi", ".trendo-serpapi", "SERPAPI_KEY", LIMIT_SERPAPI, _serpapi)):
+    for nazwa, plik, zm, f in (("serper", ".trendo-serper", "SERPER_KEY", _serper),
+                               ("serpapi", ".trendo-serpapi", "SERPAPI_KEY", _serpapi)):
         k = _klucz(plik, zm)
         if not k:
-            continue
-        if licznik(f"{nazwa}-{dzien}") >= limit:
-            uwagi.append(f"{nazwa}: dzienny limit wyczerpany")
             continue
         licznik(f"{nazwa}-{dzien}", 1)
         wyn, stan = f(q, dzial, k)
@@ -103,12 +99,12 @@ def stan():
     dzien = time.strftime("%Y-%m-%d")
     out = {}
     if _klucz(".trendo-serper", "SERPER_KEY"):
-        out["serper"] = {"klucz": True, "dzis_uzyto": licznik(f"serper-{dzien}"), "limit_dzienny": LIMIT_SERPER}
+        out["serper"] = {"klucz": True, "dzis_uzyto": licznik(f"serper-{dzien}")}
     k = _klucz(".trendo-serpapi", "SERPAPI_KEY")
     if k:
         kod, d = pobierz_json("https://serpapi.com/account.json?" + urlencode({"api_key": k}))
         out["serpapi"] = {"klucz": True, "zostalo_w_miesiacu": (d or {}).get("plan_searches_left") or (d or {}).get("total_searches_left"),
-                          "dzis_uzyto": licznik(f"serpapi-{dzien}"), "limit_dzienny": LIMIT_SERPAPI}
+                          "dzis_uzyto": licznik(f"serpapi-{dzien}")}
     return out or {"klucz": False}
 
 
@@ -136,7 +132,7 @@ def link_do_sklepu(nazwa, sklep):
     """Szuka bezpośredniej strony produktu (1 wyszukiwanie Serper). Zwraca (url, pewny) albo (None, False)."""
     k = _klucz(".trendo-serper", "SERPER_KEY")
     dzien = time.strftime("%Y-%m-%d")
-    if not k or licznik(f"serper-{dzien}") >= LIMIT_SERPER:
+    if not k:
         return None, False
     licznik(f"serper-{dzien}", 1)
     kod, d = pobierz_json("https://google.serper.dev/search", czas=25,

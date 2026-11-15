@@ -20,7 +20,7 @@ curl -fsSL https://codeload.github.com/lewym90/trendo/tar.gz/main | tar -xz -C "
 rm -rf "$DIR/trendo"
 cp -r "$TMP"/trendo-main/serwer/. "$DIR"/
 rm -rf "$TMP"
-[ -f /etc/trendo.env ] || ( umask 077; printf 'PORT=%s\nTRENDO_DANE=/var/lib/trendo\nSERPAPI_LIMIT_DZIENNY=8\n' "$PORT" > /etc/trendo.env )
+[ -f /etc/trendo.env ] || ( umask 077; printf 'PORT=%s\nTRENDO_DANE=/var/lib/trendo\n' "$PORT" > /etc/trendo.env )
 cat > /etc/systemd/system/trendo.service <<EOF
 [Unit]
 Description=Trendo zbieracz

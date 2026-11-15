@@ -65,7 +65,7 @@ def _kolejnosc():
     return wyn
 WIEK_DNI = 150          # ile wstecz liczymy wzmianki
 MAKS_NA_ZRODLO = 6      # nowych artykułów z jednego źródła na dobę
-MAKS_NA_DOBE = 90
+MAKS_NA_DOBE = 100000  # bez limitu: czytamy wszystkie nowe artykuły (decyzja użytkownika 15.11)
 TANIE_MODELE = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]  # wyciąganie wzmianek: weryfikacja i tak jest twarda
 KW = re.compile(r"trend|modn|sezon|jesie|zim[aey]|wiosn|lato|lata\b|kolor|must[- ]?have|runway|fall|winter|spring|summer|"
                 r"fw\d\d|ss\d\d|aw\d\d|catwalk|pokaz|kolekcj|nosi|styl", re.I)

@@ -191,7 +191,6 @@ def main():
             print(f"\nKONTROLA: najgorszy przebieg: błędy krytyczne {len(naj['krytyczne'])}, "
                   f"zgodność z wzorcem {round(100 * naj['trafione'] / max(1, naj['sprawdzen']))}%, hasła z błędami {bledy_hasel}.")
             return
-    klasyfikator.BUDZET = max(klasyfikator.BUDZET, klasyfikator.koszt_miesiac() + 3.0)  # kontrola zawsze może się wykonać
     if "--model" in arg:
         modele = [arg[arg.index("--model") + 1]]
     elif "--wybierz" in arg or not klasyfikator.ustawienie("model_ai"):
