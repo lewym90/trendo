@@ -431,3 +431,26 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 /* wybór świata na końcu powitania */
 .wybor-swiata{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .wybor-swiata .btn{width:100%}
+
+/* Rozmiarówka: rozmiary, szkic rzeczy z liniami pomiarów dla wybranego rozmiaru */
+.rozmiarowka .rozm-gora{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.rozmiarowka .rozm-gora b{font-weight:500;font-size:17px}
+.rozmiarowka .rozmiary button{min-width:48px;height:42px;padding:0 10px;color:var(--tekst)}
+.rozmiarowka .rozmiary button.niedostepny{color:var(--szary2);text-decoration:line-through;border-style:dashed}
+.rozmiarowka .rozmiary button.niedostepny[aria-pressed="true"]{border-style:solid;border-color:var(--szary2)}
+.pom-szkic{position:relative;height:270px;max-width:100%;margin:26px auto 4px;display:block}
+.pom-szkic img{width:100%;height:100%;object-fit:contain;filter:var(--przemaluj-szkic,none);opacity:.92}
+.pom-linia{position:absolute;height:0;border-top:1.5px dashed var(--akcent-jasny);transform:translateY(-.75px);transition:top .35s,left .35s,width .35s}
+.pom-linia::before,.pom-linia::after{content:"";position:absolute;top:-5px;width:1.5px;height:9px;background:var(--akcent-jasny)}
+.pom-linia::before{left:-1px}.pom-linia::after{right:-1px}
+.pom-pion{position:absolute;width:0;border-left:1.5px dashed var(--akcent-jasny)}
+.pom-pion::before,.pom-pion::after{content:"";position:absolute;left:-5px;width:9px;height:1.5px;background:var(--akcent-jasny)}
+.pom-pion::before{top:-1px}.pom-pion::after{bottom:-1px}
+.pom-et{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);white-space:nowrap;font-size:12px;line-height:1.2;padding:3px 8px;border-radius:999px;
+  background:rgba(var(--pasek-rgb),.88);border:1px solid rgba(var(--akcent-rgb),.35);color:var(--tekst2)}
+.pom-et b{font-weight:600;color:var(--akcent-jasny);margin-left:2px}
+.pom-pion .pom-et{left:8px;top:50%;bottom:auto;transform:translateY(-50%)}
+.pom-lista{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:14px;font-size:14px}
+.pom-lista div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--linia);padding:4px 0}
+.pom-lista b{font-weight:500;white-space:nowrap}
+.pom-et.pod{bottom:auto;top:4px}

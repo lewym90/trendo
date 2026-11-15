@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.14.0';
+  const WERSJA = '0.17.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -433,13 +433,125 @@
     r.forEach((x) => { if (x && typeof x === 'object') x = x.name || x.label || x.size || x.value; x = String(x == null ? '' : x).trim(); if (x && !w.includes(x)) w.push(x); });
     return w;
   }
+  /* ---------- rozmiarówka: tabela ze strony produktu albo ogólna tabela sklepu, na szkicu rzeczy ---------- */
+  const ROZM = {}; // id produktu -> odpowiedź serwera (albo { laduje } / { blad })
+  let SZKICE = null;
+  function wczytajRozmiarowke(p) {
+    const odswiez = () => { const k = document.getElementById('rozm'); if (k && location.hash.includes(p.id)) k.innerHTML = kartaRozmiarowki(p, ROZM[p.id]); };
+    if (!SZKICE) fetch('data/szkice-rozmiarow.json?v=' + WERSJA).then((r) => r.json()).then((d) => { SZKICE = d; odswiez(); }).catch(() => { SZKICE = {}; });
+    if (!prawdziwy(p) || ROZM[p.id]) return;
+    ROZM[p.id] = { laduje: true };
+    fetch(`${API}/rozmiary?id=${encodeURIComponent(p.id)}`).then((r) => r.json()).then((d) => { ROZM[p.id] = d; })
+      .catch(() => { ROZM[p.id] = { blad: true }; }).finally(odswiez);
+  }
+  const normR = (x) => String(x || '').toUpperCase().replace(/\s+/g, '').replace(',', '.');
+  // Czy rozmiar z tabeli (np. „XS/34”, z odpowiednikami w innych wierszach) to ten sam co rozmiar sklepu („34”)?
+  function zgodnyRozmiar(t, i, r) {
+    const n = normR(r), etyk = [t.rozmiary[i]].concat((t.aliasy || []).map((a) => a.rozmiary[i]));
+    return etyk.some((e) => normR(e) === n || normR(e).split('/').includes(n) || normR(e).split('-').includes(n));
+  }
+  const SZKIC_RODZAJ = {
+    d: { koszula: 'bluzka', bluzka: 'bluzka', top: 'bluzka', 't-shirt': 'bluzka', polo: 'bluzka', sweter: 'sweter', kardigan: 'sweter', bluza: 'sweter',
+      sukienka: 'sukienka', kombinezon: 'sukienka', 'spódnica': 'spodnica', spodnie: 'spodnie', jeansy: 'spodnie', szorty: 'spodnie', legginsy: 'spodnie',
+      marynarka: 'marynarka', kamizelka: 'marynarka', garnitur: 'marynarka', kurtka: 'plaszcz', 'płaszcz': 'plaszcz' },
+    m: { koszula: 'koszula', 't-shirt': 'tshirt', polo: 'tshirt', top: 'tshirt', sweter: 'sweter', kardigan: 'sweter', bluza: 'sweter', marynarka: 'marynarka',
+      garnitur: 'marynarka', kamizelka: 'marynarka', kurtka: 'plaszcz', 'płaszcz': 'plaszcz', spodnie: 'spodnie', szorty: 'spodnie', dres: 'spodnie', jeansy: 'jeansy' }
+  };
+  const SLOWA_SZKICU = [[/sukien/, 'sukienka'], [/spódnic/, 'spodnica'], [/jeans/, 'jeansy'], [/spodni|szort|chino/, 'spodnie'], [/marynark|garnitur|kamizel/, 'marynarka'],
+    [/płaszcz|kurtk|parka|trencz/, 'plaszcz'], [/swet|kardigan|bluza|golf/, 'sweter'], [/t-shirt|koszulk|polo/, 'tshirt'], [/koszul|bluzk|top/, 'koszula']];
+  function szkicProduktu(p, d) {
+    const pl = d && d.dzial === 'meskie' || (!d && (p.plec_sklepu || p.dzial || st.dzial) === 'meskie') ? 'm' : 'd';
+    if (d && d.grupa === 'buty') return pl + (pl === 'm' ? '-but' : '-botek');
+    let x = SZKIC_RODZAJ[pl][(p.klasa || {}).r || (d || {}).rodzaj];
+    if (!x) { const n = (p.nazwa || '').toLowerCase(); const t = SLOWA_SZKICU.find(([re]) => re.test(n)); x = t && t[1]; }
+    if (x === 'jeansy' && pl === 'd') x = 'spodnie';
+    if (x === 'koszula' && pl === 'd') x = 'bluzka';
+    if (x === 'tshirt' && pl === 'd') x = 'bluzka';
+    if (x === 'spodnica' && pl === 'm') x = 'spodnie';
+    if (x === 'sukienka' && pl === 'm') x = null;
+    if (!x) x = d && (d.grupa === 'dol' || d.grupa === 'jeansy') ? (pl === 'm' ? 'spodnie' : 'spodnie') : (pl === 'm' ? 'koszula' : 'bluzka');
+    return pl + '-' + x;
+  }
+  const liczbaPl = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
+  const cm = (w) => (w ? (w.length > 1 ? `${liczbaPl(w[0])}–${liczbaPl(w[1])}` : liczbaPl(w[0])) + ' cm' : '–');
+  const NAZWY_POM = { biust: 'Biust', klatka: 'Klatka', talia: 'Talia', biodra: 'Biodra', nogawka: 'Nogawka', stopa: 'Stopa', wkladka: 'Wkładka' };
+  const czystaNazwa = (n) => {
+    let t = String(n || '').replace(/^\[\d+\]\s*|^[A-Z]\s*-\s*|\s*[([]\s*(cm|CM)\s*[)\]]|\*|:$/g, '').replace(/\s+/g, ' ').trim();
+    if (t === t.toUpperCase()) t = t.toLowerCase();
+    return t.replace(/^./, (c) => c.toUpperCase());
+  };
+  function kroj(nazwa) {
+    const n = (nazwa || '').toLowerCase();
+    if (/oversize|relaxed|loose|boxy|luźn/.test(n)) return 'luźny (oversize)';
+    if (/slim|skinny|dopasowan|fitted|taliowan/.test(n)) return 'dopasowany (slim)';
+    if (/regular|straight|prosty|klasyczn/.test(n)) return 'regularny';
+    return null;
+  }
+  function kartaRozmiarowki(p, d) {
+    const rp = listaRozmiarow(p.rozmiary);
+    const naglowek = (prawa) => `<div class="rozm-gora"><b>Rozmiarówka</b>${prawa ? `<span class="maly szary">${prawa}</span>` : ''}</div>`;
+    const chipy = (lista) => `<div class="rozmiary">${lista.map(({ r, ok, wyb }) => `<button aria-pressed="${!!wyb}" ${ok ? '' : `class="niedostepny" aria-label="${esc(r)}, niedostępny"`} data-akcja="rozmiar" data-id="${p.id}" data-v="${esc(r)}">${esc(r)}</button>`).join('')}</div>`;
+    if (!prawdziwy(p)) return naglowek() + (rp.length ? chipy(rp.map((r) => ({ r, ok: !(p.brak || []).includes(r), wyb: st.rozmiar[p.id] === r }))) : '');
+    if (!d || d.laduje) return naglowek() + (rp.length ? chipy(rp.map((r) => ({ r, ok: true, wyb: st.rozmiar[p.id] === r }))) : '') + '<p class="maly szary" style="margin:12px 0 0">Sprawdzam tabelę rozmiarów…</p>';
+    const t = d.tabela;
+    if (!t || !t.rozmiary || !t.rozmiary.length) {
+      const pow = p.uzywany ? 'Rozmiar podał sprzedający. Ogłoszenia z drugiej ręki nie mają tabeli rozmiarów.' : d.blad ? 'Tabela rozmiarów chwilowo niedostępna.' : 'Sklep nie podaje tabeli rozmiarów, którą możemy odczytać.';
+      return naglowek() + (rp.length ? chipy(rp.map((r) => ({ r, ok: true, wyb: st.rozmiar[p.id] === r }))) : '')
+        + `<p class="maly szary" style="margin:12px 0 0">${pow}${p.uzywany ? '' : ` <a class="link" href="${esc(p.url)}" target="_blank" rel="noopener">Sprawdź w sklepie</a>`}</p>`;
+    }
+    // kolumny tabeli i dostępność według rozmiarów sklepu
+    const kol = t.rozmiary.map((r, i) => ({ r, i, ok: !rp.length || rp.some((x) => zgodnyRozmiar(t, i, x)) }));
+    const pozaTabela = rp.filter((x) => !t.rozmiary.some((_, i) => zgodnyRozmiar(t, i, x)));
+    const zapisany = st.rozmiar[p.id];
+    let wi = kol.findIndex((k) => zapisany && (normR(k.r) === normR(zapisany) || zgodnyRozmiar(t, k.i, zapisany)));
+    if (wi < 0) { const dost = kol.filter((k) => k.ok); const m = dost.find((k) => /^M$|^38$|^50$/.test(normR(k.r).split('/')[0])); wi = (m || dost[Math.floor((dost.length - 1) / 2)] || kol[0]).i; }
+    const lista = kol.map((k) => ({ r: k.r, ok: k.ok, wyb: k.i === wi })).concat(pozaTabela.map((r) => ({ r, ok: true, wyb: zapisany === r })));
+    // szkic z liniami pomiarów
+    const nazwaSz = szkicProduktu(p, d), sz = SZKICE && SZKICE[nazwaSz];
+    const W = t.wymiary || {}, rysowane = new Set();
+    const wartosc = (k) => { const z = W[k]; return z ? z.wartosci[wi] : null; };
+    let linie = '';
+    const poziome = [];
+    if (sz) {
+      Object.entries(sz.poziome || {}).forEach(([k, [y, x0, x1]]) => {
+        const klucze = k === 'biust' || k === 'klatka' ? ['biust', 'klatka'] : k === 'stopa' ? ['wkladka', 'stopa'] : [k];
+        const kk = klucze.find((x) => W[x] && wartosc(x)); if (!kk) return;
+        rysowane.add(kk);
+        const nazwa = kk === 'klatka' && nazwaSz.startsWith('d') ? 'Biust' : kk === 'biust' && nazwaSz.startsWith('m') ? 'Klatka' : kk === 'wkladka' ? 'Długość wkładki' : kk === 'stopa' ? 'Długość stopy' : NAZWY_POM[kk];
+        poziome.push({ y, x0, x1, html: `${nazwa} <b>${cm(wartosc(kk))}</b>` });
+      });
+      // etykieta nad linią, a gdy zachodziłaby na poprzednią, pod linią (wysokość etykiety ok. 9% szkicu)
+      let dol = -1;
+      poziome.sort((a, b) => a.y - b.y).forEach((l) => {
+        const nad = l.y - 0.1 >= dol;
+        dol = nad ? l.y : l.y + 0.1;
+        linie += `<div class="pom-linia" style="top:${l.y * 100}%;left:${l.x0 * 100}%;width:${(l.x1 - l.x0) * 100}%"><span class="pom-et${nad ? '' : ' pod'}">${l.html}</span></div>`;
+      });
+      Object.entries(sz.pionowe || {}).forEach(([k, [x, y0, y1]]) => {
+        const klucze = k === 'stopa' ? ['wkladka', 'stopa'] : [k];
+        const kk = klucze.find((z) => W[z] && wartosc(z)); if (!kk) return;
+        rysowane.add(kk);
+        linie += `<div class="pom-pion" style="left:${x * 100}%;top:${y0 * 100}%;height:${(y1 - y0) * 100}%"><span class="pom-et">${kk === 'nogawka' ? 'Nogawka' : 'Długość'} <b>${cm(wartosc(kk))}</b></span></div>`;
+      });
+    }
+    const reszta = Object.entries(W).filter(([k]) => !rysowane.has(k)).map(([, v]) => v).concat(t.inne || [])
+      .filter((v) => v.wartosci[wi]).map((v) => `<div><span class="szary">${esc(czystaNazwa(v.nazwa))}</span><b>${cm(v.wartosci[wi])}</b></div>`).join('');
+    const k = kroj(p.nazwa);
+    const opis = d.zrodlo === 'produkt' ? 'Tabela ze strony tego produktu' : `Ogólna tabela sklepu${d.nazwa_tabeli ? ': ' + esc(d.nazwa_tabeli.toLowerCase()) : ''}, wymiary ciała`;
+    const kiedy = d.sprawdzono ? `, sprawdzona ${new Date(d.sprawdzono).toLocaleDateString('pl-PL')}` : '';
+    return naglowek('w cm') + chipy(lista)
+      + (rp.length ? '' : '<p class="maly szary" style="margin:8px 0 0">Dostępność rozmiarów sprawdzisz w sklepie.</p>')
+      + (sz ? `<div class="pom-szkic" style="aspect-ratio:${sz.w}/${sz.h}"><img src="img/rozmiary/${nazwaSz}.webp" alt="">${linie}</div>` : '')
+      + (reszta ? `<div class="pom-lista">${reszta}</div>` : '')
+      + (k ? `<p class="maly" style="margin:10px 0 0">Krój: <b style="font-weight:500">${k}</b> <span class="szary">(z nazwy produktu)</span></p>` : '')
+      + `<p class="maly szary" style="margin:10px 0 0">${opis}${kiedy}. ${d.zrodlo_url ? `<a class="link" href="${esc(d.zrodlo_url)}" target="_blank" rel="noopener">Źródło</a>` : ''}</p>`;
+  }
+
   EKRANY.produkt = (id) => {
     const p = prod(id) || DEMO.P[0];
     const r = rabat(p);
     const ul = st.ulubione.includes(p.id);
     const alert = st.alerty.find((a) => a.id === p.id);
-    const wybr = st.rozmiar[p.id];
-    const rozm = listaRozmiarow(p.rozmiary);
     let werInfo = '';
     if (p.weryf === 'ok') werInfo = `<div class="info ok">${IK.ok}<p><b>Obniżka jest prawdziwa.</b> ${p.omnibus ? `Najniższa cena z 30 dni przed obniżką: ${zl(p.omnibus)}.` : 'Przez ostatnie 30 dni sprawdzaliśmy cenę sami i była wyższa niż teraz.'}${p.stara_sklepu ? ` Sklep podaje cenę regularną ${zl(p.stara_sklepu)}, ale rabat liczymy uczciwie, od najniższej ceny z 30 dni.` : ''}</p></div>`;
     else if (p.weryf === 'pozorna') werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> ${p.omnibus ? `Przez ostatnie 30 dni produkt kosztował tyle samo (${zl(p.omnibus)}).` : 'Przez ostatnie 30 dni produkt kosztował tyle samo albo mniej.'} Przekreślona cena nie była aktualna.</p></div>`;
@@ -450,6 +562,7 @@
       akt: 'szukaj', menu: false, klasa: 'bez-menu',
       po: () => {
         const wc = document.querySelector('#hist .wykres-ceny'); if (wc) G.podpnijWykresCeny(wc, zl);
+        wczytajRozmiarowke(p);
         if (!prawdziwy(p)) return;
         fetch(`${API}/historia?id=${encodeURIComponent(p.id)}`).then((r) => r.json()).then((d) => {
           const el = document.getElementById('hist'); if (!el) return;
@@ -459,7 +572,7 @@
             G.podpnijWykresCeny(el.querySelector('.wykres-ceny'), zl);
             document.getElementById('hist-opis').textContent = c.every((x) => x[0] === c[0][0]) ? 'bez zmian' : 'zmieniała się';
           } else {
-            el.innerHTML = `<p class="maly szary">Historię ceny tego produktu zbieramy od ${new Date((c[0] ? c[0][1] : p.sprawdzono) * 1000).toLocaleDateString('pl-PL')}. Wykres pojawi się po kilku dniach, a ocena promocji po 30 dniach.</p>`;
+            el.innerHTML = `<p class="maly szary">Historię ceny tego produktu zbieramy od ${new Date((c[0] ? c[0][1] : p.sprawdzono) * 1000).toLocaleDateString('pl-PL')}. Wykres pojawi się po kilku dniach${p.omnibus || p.weryf === 'ok' || p.weryf === 'pozorna' ? '' : ', a nasza ocena promocji po 30 dniach'}.</p>`;
           }
         }).catch(() => { const el = document.getElementById('hist'); if (el) el.innerHTML = '<p class="maly szary">Historia ceny chwilowo niedostępna.</p>'; });
       },
@@ -475,11 +588,10 @@
         <h1 style="font-size:30px;margin-top:-8px">${esc(p.nazwa)}</h1>
         <div class="ceny"><span class="cena" style="font-size:38px">${zl(p.cena)}</span>${p.stara ? `<span class="stara" style="font-size:16px">${zl(p.stara)}</span><span class="rabat">−${r}%</span>` : ''}</div>
         ${werInfo}
+        <div class="karta rozmiarowka" id="rozm">${kartaRozmiarowki(p, ROZM[p.id])}</div>
         ${Array.isArray(p.okazje) ? `<div class="pasuje-na"><b>Pasuje na</b>${p.okazje.length ? `<div class="pasuje-lista">${OKAZJE_LISTA.filter(([v]) => p.okazje.includes(v)).map(([v, n]) => `<span class="pasuje-kafel"><img src="img/okazje/okazja-${st.dzial === 'meskie' ? 'm' : 'd'}-${v}.webp" alt="">${n}</span>`).join('')}</div>` : '<p class="maly szary">Według naszego kodeksu ubioru to rzecz poza okazjami z listy (np. sportowa albo domowa).</p>'}</div>` : ''}
         <div class="karta"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font-weight:500">Cena przez 30 dni</b><span class="maly szary" id="hist-opis">${p.historia ? (p.historia.every((v) => v === p.historia[0]) ? 'bez zmian' : 'zmieniała się') : ''}</span></div>
           <div id="hist">${p.historia ? G.wykresCeny(p.historia.map((v, i) => [v, Date.now() / 1000 - (p.historia.length - 1 - i) * 86400]), zl) : '<p class="maly szary">Sprawdzam historię ceny…</p>'}</div></div>
-        ${rozm.length ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
-          <div class="rozmiary">${rozm.map((r) => `<button aria-pressed="${wybr === r}" ${(p.brak || []).includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
           <a class="btn" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Kup w sklepie ${esc(p.sklep)}</a>
           ${viaGoogle(p) ? '<p class="maly szary" style="margin:-4px 2px 0">Ten produkt znaleźliśmy przez Google Shopping. Po dotknięciu wyszukamy jego stronę w sklepie.</p>' : ''}
@@ -855,7 +967,11 @@
     },
     usunZKoszyka(el) { st.koszyk = st.koszyk.filter((x) => x !== el.dataset.id); zapisz(); render(true); },
     wyczyscKoszyk() { st.koszyk = []; zapisz(); render(); },
-    rozmiar(el) { st.rozmiar[el.dataset.id] = el.dataset.v; zapisz(); render(true); },
+    rozmiar(el) {
+      st.rozmiar[el.dataset.id] = el.dataset.v; zapisz();
+      const k = document.getElementById('rozm'), p = prod(el.dataset.id);
+      if (k && p) k.innerHTML = kartaRozmiarowki(p, ROZM[p.id]); else render(true);
+    },
     alert(el) { arkuszAlertu(el.dataset.id); },
     zapiszAlert(el) {
       const id = el.dataset.id, cel = +document.getElementById('cel').value;

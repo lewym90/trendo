@@ -23,7 +23,12 @@ ODSWIEZ_CO = 12 * 3600
 
 
 def _okrojony(p):
-    return {k: p[k] for k in POLA if p.get(k) is not None}
+    d = {k: p[k] for k in POLA if p.get(k) is not None}
+    if (p.get("klasa") or {}).get("r"):
+        d["rodzaj"] = p["klasa"]["r"]  # rodzaj rzeczy z oceny AI: dobór tabeli rozmiarów i szkicu
+    elif p.get("rodzaj"):
+        d["rodzaj"] = p["rodzaj"]
+    return d
 
 
 def zapamietaj(produkty):

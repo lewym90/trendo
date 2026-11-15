@@ -11,6 +11,7 @@ Endpointy (za Caddy pod /trendo-api/):
   GET /produkty?ids=a,b           ostatni znany stan produktów (alerty, ulubione, koszyk)
   GET /obserwuj?ids=a,b           serwer odświeża ceny tych produktów co 12 godzin w ich sklepach
   POST /zdjecie                   zdjęcie rzeczy (JPEG, do 2 MB) -> hasło do wyszukania
+  GET /rozmiary?id=...            rozmiarówka produktu: tabela ze strony produktu albo ogólna tabela sklepu
 """
 import json, os, re, time, traceback
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -18,10 +19,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote_plus, urlparse
 
 import threading
-from . import klasyfikator, lacznik_ccc, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_strony, lacznik_wittchen, lacznik_zara, logo, nadzor, obserwowane, trendy
+from . import klasyfikator, lacznik_ccc, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_strony, lacznik_wittchen, lacznik_zara, logo, nadzor, obserwowane, rozmiary, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.16.0"
+WERSJA = "0.17.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_ccc, lacznik_wittchen, lacznik_strony, lacznik_przegladarka, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -356,6 +357,11 @@ class Obsluga(BaseHTTPRequestHandler):
                 return self._wyslij(200, {"produkty": obserwowane.dane(a.get("ids", "").split(","))})
             if u.path == "/obserwuj":
                 return self._wyslij(200, {"ok": True, "ile": obserwowane.obserwuj(a.get("ids", "").split(","))})
+            if u.path == "/rozmiary":
+                p = obserwowane.dane([a.get("id", "")]).get(a.get("id", ""))
+                if not p:
+                    return self._wyslij(404, {"blad": "Nie znam tego produktu. Wyszukaj go jeszcze raz."})
+                return self._wyslij(200, rozmiary.dla_produktu(p))
             if u.path == "/historia":
                 return self._wyslij(200, {"id": a.get("id"), "ceny": historia(a.get("id", ""))})
             return self._wyslij(404, {"blad": "Nie ma takiej ścieżki."})

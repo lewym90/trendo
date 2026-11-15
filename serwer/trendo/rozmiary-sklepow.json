@@ -1,0 +1,3713 @@
+{
+ "opis": "Ogólne tabele rozmiarów sklepów (wymiary ciała w cm), przepisane z ich stron. Budowa: kontrola/rozmiary_sklepow.py.",
+ "sklepy": {
+  "Reserved": {
+   "url": "https://www.reserved.com/pl/pl/help-size-guide",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież damska (XS–XL)",
+     "url": "https://www.reserved.com/pl/pl/help-size-guide",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL",
+      "1XL",
+      "2XL",
+      "3XL"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "Obwód klatki piersiowej (cm)",
+       "wartosci": [
+        [
+         82.0
+        ],
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         96.0
+        ],
+        [
+         102.0
+        ],
+        [
+         108.0
+        ],
+        [
+         114.0
+        ],
+        [
+         120.0
+        ],
+        [
+         126.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód w talii (cm)",
+       "wartosci": [
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         78.0
+        ],
+        [
+         84.0
+        ],
+        [
+         90.0
+        ],
+        [
+         96.0
+        ],
+        [
+         102.0
+        ],
+        [
+         108.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód w biodrach (cm)",
+       "wartosci": [
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ],
+        [
+         116.0
+        ],
+        [
+         122.0
+        ],
+        [
+         128.0
+        ],
+        [
+         134.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": [
+      {
+       "nazwa": "",
+       "rozmiary": [
+        "42",
+        "44",
+        "46",
+        "49",
+        "52",
+        "55",
+        "58",
+        "61",
+        "64"
+       ]
+      }
+     ]
+    },
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież damska (32–54)",
+     "url": "https://www.reserved.com/pl/pl/help-size-guide",
+     "rozmiary": [
+      "32",
+      "34",
+      "36",
+      "38",
+      "40",
+      "42",
+      "44",
+      "46",
+      "48",
+      "50",
+      "52",
+      "54"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "Obwód klatki piersiowej (cm)",
+       "wartosci": [
+        [
+         78.0
+        ],
+        [
+         82.0
+        ],
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         112.0
+        ],
+        [
+         118.0
+        ],
+        [
+         124.0
+        ],
+        [
+         130.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód w talii (cm)",
+       "wartosci": [
+        [
+         60.0
+        ],
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ],
+        [
+         84.0
+        ],
+        [
+         88.0
+        ],
+        [
+         94.0
+        ],
+        [
+         100.0
+        ],
+        [
+         106.0
+        ],
+        [
+         112.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód w biodrach (cm)",
+       "wartosci": [
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         110.0
+        ],
+        [
+         114.0
+        ],
+        [
+         120.0
+        ],
+        [
+         126.0
+        ],
+        [
+         132.0
+        ],
+        [
+         138.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": [
+      {
+       "nazwa": "IT",
+       "rozmiary": [
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46",
+        "48",
+        "50",
+        "52",
+        "54",
+        "56",
+        "58"
+       ]
+      }
+     ]
+    },
+    {
+     "dzial": "d",
+     "grupa": "dol",
+     "nazwa": "Spodnie i spódnice damskie",
+     "url": "https://www.reserved.com/pl/pl/help-size-guide",
+     "rozmiary": [
+      "32",
+      "34",
+      "36",
+      "38",
+      "40",
+      "42",
+      "44",
+      "46",
+      "48",
+      "50",
+      "52",
+      "54"
+     ],
+     "wymiary": {
+      "talia": {
+       "nazwa": "Obwód w talii (cm)",
+       "wartosci": [
+        [
+         60.0
+        ],
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ],
+        [
+         84.0
+        ],
+        [
+         88.0
+        ],
+        [
+         94.0
+        ],
+        [
+         100.0
+        ],
+        [
+         106.0
+        ],
+        [
+         112.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód w biodrach (cm)",
+       "wartosci": [
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         110.0
+        ],
+        [
+         114.0
+        ],
+        [
+         120.0
+        ],
+        [
+         126.0
+        ],
+        [
+         132.0
+        ],
+        [
+         138.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "buty",
+     "nazwa": "Buty damskie",
+     "url": "https://www.reserved.com/pl/pl/help-size-guide",
+     "rozmiary": [
+      "35",
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+     ],
+     "wymiary": {
+      "stopa": {
+       "nazwa": "Długość stopy (cm)",
+       "wartosci": [
+        [
+         22.8
+        ],
+        [
+         23.4
+        ],
+        [
+         24.0
+        ],
+        [
+         24.6
+        ],
+        [
+         25.3
+        ],
+        [
+         26.0
+        ],
+        [
+         26.6
+        ],
+        [
+         27.3
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "ubrania",
+     "nazwa": "Odzież męska",
+     "url": "https://www.reserved.com/pl/pl/help-size-guide",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "Wzrost (cm)",
+       "wartosci": [
+        [
+         170.0,
+         174.0
+        ],
+        [
+         174.0,
+         176.0
+        ],
+        [
+         176.0,
+         180.0
+        ],
+        [
+         180.0,
+         184.0
+        ],
+        [
+         184.0,
+         188.0
+        ],
+        [
+         188.0,
+         190.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "Obwód klatki piersiowej (cm)",
+       "wartosci": [
+        [
+         87.0,
+         92.0
+        ],
+        [
+         92.0,
+         97.0
+        ],
+        [
+         97.0,
+         102.0
+        ],
+        [
+         102.0,
+         107.0
+        ],
+        [
+         107.0,
+         113.0
+        ],
+        [
+         113.0,
+         120.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód w talii (cm)",
+       "wartosci": [
+        [
+         75.0,
+         80.0
+        ],
+        [
+         80.0,
+         85.0
+        ],
+        [
+         85.0,
+         90.0
+        ],
+        [
+         90.0,
+         95.0
+        ],
+        [
+         95.0,
+         101.0
+        ],
+        [
+         101.0,
+         108.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód w biodrach (cm)",
+       "wartosci": [
+        [
+         87.0,
+         92.0
+        ],
+        [
+         92.0,
+         97.0
+        ],
+        [
+         97.0,
+         102.0
+        ],
+        [
+         102.0,
+         107.0
+        ],
+        [
+         107.0,
+         113.0
+        ],
+        [
+         113.0,
+         120.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": [
+      {
+       "nazwa": "Spodnie tkane/jeansy",
+       "rozmiary": [
+        "28",
+        "30",
+        "32",
+        "34",
+        "36",
+        "38"
+       ]
+      },
+      {
+       "nazwa": "",
+       "rozmiary": [
+        "44-46",
+        "46-48",
+        "48-50",
+        "50-52",
+        "52-54",
+        "54-56"
+       ]
+      },
+      {
+       "nazwa": "Garnitury/Marynarki",
+       "rozmiary": [
+        "46",
+        "48",
+        "50",
+        "52",
+        "54",
+        "56"
+       ]
+      }
+     ]
+    },
+    {
+     "dzial": "m",
+     "grupa": "buty",
+     "nazwa": "Buty męskie",
+     "url": "https://www.reserved.com/pl/pl/help-size-guide",
+     "rozmiary": [
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45",
+      "46",
+      "47"
+     ],
+     "wymiary": {
+      "stopa": {
+       "nazwa": "Długość stopy (cm)",
+       "wartosci": [
+        [
+         25.1
+        ],
+        [
+         25.7
+        ],
+        [
+         26.4
+        ],
+        [
+         27.0
+        ],
+        [
+         27.6
+        ],
+        [
+         28.3
+        ],
+        [
+         28.9
+        ],
+        [
+         29.6
+        ],
+        [
+         30.3
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    }
+   ]
+  },
+  "Mohito": {
+   "url": "https://www.mohito.com/pl/pl/help-tabele-rozmiarowe",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież (XXS–XXL)",
+     "url": "https://www.mohito.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XXS",
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "Wzrost",
+       "wartosci": [
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "Obwód Klatki Piersiowej",
+       "wartosci": [
+        [
+         82.0
+        ],
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód pasa",
+       "wartosci": [
+        [
+         62.0
+        ],
+        [
+         66.0
+        ],
+        [
+         70.0
+        ],
+        [
+         74.0
+        ],
+        [
+         78.0
+        ],
+        [
+         82.0
+        ],
+        [
+         86.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód bioder",
+       "wartosci": [
+        [
+         87.0
+        ],
+        [
+         91.0
+        ],
+        [
+         95.0
+        ],
+        [
+         99.0
+        ],
+        [
+         103.0
+        ],
+        [
+         107.0
+        ],
+        [
+         111.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież (32–44)",
+     "url": "https://www.mohito.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "32",
+      "34",
+      "36",
+      "38",
+      "40",
+      "42",
+      "44"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "Wzrost",
+       "wartosci": [
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ],
+        [
+         164.0,
+         176.0
+        ]
+       ]
+      },
+      "biust": {
+       "nazwa": "Obwód biustu",
+       "wartosci": [
+        [
+         82.0
+        ],
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód pasa",
+       "wartosci": [
+        [
+         62.0
+        ],
+        [
+         66.0
+        ],
+        [
+         70.0
+        ],
+        [
+         74.0
+        ],
+        [
+         78.0
+        ],
+        [
+         82.0
+        ],
+        [
+         86.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód bioder",
+       "wartosci": [
+        [
+         87.0
+        ],
+        [
+         91.0
+        ],
+        [
+         95.0
+        ],
+        [
+         99.0
+        ],
+        [
+         103.0
+        ],
+        [
+         107.0
+        ],
+        [
+         111.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    }
+   ]
+  },
+  "House": {
+   "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież damska",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XXS",
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "obwód klatki piersiowej",
+       "wartosci": [
+        [
+         78.0
+        ],
+        [
+         82.0
+        ],
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         96.0
+        ],
+        [
+         102.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "obwód w talii",
+       "wartosci": [
+        [
+         61.0
+        ],
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         78.0
+        ],
+        [
+         84.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "obwód w biodrach",
+       "wartosci": [
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "dol",
+     "nazwa": "Spodnie, szorty i spódnice damskie",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XXS",
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+     ],
+     "wymiary": {
+      "talia": {
+       "nazwa": "obwód w talii",
+       "wartosci": [
+        [
+         61.0
+        ],
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         78.0
+        ],
+        [
+         84.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "obwód w biodrach",
+       "wartosci": [
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "jeansy",
+     "nazwa": "Jeansy damskie",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "32",
+      "34",
+      "36",
+      "38",
+      "40",
+      "42",
+      "44"
+     ],
+     "wymiary": {
+      "talia": {
+       "nazwa": "obwód w talii",
+       "wartosci": [
+        [
+         60.0
+        ],
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ],
+        [
+         85.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "obwód w biodrach",
+       "wartosci": [
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         111.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "buty",
+     "nazwa": "Obuwie damskie",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "35",
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41"
+     ],
+     "wymiary": {
+      "wkladka": {
+       "nazwa": "Długość wkładki [CM]",
+       "wartosci": [
+        [
+         23.0
+        ],
+        [
+         23.5
+        ],
+        [
+         24.0
+        ],
+        [
+         24.6
+        ],
+        [
+         25.3
+        ],
+        [
+         26.0
+        ],
+        [
+         26.6
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "ubrania",
+     "nazwa": "Góra męska (koszule, t-shirty, kurtki)",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "obwód klatki piersiowej [cm]",
+       "wartosci": [
+        [
+         86.0,
+         90.0
+        ],
+        [
+         90.0,
+         96.0
+        ],
+        [
+         96.0,
+         102.0
+        ],
+        [
+         102.0,
+         108.0
+        ],
+        [
+         108.0,
+         114.0
+        ],
+        [
+         114.0,
+         116.0
+        ]
+       ]
+      },
+      "kolnierzyk": {
+       "nazwa": "obwód kołnierzyka [cm]",
+       "wartosci": [
+        [
+         35.5
+        ],
+        [
+         37.0
+        ],
+        [
+         39.0
+        ],
+        [
+         41.0
+        ],
+        [
+         43.0
+        ],
+        [
+         45.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "dol",
+     "nazwa": "Spodnie i szorty męskie",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ],
+     "wymiary": {
+      "talia": {
+       "nazwa": "Obwód w pasie [cm]",
+       "wartosci": [
+        [
+         73.0,
+         78.0
+        ],
+        [
+         78.0,
+         83.0
+        ],
+        [
+         83.0,
+         88.0
+        ],
+        [
+         88.0,
+         93.0
+        ],
+        [
+         93.0,
+         98.0
+        ],
+        [
+         98.0,
+         103.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód w biodrach [cm]",
+       "wartosci": [
+        [
+         89.0,
+         94.0
+        ],
+        [
+         94.0,
+         99.0
+        ],
+        [
+         99.0,
+         104.0
+        ],
+        [
+         104.0,
+         109.0
+        ],
+        [
+         109.0,
+         114.0
+        ],
+        [
+         114.0,
+         119.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "jeansy",
+     "nazwa": "Jeansy męskie",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "28",
+      "29",
+      "30",
+      "31",
+      "32",
+      "33",
+      "34",
+      "36",
+      "38"
+     ],
+     "wymiary": {
+      "biodra": {
+       "nazwa": "biodra",
+       "wartosci": [
+        [
+         92.0,
+         95.0
+        ],
+        [
+         95.0,
+         98.0
+        ],
+        [
+         98.0,
+         101.0
+        ],
+        [
+         101.0,
+         104.0
+        ],
+        [
+         104.0,
+         107.0
+        ],
+        [
+         107.0,
+         110.0
+        ],
+        [
+         110.0,
+         113.0
+        ],
+        [
+         116.0,
+         119.0
+        ],
+        [
+         122.0,
+         125.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "buty",
+     "nazwa": "Obuwie męskie",
+     "url": "https://www.housebrand.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45",
+      "46"
+     ],
+     "wymiary": {
+      "wkladka": {
+       "nazwa": "Długość wkładki [cm]",
+       "wartosci": [
+        [
+         25.3
+        ],
+        [
+         26.0
+        ],
+        [
+         26.6
+        ],
+        [
+         27.3
+        ],
+        [
+         28.0
+        ],
+        [
+         28.6
+        ],
+        [
+         29.3
+        ],
+        [
+         30.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    }
+   ]
+  },
+  "Cropp": {
+   "url": "https://www.cropp.com/pl/pl/help-tabele-rozmiarowe",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Topy damskie",
+     "url": "https://www.cropp.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost",
+       "wartosci": [
+        [
+         164.0
+        ],
+        [
+         164.0
+        ],
+        [
+         170.0
+        ],
+        [
+         176.0
+        ],
+        [
+         176.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "B - Obwód w klatce piersiowej",
+       "wartosci": [
+        [
+         82.0
+        ],
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "C - Obród w talii",
+       "wartosci": [
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "D - Obwód w biodrach",
+       "wartosci": [
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ]
+       ]
+      },
+      "rekaw": {
+       "nazwa": "G - Długość rękawa",
+       "wartosci": [
+        [
+         58.0
+        ],
+        [
+         58.0
+        ],
+        [
+         60.0
+        ],
+        [
+         62.0
+        ],
+        [
+         62.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": [
+      {
+       "nazwa": "EUR",
+       "rozmiary": [
+        "34",
+        "36",
+        "38",
+        "40",
+        "42"
+       ]
+      }
+     ]
+    },
+    {
+     "dzial": "d",
+     "grupa": "dol",
+     "nazwa": "Spodnie, szorty i spódnice damskie",
+     "url": "https://www.cropp.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost",
+       "wartosci": [
+        [
+         164.0
+        ],
+        [
+         164.0
+        ],
+        [
+         170.0
+        ],
+        [
+         176.0
+        ],
+        [
+         176.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "B - Obwód w talii",
+       "wartosci": [
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "O D - Obwód w biodrach",
+       "wartosci": [
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ]
+       ]
+      },
+      "nogawka": {
+       "nazwa": "E - DŁUGOŚĆ WEWNĘTRZNA NOGAWKI",
+       "wartosci": [
+        [
+         80.0
+        ],
+        [
+         80.0
+        ],
+        [
+         82.0
+        ],
+        [
+         84.0
+        ],
+        [
+         84.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": [
+      {
+       "nazwa": "EUR",
+       "rozmiary": [
+        "34",
+        "36",
+        "38",
+        "40",
+        "42"
+       ]
+      }
+     ]
+    },
+    {
+     "dzial": "d",
+     "grupa": "jeansy",
+     "nazwa": "Jeansy damskie",
+     "url": "https://www.cropp.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XXS",
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost",
+       "wartosci": [
+        [
+         164.0
+        ],
+        [
+         164.0
+        ],
+        [
+         164.0
+        ],
+        [
+         170.0
+        ],
+        [
+         176.0
+        ],
+        [
+         176.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "C - Obwód w talii",
+       "wartosci": [
+        [
+         60.0
+        ],
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "D - Obwód w biodrach",
+       "wartosci": [
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": [
+      {
+       "nazwa": "EUR",
+       "rozmiary": [
+        "32",
+        "34",
+        "36",
+        "38",
+        "40",
+        "42"
+       ]
+      }
+     ]
+    },
+    {
+     "dzial": "m",
+     "grupa": "ubrania",
+     "nazwa": "Kurtki, bluzy, t-shirty, swetry, koszule",
+     "url": "https://www.cropp.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost",
+       "wartosci": [
+        [
+         172.0
+        ],
+        [
+         172.0
+        ],
+        [
+         172.0,
+         176.0
+        ],
+        [
+         176.0,
+         182.0
+        ],
+        [
+         182.0,
+         186.0
+        ],
+        [
+         186.0,
+         190.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "B - Obwód klatki piersiowej",
+       "wartosci": [
+        [
+         84.0,
+         88.0
+        ],
+        [
+         88.0,
+         94.0
+        ],
+        [
+         94.0,
+         100.0
+        ],
+        [
+         100.0,
+         106.0
+        ],
+        [
+         106.0,
+         112.0
+        ],
+        [
+         112.0,
+         118.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "C - Obwód pasa",
+       "wartosci": [
+        [
+         72.0,
+         76.0
+        ],
+        [
+         76.0,
+         82.0
+        ],
+        [
+         82.0,
+         88.0
+        ],
+        [
+         88.0,
+         94.0
+        ],
+        [
+         94.0,
+         100.0
+        ],
+        [
+         100.0,
+         106.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "D - Obwód bioder",
+       "wartosci": [
+        [
+         86.0,
+         90.0
+        ],
+        [
+         90.0,
+         96.0
+        ],
+        [
+         96.0,
+         102.0
+        ],
+        [
+         102.0,
+         108.0
+        ],
+        [
+         108.0,
+         114.0
+        ],
+        [
+         114.0,
+         120.0
+        ]
+       ]
+      }
+     },
+     "inne": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "jeansy",
+     "nazwa": "Jeansy i spodnie męskie",
+     "url": "https://www.cropp.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "28",
+      "30",
+      "32",
+      "34",
+      "36",
+      "38"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost",
+       "wartosci": [
+        [
+         172.0
+        ],
+        [
+         172.0
+        ],
+        [
+         172.0,
+         176.0
+        ],
+        [
+         176.0,
+         182.0
+        ],
+        [
+         182.0,
+         186.0
+        ],
+        [
+         186.0,
+         190.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "C - Obwód pasa",
+       "wartosci": [
+        [
+         72.0,
+         76.0
+        ],
+        [
+         76.0,
+         82.0
+        ],
+        [
+         82.0,
+         88.0
+        ],
+        [
+         88.0,
+         94.0
+        ],
+        [
+         94.0,
+         100.0
+        ],
+        [
+         100.0,
+         106.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "D - Obwód bioder",
+       "wartosci": [
+        [
+         87.0,
+         92.0
+        ],
+        [
+         92.0,
+         97.0
+        ],
+        [
+         97.0,
+         102.0
+        ],
+        [
+         102.0,
+         107.0
+        ],
+        [
+         107.0,
+         112.0
+        ],
+        [
+         112.0,
+         117.0
+        ]
+       ]
+      }
+     },
+     "inne": []
+    }
+   ]
+  },
+  "Sinsay": {
+   "url": "https://www.sinsay.com/pl/pl/help-tabele-rozmiarowe",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież damska",
+     "url": "https://www.sinsay.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XXS",
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost (cm)",
+       "wartosci": [
+        [
+         160.0
+        ],
+        [
+         164.0
+        ],
+        [
+         168.0
+        ],
+        [
+         172.0
+        ],
+        [
+         174.0
+        ],
+        [
+         176.0
+        ],
+        [
+         178.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "B - Obwód klatki piersiowej (cm)",
+       "wartosci": [
+        [
+         80.0
+        ],
+        [
+         84.0
+        ],
+        [
+         88.0
+        ],
+        [
+         92.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "C - Obwód talii (cm)",
+       "wartosci": [
+        [
+         60.0
+        ],
+        [
+         64.0
+        ],
+        [
+         68.0
+        ],
+        [
+         72.0
+        ],
+        [
+         78.0
+        ],
+        [
+         84.0
+        ],
+        [
+         90.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "D - Obwód bioder (cm)",
+       "wartosci": [
+        [
+         86.0
+        ],
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ],
+        [
+         116.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież damska, większe rozmiary",
+     "url": "https://www.sinsay.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "L",
+      "1XL",
+      "2XL",
+      "3XL",
+      "4XL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost (cm)",
+       "wartosci": [
+        [
+         168.0
+        ],
+        [
+         170.0
+        ],
+        [
+         172.0
+        ],
+        [
+         174.0
+        ],
+        [
+         176.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "B - Obwód klatki piersiowej (cm)",
+       "wartosci": [
+        [
+         112.0
+        ],
+        [
+         118.0
+        ],
+        [
+         126.0
+        ],
+        [
+         134.0
+        ],
+        [
+         142.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "C - Obwód talii (cm)",
+       "wartosci": [
+        [
+         94.0
+        ],
+        [
+         100.0
+        ],
+        [
+         108.0
+        ],
+        [
+         116.0
+        ],
+        [
+         124.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "D - Obwód bioder (cm)",
+       "wartosci": [
+        [
+         114.0
+        ],
+        [
+         120.0
+        ],
+        [
+         128.0
+        ],
+        [
+         136.0
+        ],
+        [
+         144.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "buty",
+     "nazwa": "Buty damskie",
+     "url": "https://www.sinsay.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41"
+     ],
+     "wymiary": {
+      "stopa": {
+       "nazwa": "A - Długość stopy (cm)",
+       "wartosci": [
+        [
+         23.0
+        ],
+        [
+         24.0
+        ],
+        [
+         24.5
+        ],
+        [
+         25.0
+        ],
+        [
+         26.0
+        ],
+        [
+         26.5
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "ubrania",
+     "nazwa": "Odzież męska",
+     "url": "https://www.sinsay.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL",
+      "3XL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost (cm)",
+       "wartosci": [
+        [
+         170.0,
+         174.0
+        ],
+        [
+         174.0,
+         176.0
+        ],
+        [
+         176.0,
+         180.0
+        ],
+        [
+         180.0,
+         184.0
+        ],
+        [
+         184.0,
+         188.0
+        ],
+        [
+         188.0,
+         190.0
+        ],
+        [
+         188.0,
+         193.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "B - Obwód klatki piersiowej (cm)",
+       "wartosci": [
+        [
+         86.0,
+         92.0
+        ],
+        [
+         92.0,
+         96.0
+        ],
+        [
+         96.0,
+         101.0
+        ],
+        [
+         101.0,
+         107.0
+        ],
+        [
+         107.0,
+         113.0
+        ],
+        [
+         113.0,
+         119.0
+        ],
+        [
+         119.0,
+         125.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "C - Obwód talii (cm)",
+       "wartosci": [
+        [
+         75.0,
+         80.0
+        ],
+        [
+         80.0,
+         84.0
+        ],
+        [
+         84.0,
+         89.0
+        ],
+        [
+         89.0,
+         95.0
+        ],
+        [
+         95.0,
+         101.0
+        ],
+        [
+         101.0,
+         107.0
+        ],
+        [
+         107.0,
+         113.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "D - Obwód bioder (cm)",
+       "wartosci": [
+        [
+         87.0,
+         91.0
+        ],
+        [
+         91.0,
+         96.0
+        ],
+        [
+         96.0,
+         101.0
+        ],
+        [
+         101.0,
+         107.0
+        ],
+        [
+         107.0,
+         113.0
+        ],
+        [
+         113.0,
+         119.0
+        ],
+        [
+         119.0,
+         125.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "dol",
+     "nazwa": "Spodnie męskie",
+     "url": "https://www.sinsay.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "A - Wzrost (cm)",
+       "wartosci": [
+        [
+         170.0,
+         174.0
+        ],
+        [
+         174.0,
+         176.0
+        ],
+        [
+         176.0,
+         180.0
+        ],
+        [
+         180.0,
+         184.0
+        ],
+        [
+         184.0,
+         188.0
+        ],
+        [
+         188.0,
+         190.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "B - Obwód talii (cm)",
+       "wartosci": [
+        [
+         75.0,
+         80.0
+        ],
+        [
+         80.0,
+         85.0
+        ],
+        [
+         85.0,
+         90.0
+        ],
+        [
+         90.0,
+         95.0
+        ],
+        [
+         95.0,
+         100.0
+        ],
+        [
+         100.0,
+         105.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "C - Obwód bioder (cm)",
+       "wartosci": [
+        [
+         87.0,
+         92.0
+        ],
+        [
+         92.0,
+         97.0
+        ],
+        [
+         97.0,
+         102.0
+        ],
+        [
+         102.0,
+         107.0
+        ],
+        [
+         107.0,
+         112.0
+        ],
+        [
+         112.0,
+         117.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": [
+      {
+       "nazwa": "",
+       "rozmiary": [
+        "28-29",
+        "30-31",
+        "32-33",
+        "34",
+        "36",
+        "38"
+       ]
+      }
+     ]
+    },
+    {
+     "dzial": "m",
+     "grupa": "buty",
+     "nazwa": "Buty męskie",
+     "url": "https://www.sinsay.com/pl/pl/help-tabele-rozmiarowe",
+     "rozmiary": [
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45",
+      "46"
+     ],
+     "wymiary": {
+      "stopa": {
+       "nazwa": "A - Długość stopy (cm)",
+       "wartosci": [
+        [
+         25.0
+        ],
+        [
+         26.0
+        ],
+        [
+         26.5
+        ],
+        [
+         27.0
+        ],
+        [
+         28.0
+        ],
+        [
+         28.5
+        ],
+        [
+         29.0
+        ],
+        [
+         30.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    }
+   ]
+  },
+  "Quiosque": {
+   "url": "https://www.quiosque.pl/tabela-rozmiarow,13.html",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież (S–5XL)",
+     "url": "https://www.quiosque.pl/tabela-rozmiarow,13.html",
+     "rozmiary": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL",
+      "3XL",
+      "4XL",
+      "5XL"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "Obwód klatki piersiowej - A",
+       "wartosci": [
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         110.0
+        ],
+        [
+         114.0
+        ],
+        [
+         118.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód talii -B",
+       "wartosci": [
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ],
+        [
+         84.0
+        ],
+        [
+         88.0
+        ],
+        [
+         92.0
+        ],
+        [
+         96.0
+        ],
+        [
+         100.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód bioder - C",
+       "wartosci": [
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         110.0
+        ],
+        [
+         114.0
+        ],
+        [
+         118.0
+        ],
+        [
+         122.0
+        ]
+       ]
+      },
+      "wzrost": {
+       "nazwa": "Wzrost",
+       "wartosci": [
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież (36–52)",
+     "url": "https://www.quiosque.pl/tabela-rozmiarow,13.html",
+     "rozmiary": [
+      "36",
+      "38",
+      "40",
+      "42",
+      "44",
+      "46",
+      "48",
+      "50",
+      "52"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "Obwód klatki piersiowej - A",
+       "wartosci": [
+        [
+         90.0
+        ],
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         110.0
+        ],
+        [
+         114.0
+        ],
+        [
+         118.0
+        ],
+        [
+         122.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód talii -B",
+       "wartosci": [
+        [
+         72.0
+        ],
+        [
+         76.0
+        ],
+        [
+         80.0
+        ],
+        [
+         84.0
+        ],
+        [
+         88.0
+        ],
+        [
+         92.0
+        ],
+        [
+         96.0
+        ],
+        [
+         100.0
+        ],
+        [
+         104.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód bioder - C",
+       "wartosci": [
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         110.0
+        ],
+        [
+         116.0
+        ],
+        [
+         118.0
+        ],
+        [
+         122.0
+        ],
+        [
+         126.0
+        ]
+       ]
+      },
+      "wzrost": {
+       "nazwa": "Wzrost",
+       "wartosci": [
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    }
+   ]
+  },
+  "Monnari": {
+   "url": "https://emonnari.pl/tabela-rozmiarow,13.html",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież (S–5XL)",
+     "url": "https://emonnari.pl/tabela-rozmiarow,13.html",
+     "rozmiary": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL",
+      "3XL",
+      "4XL",
+      "5XL"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "Obwód klatki piersiowej - A",
+       "wartosci": [
+        [
+         88.0
+        ],
+        [
+         92.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ],
+        [
+         116.0
+        ],
+        [
+         122.0
+        ],
+        [
+         128.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód talii -B",
+       "wartosci": [
+        [
+         70.0
+        ],
+        [
+         74.0
+        ],
+        [
+         80.0
+        ],
+        [
+         86.0
+        ],
+        [
+         92.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód bioder - C",
+       "wartosci": [
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ],
+        [
+         116.0
+        ],
+        [
+         122.0
+        ],
+        [
+         128.0
+        ],
+        [
+         134.0
+        ]
+       ]
+      },
+      "wzrost": {
+       "nazwa": "Wzrost",
+       "wartosci": [
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "ubrania",
+     "nazwa": "Odzież (36–52)",
+     "url": "https://emonnari.pl/tabela-rozmiarow,13.html",
+     "rozmiary": [
+      "36",
+      "38",
+      "40",
+      "42",
+      "44",
+      "46",
+      "48",
+      "50",
+      "52"
+     ],
+     "wymiary": {
+      "klatka": {
+       "nazwa": "Obwód klatki piersiowej - A",
+       "wartosci": [
+        [
+         88.0
+        ],
+        [
+         92.0
+        ],
+        [
+         96.0
+        ],
+        [
+         100.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ],
+        [
+         116.0
+        ],
+        [
+         122.0
+        ],
+        [
+         128.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "Obwód talii -B",
+       "wartosci": [
+        [
+         70.0
+        ],
+        [
+         74.0
+        ],
+        [
+         78.0
+        ],
+        [
+         82.0
+        ],
+        [
+         86.0
+        ],
+        [
+         92.0
+        ],
+        [
+         98.0
+        ],
+        [
+         104.0
+        ],
+        [
+         110.0
+        ]
+       ]
+      },
+      "biodra": {
+       "nazwa": "Obwód bioder - C",
+       "wartosci": [
+        [
+         94.0
+        ],
+        [
+         98.0
+        ],
+        [
+         102.0
+        ],
+        [
+         106.0
+        ],
+        [
+         110.0
+        ],
+        [
+         116.0
+        ],
+        [
+         122.0
+        ],
+        [
+         128.0
+        ],
+        [
+         134.0
+        ]
+       ]
+      },
+      "wzrost": {
+       "nazwa": "Wzrost",
+       "wartosci": [
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ],
+        [
+         168.0
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    },
+    {
+     "dzial": "d",
+     "grupa": "buty",
+     "nazwa": "Obuwie damskie",
+     "url": "https://emonnari.pl/tabela-rozmiarow,13.html",
+     "rozmiary": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41"
+     ],
+     "wymiary": {
+      "stopa": {
+       "nazwa": "Długość stopy w centymetrach",
+       "wartosci": [
+        [
+         23.0
+        ],
+        [
+         24.0
+        ],
+        [
+         24.5
+        ],
+        [
+         25.0
+        ],
+        [
+         26.0
+        ],
+        [
+         26.5
+        ]
+       ]
+      }
+     },
+     "inne": [],
+     "aliasy": []
+    }
+   ]
+  },
+  "Kazar": {
+   "url": "https://kazar.com/tabele-rozmiarow",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "d",
+     "grupa": "buty",
+     "nazwa": "Obuwie damskie",
+     "url": "https://kazar.com/tabele-rozmiarow",
+     "rozmiary": [
+      "35",
+      "35.5",
+      "36",
+      "36.5",
+      "37",
+      "37.5",
+      "38",
+      "38.5",
+      "39",
+      "39.5",
+      "40",
+      "40.5",
+      "41",
+      "42"
+     ],
+     "wymiary": {
+      "stopa": {
+       "nazwa": "Długość stopy w cm:",
+       "wartosci": [
+        [
+         22.5
+        ],
+        [
+         22.7
+        ],
+        [
+         23.0
+        ],
+        [
+         23.5
+        ],
+        [
+         24.0
+        ],
+        [
+         24.2
+        ],
+        [
+         24.5
+        ],
+        [
+         24.7
+        ],
+        [
+         25.0
+        ],
+        [
+         25.5
+        ],
+        [
+         26.0
+        ],
+        [
+         26.2
+        ],
+        [
+         26.5
+        ],
+        [
+         27.0
+        ]
+       ]
+      }
+     },
+     "inne": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "buty",
+     "nazwa": "Obuwie męskie",
+     "url": "https://kazar.com/tabele-rozmiarow",
+     "rozmiary": [
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45",
+      "46",
+      "47",
+      "48"
+     ],
+     "wymiary": {
+      "stopa": {
+       "nazwa": "Długość stopy w cm:",
+       "wartosci": [
+        [
+         25.0
+        ],
+        [
+         26.0
+        ],
+        [
+         26.5
+        ],
+        [
+         27.0
+        ],
+        [
+         28.0
+        ],
+        [
+         28.5
+        ],
+        [
+         29.0
+        ],
+        [
+         30.0
+        ],
+        [
+         30.5
+        ],
+        [
+         31.0
+        ]
+       ]
+      }
+     },
+     "inne": []
+    }
+   ]
+  },
+  "Bytom": {
+   "url": "https://bytom.com.pl/tabela-rozmiarow-1",
+   "sprawdzono": "2026-11-15",
+   "tabele": [
+    {
+     "dzial": "m",
+     "grupa": "ubrania",
+     "nazwa": "Wymiary ciała (S–XXXL)",
+     "url": "https://bytom.com.pl/tabela-rozmiarow-1",
+     "rozmiary": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL",
+      "XXXL"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "WZROST",
+       "wartosci": [
+        [
+         170.0,
+         182.0
+        ],
+        [
+         170.0,
+         182.0
+        ],
+        [
+         170.0,
+         182.0
+        ],
+        [
+         176.0,
+         194.0
+        ],
+        [
+         176.0,
+         194.0
+        ],
+        [
+         176.0,
+         194.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "OBWÓD KLATKI PIERSIOWEJ",
+       "wartosci": [
+        [
+         94.0,
+         97.0
+        ],
+        [
+         98.0,
+         101.0
+        ],
+        [
+         102.0,
+         105.0
+        ],
+        [
+         106.0,
+         109.0
+        ],
+        [
+         110.0,
+         113.0
+        ],
+        [
+         114.0,
+         117.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "OBWÓD TALII",
+       "wartosci": [
+        [
+         82.0,
+         85.0
+        ],
+        [
+         86.0,
+         89.0
+        ],
+        [
+         90.0,
+         93.0
+        ],
+        [
+         94.0,
+         97.0
+        ],
+        [
+         98.0,
+         101.0
+        ],
+        [
+         102.0,
+         106.0
+        ]
+       ]
+      }
+     },
+     "inne": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "marynarki",
+     "nazwa": "Garnitury i marynarki",
+     "url": "https://bytom.com.pl/tabela-rozmiarow-2",
+     "rozmiary": [
+      "48",
+      "50",
+      "52",
+      "54",
+      "56",
+      "58"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "WZROST",
+       "wartosci": [
+        [
+         170.0,
+         182.0
+        ],
+        [
+         170.0,
+         182.0
+        ],
+        [
+         170.0,
+         182.0
+        ],
+        [
+         176.0,
+         194.0
+        ],
+        [
+         176.0,
+         194.0
+        ],
+        [
+         176.0,
+         194.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "OBWÓD KLATKI PIERSIOWEJ",
+       "wartosci": [
+        [
+         94.0,
+         97.0
+        ],
+        [
+         98.0,
+         101.0
+        ],
+        [
+         102.0,
+         105.0
+        ],
+        [
+         106.0,
+         109.0
+        ],
+        [
+         110.0,
+         113.0
+        ],
+        [
+         114.0,
+         117.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "OBWÓD TALII",
+       "wartosci": [
+        [
+         82.0,
+         85.0
+        ],
+        [
+         86.0,
+         89.0
+        ],
+        [
+         90.0,
+         93.0
+        ],
+        [
+         94.0,
+         97.0
+        ],
+        [
+         98.0,
+         101.0
+        ],
+        [
+         102.0,
+         106.0
+        ]
+       ]
+      }
+     },
+     "inne": []
+    },
+    {
+     "dzial": "m",
+     "grupa": "dol",
+     "nazwa": "Spodnie",
+     "url": "https://bytom.com.pl/tabela-rozmiarow-3",
+     "rozmiary": [
+      "31/32",
+      "32/32",
+      "33/32",
+      "34/34",
+      "36/34",
+      "38/34"
+     ],
+     "wymiary": {
+      "wzrost": {
+       "nazwa": "WZROST",
+       "wartosci": [
+        [
+         170.0,
+         182.0
+        ],
+        [
+         170.0,
+         182.0
+        ],
+        [
+         170.0,
+         182.0
+        ],
+        [
+         176.0,
+         194.0
+        ],
+        [
+         176.0,
+         194.0
+        ],
+        [
+         176.0,
+         194.0
+        ]
+       ]
+      },
+      "klatka": {
+       "nazwa": "OBWÓD KLATKI PIERSIOWEJ",
+       "wartosci": [
+        [
+         94.0,
+         97.0
+        ],
+        [
+         98.0,
+         101.0
+        ],
+        [
+         102.0,
+         105.0
+        ],
+        [
+         106.0,
+         109.0
+        ],
+        [
+         110.0,
+         113.0
+        ],
+        [
+         114.0,
+         117.0
+        ]
+       ]
+      },
+      "talia": {
+       "nazwa": "OBWÓD TALII",
+       "wartosci": [
+        [
+         82.0,
+         85.0
+        ],
+        [
+         86.0,
+         89.0
+        ],
+        [
+         90.0,
+         93.0
+        ],
+        [
+         94.0,
+         97.0
+        ],
+        [
+         98.0,
+         101.0
+        ],
+        [
+         102.0,
+         106.0
+        ]
+       ]
+      }
+     },
+     "inne": []
+    }
+   ]
+  }
+ }
+}
