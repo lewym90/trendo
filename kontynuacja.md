@@ -153,3 +153,7 @@ Najlepsza droga dla każdego sklepu:
 ## 0.11.3 (15.11.2026): okazje z grafikami, ilustracje pustych ekranów
 - Arkusze 5 (damskie) i 6 (męskie) od użytkownika: 16 stylizacji okazji (img/okazje/okazja-<d|m>-<okazja>.webp) + pusty koszyk i dzwonek (img/puste/). tnij_arkusz.py obsługuje pole "katalog" w planie i większy rozmiar (560 px) dla zestawów.
 - Wyszukiwanie: okazje jako karuzela kafelków z grafiką stylizacji (zależną od działu), zaznaczenie w różowym złocie, wybór bez przerysowania ekranu, karuzela przewija się do wybranej okazji. Pusty koszyk i brak alertów z ilustracjami.
+
+## 0.11.4 (15.11.2026): powitanie w 3 slajdach, przedmioty w różowym złocie
+- Arkusz 7 (img/ikony/): tryby wyszukiwania (manekin, wieszak, torebka, aparat) zamiast cienkich ikon; puste ekrany: obserwowane (serce), brak wyników (lupa), trendy (klepsydra), brak promocji (metka); Ustawienia z miarą krawiecką.
+- Powitanie: 3 przesuwane slajdy (scroll-snap) z img/hero.jpg, img/powitanie-2.jpg (promocje), img/powitanie-3.jpg (trendy); przycisk „Dalej” → „Zacznijmy” na ostatnim, kropki klikalne.

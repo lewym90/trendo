@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.11.3';
+  const WERSJA = '0.11.4';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -63,17 +63,33 @@
   /* ---------- ekrany ---------- */
   const EKRANY = {};
 
+  const SLAJDY = [
+    ['img/hero.jpg', 'Moda\nTrendy\nStylizacje\nZakupy', 'Znajdzie to, czego szukasz, w dziesiątkach sklepów, sprawdzi, czy promocja jest prawdziwa, i dobierze resztę stylizacji zgodnie z trendami.'],
+    ['img/powitanie-2.jpg', 'Prawdziwe\npromocje', 'Szukamy w wielu sklepach naraz i porównujemy każdą obniżkę z najniższą ceną z 30 dni. Pozorne promocje oznaczamy od razu.'],
+    ['img/powitanie-3.jpg', 'Trendy\nna każdą\nokazję', 'Trendy z magazynów i raportów, każdy potwierdzony w co najmniej dwóch niezależnych źródłach. Dla kobiet i mężczyzn, na co dzień i na wielkie wyjścia.']
+  ];
   EKRANY.witaj = () => ({
     klasa: 'pelny', menu: false,
     html: `<section class="powitanie">
-      <div class="powitanie-foto" style="--foto:url('img/hero.jpg')"></div>
+      <div class="slajdy" id="slajdy">${SLAJDY.map(([foto, h, p], i) => `<div class="slajd" aria-label="Slajd ${i + 1} z ${SLAJDY.length}">
+        <div class="powitanie-foto" style="--foto:url('${foto}')"></div>
+        <div class="powitanie-tresc${i ? '' : ' wejscie'}"><h1>${h}</h1><p>${p}</p></div></div>`).join('')}</div>
       <div class="powitanie-znak">Trendo</div>
-      <div class="powitanie-tresc wejscie">
-        <h1>Moda\nTrendy\nStylizacje\nZakupy</h1>
-        <p>Znajdzie to, czego szukasz, w dziesiątkach sklepów, sprawdzi, czy promocja jest prawdziwa, i dobierze resztę stylizacji zgodnie z trendami.</p>
-        <button class="btn" data-akcja="zacznij">Zacznijmy ${IK.dalej}</button>
-        <div class="kropki" aria-hidden="true"><span class="tak"></span><span></span><span></span></div>
-      </div></section>`
+      <div class="powitanie-dol">
+        <button class="btn" data-akcja="witajDalej" id="witaj-btn">Dalej ${IK.dalej}</button>
+        <div class="kropki" role="tablist" aria-label="Slajdy">${SLAJDY.map((_, i) => `<button role="tab" aria-label="Slajd ${i + 1}" data-akcja="witajSlajd" data-i="${i}" class="${i ? '' : 'tak'}"></button>`).join('')}</div>
+      </div></section>`,
+    po: () => {
+      const sl = document.getElementById('slajdy');
+      const nr = () => Math.round(sl.scrollLeft / sl.clientWidth);
+      sl.addEventListener('scroll', () => {
+        const i = nr();
+        document.querySelectorAll('.kropki button').forEach((k, j) => k.classList.toggle('tak', j === i));
+        const b = document.getElementById('witaj-btn');
+        b.innerHTML = (i === SLAJDY.length - 1 ? 'Zacznijmy ' : 'Dalej ') + IK.dalej;
+        b.dataset.akcja = i === SLAJDY.length - 1 ? 'zacznij' : 'witajDalej';
+      }, { passive: true });
+    }
   });
 
   EKRANY.start = () => {
@@ -145,7 +161,7 @@
 
       <div class="sekcja">
         <p style="text-align:center;margin-bottom:12px;font-size:15px">Lub wybierz, czego potrzebujesz</p>
-        <div class="tryby">${tryby.map(([v, ik, n]) => `<button class="tryb" aria-pressed="${st.tryb === v}" data-akcja="tryb" data-v="${v}">${IK[ik]}${n}</button>`).join('')}</div>
+        <div class="tryby">${tryby.map(([v, , n]) => `<button class="tryb" aria-pressed="${st.tryb === v}" data-akcja="tryb" data-v="${v}"><img class="tryb-ikona" src="img/ikony/tryb-${v}.webp" alt="">${n}</button>`).join('')}</div>
       </div>
 
       <div class="sekcja">
@@ -228,7 +244,7 @@
         </div>
         <div class="chipy" style="margin-top:8px"><button class="chip" aria-pressed="${tylkoPrawdziwe}" data-akcja="tylkoPrawdziwe">${ikonaW('ok', 14)} Tylko potwierdzone promocje</button></div>
         <p class="szary maly" style="margin:12px 0">${strefa === 'wiecej' ? 'Trochę ponad Twój cel, ale z wyraźnie lepszym materiałem albo dobrą obniżką.' : strefa === 'second' ? 'Ogłoszenia z serwisów z używaną odzieżą. Stan opisuje sprzedający.' : strefa === 'tanio' ? 'Wszystkie nowe produkty od najtańszego.' : 'Produkty w okolicy Twojej kwoty.'}</p>
-        ${lista.length ? `<div class="siatka">${lista.map(kartaProduktu).join('')}</div>` : `<div class="pusty"><p>Brak potwierdzonych promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystkie produkty.</p></div>`}`}`
+        ${lista.length ? `<div class="siatka">${lista.map(kartaProduktu).join('')}</div>` : `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-okazje.webp" alt=""><p>Brak potwierdzonych promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystkie produkty.</p></div>`}`}`
     };
   };
 
@@ -287,7 +303,7 @@
         <div class="chipy" style="margin-top:8px"><button class="chip" aria-pressed="${tylkoPrawdziwe}" data-akcja="tylkoPrawdziwe">${ikonaW('okazje', 14)} Tylko promocje</button></div>
         <p class="szary maly" style="margin:12px 0">${strefa === 'wiecej' ? `Od ${zl(Math.round(st.b1 * 1.15))} do ${zl(Math.round(st.b1 * 1.8))}: trochę ponad Twój cel.` : strefa === 'second' ? 'Ogłoszenia z serwisów z używaną odzieżą. Stan opisuje sprzedający.' : strefa === 'tanio' ? 'Wszystkie nowe produkty od najtańszego.' : `Do ${zl(Math.round(st.b1 * 1.15))}, czyli w okolicy Twojej kwoty.`}</p>
         ${zamiast}
-        ${lista.length ? siatkaWynikow(lista, q) : `<div class="pusty"><p>${strefa === 'second' ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPrawdziwe ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Brak produktów w tej grupie. Zajrzyj do „Najtaniej”.'}</p></div>`}`}`
+        ${lista.length ? siatkaWynikow(lista, q) : `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/${tylkoPrawdziwe ? 'pusty-okazje' : 'pusty-wyniki'}.webp" alt=""><p>${strefa === 'second' ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPrawdziwe ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Brak produktów w tej grupie. Zajrzyj do „Najtaniej”.'}</p></div>`}`}`
     };
   }
 
@@ -458,9 +474,9 @@
       <div class="okladka wejscie" style="--foto:url('img/${s.plik}.jpg');margin-top:14px"><div><p class="maly" style="color:#E7CFC6;margin:0 0 6px">Kluczowe trendy</p><h2>${s.nazwa}<br>${s.rok}</h2></div></div>
       <div class="chipy" style="margin-top:16px">
         ${[['wszystkie', 'Wszystkie'], ['rosnie', 'Rosnące'], ['nadchodzi', 'Nadchodzące'], ['szczyt', 'Na szczycie'], ['wygasa', 'Wygasające']].map(([v, n]) => `<button class="chip" aria-pressed="${filtrTrendow === v}" data-akcja="filtrTrendow" data-v="${v}">${n}</button>`).join('')}</div>
-      <div style="margin-top:4px">${!dane ? '<div class="pusty"><p>Sprawdzam aktualne trendy w źródłach…</p></div>'
-        : !prawdziwe ? `<div class="pusty"><p>${dane.blad ? 'Serwer trendów chwilowo nie odpowiada.' : 'Zbieramy pierwsze potwierdzone trendy. Pokażemy je, gdy napiszą o nich co najmniej dwa niezależne źródła.'}</p></div>`
-        : !lista.length ? '<div class="pusty"><p>W tej grupie nie ma teraz trendów.</p></div>'
+      <div style="margin-top:4px">${!dane ? '<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-trendy.webp" alt=""><p>Sprawdzam aktualne trendy w źródłach…</p></div>'
+        : !prawdziwe ? `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-trendy.webp" alt=""><p>${dane.blad ? 'Serwer trendów chwilowo nie odpowiada.' : 'Zbieramy pierwsze potwierdzone trendy. Pokażemy je, gdy napiszą o nich co najmniej dwa niezależne źródła.'}</p></div>`
+        : !lista.length ? '<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-trendy.webp" alt=""><p>W tej grupie nie ma teraz trendów.</p></div>'
         : lista.map((t) => {
           const [ik, nazwa, kol] = stat[t.status] || stat.szczyt;
           return `<div class="trend" style="cursor:pointer" data-akcja="zrodlaTrendu" data-i="${t.i}" role="button" tabindex="0">
@@ -485,7 +501,7 @@
         ${[['promocje', 'Promocje'], ['wyprzedaze', 'Wyprzedaże'], ['obserwowane', 'Obserwowane']].map(([v, n]) => `<button role="tab" aria-selected="${zakladkaOkazji === v}" data-akcja="zakladkaOkazji" data-v="${v}">${n}</button>`).join('')}</div>
       <div style="margin-top:16px">
       ${zakladkaOkazji === 'obserwowane'
-        ? (obs.length ? `<div class="elementy">${obs.map(wierszElementu).join('')}</div>` : `<div class="pusty">${ikonaW('serce', 34)}<p>Dotknij serca przy produkcie, żeby go obserwować. Gdy stanieje, zobaczysz to tutaj.</p><a class="btn maly" href="#/szukaj">Szukaj produktów</a></div>`)
+        ? (obs.length ? `<div class="elementy">${obs.map(wierszElementu).join('')}</div>` : `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-obserwowane.webp" alt=""><p>Dotknij serca przy produkcie, żeby go obserwować. Gdy stanieje, zobaczysz to tutaj.</p><a class="btn maly" href="#/szukaj">Szukaj produktów</a></div>`)
         : lista.map(kartaOkazji).join('')}
       </div>
       ${zakladkaOkazji !== 'obserwowane' ? '<p class="maly szary" style="margin-top:14px">Każdą promocję porównujemy z najniższą ceną z 30 dni przed obniżką. Pozorne oznaczamy na pomarańczowo.</p>' : ''}`
@@ -546,7 +562,8 @@
   EKRANY.profil = () => ({
     akt: 'start',
     html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Ustawienia</h1><span class="puste"></span></div>
-    <p class="szary" style="text-align:center;margin:-6px 0 16px">Zapisują się tylko na tym telefonie.</p>
+    <img class="ilustracja-ustawien" src="img/ikony/rozmiary.webp" alt="">
+    <p class="szary" style="text-align:center;margin:0 0 16px">Twoje rozmiary pomagają dobrać rzeczy. Zapisują się tylko na tym telefonie.</p>
     <div class="karta" style="padding:4px 16px">
       <div class="ustawienie"><label for="u-dzial">Dział na start</label><select id="u-dzial" data-ust="dzial"><option value="damskie" ${st.dzial === 'damskie' ? 'selected' : ''}>Damskie</option><option value="meskie" ${st.dzial === 'meskie' ? 'selected' : ''}>Męskie</option></select></div>
       <div class="ustawienie"><label for="u-gora">Rozmiar góry</label><select id="u-gora" data-ust="gora">${['', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map((r) => `<option value="${r}" ${st.ust.gora === r ? 'selected' : ''}>${r || 'nie podano'}</option>`).join('')}</select></div>
@@ -657,6 +674,8 @@
   /* ---------- akcje ---------- */
   const A = {
     zacznij() { st.witaj = true; zapisz(); location.hash = '#/start'; },
+    witajDalej() { const sl = document.getElementById('slajdy'); sl.scrollTo({ left: (Math.round(sl.scrollLeft / sl.clientWidth) + 1) * sl.clientWidth, behavior: 'smooth' }); },
+    witajSlajd(el) { const sl = document.getElementById('slajdy'); sl.scrollTo({ left: Number(el.dataset.i) * sl.clientWidth, behavior: 'smooth' }); },
     dzial(el) { st.dzial = el.dataset.v; zapisz(); render(); },
     tryb(el) {
       if (el.dataset.v === 'zdjecie') return A.zdjecie();
