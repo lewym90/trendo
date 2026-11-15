@@ -72,6 +72,51 @@ SPEC = {
 }
 
 
+# C&A: strona chroniona przed curl, tabele bierzemy z ich API (to samo okienko „Tabela rozmiarów”) przez przeglądarkę.
+CA_URL = "https://www.c-and-a.com/pl/pl/shop/"
+CA_HASH = "73fa97a372f4ae1dc23e893e9e2baaf3585d4d9ffa9c7b4315de960dce839c9f"
+CA_SPEC = [("1-top", "d", "ubrania", {"biust", "talia", "biodra"}), ("1-bottom", "d", "dol", {"talia", "biodra"}),
+           ("2-top", "m", "ubrania", {"klatka", "talia"}), ("2-bottom", "m", "dol", {"talia"})]
+
+
+def _ca(bledy):
+    import re
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception:
+        bledy.append("C&A: brak Playwright")
+        return []
+    lista = []
+    with sync_playwright() as pw:
+        b = pw.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+        try:
+            pg = b.new_context(locale="pl-PL", user_agent=R.UA if hasattr(R, "UA") else None).new_page()
+            pg.goto("https://www.c-and-a.com/pl/pl/shop/sukienki", timeout=45000, wait_until="domcontentloaded")
+            pg.wait_for_timeout(3000)
+            for klucz, dz, gr, wymagane in CA_SPEC:
+                kod, txt = pg.evaluate("""async ([k,h])=>{const r=await fetch('/api?o=sizeGuide',{method:'POST',headers:{'content-type':'application/json','x-language':'pl','x-country':'pl'},
+                    body:JSON.stringify({extensions:{persistedQuery:{version:1,sha256Hash:h}},variables:{key:k}})});return [r.status,await r.text()]}""", [klucz, CA_HASH])
+                try:
+                    sg = json.loads(txt)["data"]["sizeGuide"]
+                    tab = sg["tables"][0]
+                    siat = [list(r["values"]) for r in tab["data"]["rows"]]
+                except Exception:
+                    bledy.append(f"C&A: brak tabeli {klucz} ({kod})")
+                    continue
+                for w in siat:  # „Rozmiar (W = Talia w inches)” to wiersz rozmiarów, nie pomiar talii
+                    if w and w[0].lower().startswith("rozmiar"):
+                        w[0] = "Rozmiar"
+                        w[1:] = [re.sub(r"^W\s+", "W", x) for x in w[1:]]
+                t = R._z_siatki(siat)
+                if not t or not wymagane <= set(t["wymiary"]):
+                    bledy.append(f"C&A: tabela {klucz} bez oczekiwanych pomiarów")
+                    continue
+                lista.append({"dzial": dz, "grupa": gr, "nazwa": (sg.get("headline") or tab.get("headline") or "").replace(" - ", ", ").strip(), "url": CA_URL, **t})
+        finally:
+            b.close()
+    return lista
+
+
 def buduj():
     dzis = time.strftime("%Y-%m-%d")
     wyn, bledy = {}, []
@@ -98,6 +143,9 @@ def buduj():
             lista.append({"dzial": dz, "grupa": gr, "nazwa": naz, "url": adresy[nr], **t})
         if lista:
             wyn[sklep] = {"url": adresy[0], "sprawdzono": dzis, "tabele": lista}
+    ca = _ca(bledy)
+    if ca:
+        wyn["C&A"] = {"url": CA_URL, "sprawdzono": dzis, "tabele": ca}
     return wyn, bledy
 
 

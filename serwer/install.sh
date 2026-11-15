@@ -117,24 +117,34 @@ print('  Ocena:', d.get('klasyfikacja'), '| wszystkie:', len(P), '| pasuje na wi
 import json,sys; d=json.load(sys.stdin); P=d['produkty']
 print('  Sklepów z wynikami:', sum(1 for s in d['sklepy'] if s['ile']), '| produktów:', len(P), '| czas:', d.get('czas'), 's')
 " || echo "Próbne wyszukiwanie damskie: brak odpowiedzi."
-  echo; echo "Rozmiarówka (tabela ze strony produktu albo ogólna tabela sklepu; po jednym produkcie z kilku sklepów):"
-  curl -fsS --max-time 60 "https://$HOST/trendo-api/szukaj?q=sukienka&dzial=damskie" -o /tmp/trendo-rozm.json && "$PY" - "$HOST" <<'PYEOF2'
-import json, sys, urllib.request
-P = json.load(open("/tmp/trendo-rozm.json"))["produkty"]
-byly, n = set(), 0
-for p in P:
-    if p["sklep"] in byly or n >= 10:
-        continue
-    byly.add(p["sklep"]); n += 1
+  echo; echo "Rozmiarówka (po jednym produkcie z każdego sklepu, może potrwać 2-3 minuty):"
+  "$PY" - "$HOST" <<'PYEOF2'
+import json, sys, urllib.request, urllib.parse
+from concurrent.futures import ThreadPoolExecutor
+H = sys.argv[1]
+def daj(u, t=200):
+    return json.load(urllib.request.urlopen(u, timeout=t))
+wybrane = {}
+for q, dz in (("koszula", "meskie"), ("sukienka", "damskie"), ("jeansy", "damskie"), ("botki", "damskie")):
     try:
-        d = json.load(urllib.request.urlopen(f"https://{sys.argv[1]}/trendo-api/rozmiary?id={p['id']}", timeout=40))
-        t = d.get("tabela") or {}
-        opis = {"produkt": "ze strony produktu", "sklep": "ogólna sklepu"}.get(d.get("zrodlo"), "brak tabeli w sklepie")
-        print(f"  {p['sklep']:12} {opis:22} {', '.join(t.get('rozmiary', [])[:6])}")
+        for p in daj(f"https://{H}/trendo-api/szukaj?q={urllib.parse.quote(q)}&dzial={dz}")["produkty"]:
+            wybrane.setdefault(p["sklep"], (q, p))
     except Exception as e:
-        print(f"  {p['sklep']:12} błąd: {str(e)[:50]}")
+        print(f"  szukanie {q}: {str(e)[:50]}")
+def sprawdz(sk):
+    q, p = wybrane[sk]
+    try:
+        d = daj(f"https://{H}/trendo-api/rozmiary?id={p['id']}", 60)
+        t = d.get("tabela") or {}
+        opis = "przelicznik EU/IT/UK" if t.get("rodzaj") == "przelicznik" else {"produkt": "dla tego produktu", "sklep": "ogólna sklepu"}.get(d.get("zrodlo"), "brak tabeli")
+        g = (t.get("grupy") or {}).get("nazwa")
+        return f"  {sk:13} {q:9} {opis:20} {', '.join(t.get('rozmiary', [])[:5])}{'  (wybór: ' + g.lower() + ')' if g else ''}"
+    except Exception as e:
+        return f"  {sk:13} {q:9} błąd: {str(e)[:50]}"
+with ThreadPoolExecutor(5) as ex:
+    for linia in ex.map(sprawdz, sorted(wybrane)):
+        print(linia)
 PYEOF2
-  rm -f /tmp/trendo-rozm.json
   echo; echo "Okazje dnia (tylko obniżki sprawdzone, rosną z każdym wyszukiwaniem i nocnym przeglądem sklepów):"
   for dz in damskie meskie; do curl -fsS --max-time 30 "https://$HOST/trendo-api/okazje?dzial=$dz" | "$PY" -c "
 import json,sys; d=json.load(sys.stdin); o=d['okazje']

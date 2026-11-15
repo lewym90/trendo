@@ -454,3 +454,10 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .pom-lista div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--linia);padding:4px 0}
 .pom-lista b{font-weight:500;white-space:nowrap}
 .pom-et.pod{bottom:auto;top:4px}
+
+.rozm-grupy{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
+.rozm-grupy .maly{margin-right:4px}
+.rozm-grupy button{height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--linia2);background:transparent;color:var(--tekst2);font-size:13px}
+.rozm-grupy button[aria-pressed="true"]{border-color:var(--roz);color:var(--akcent-jasny);background:rgba(var(--jasny-rgb),.05)}
+.rozm-odp{margin:12px 0 0;font-size:14px;line-height:1.7;color:var(--tekst2)}
+.rozm-odp b{color:var(--tekst);font-weight:500}

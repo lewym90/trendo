@@ -332,7 +332,9 @@ def _bigstar(sklep, url, dzial):
         wyn.append(produkt(sklep, nazwa, cena, "https://bigstar.pl/p-" + x["slug"], (im.get("base_path") or "") + plik if plik else None,
                            stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
                            extra={"omnibus": om if stara and stara > cena else None, "rozmiary": rozm or None,
-                                  "plec_sklepu": "meskie" if "męsk" in kat else "damskie" if "damsk" in kat else None}))
+                                  "plec_sklepu": "meskie" if "męsk" in kat else "damskie" if "damsk" in kat else None,
+                                  "rozm_ref": {"war": x.get("variation_id"),
+                                               "mapa": {str(r.get("variation_id")): r.get("label") for r in x.get("size_variants") or []}}}))
     return wyn, "ok"
 
 

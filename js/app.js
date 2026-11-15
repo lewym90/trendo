@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.17.0';
+  const WERSJA = '0.18.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -490,7 +490,7 @@
   function kartaRozmiarowki(p, d) {
     const rp = listaRozmiarow(p.rozmiary);
     const naglowek = (prawa) => `<div class="rozm-gora"><b>Rozmiarówka</b>${prawa ? `<span class="maly szary">${prawa}</span>` : ''}</div>`;
-    const chipy = (lista) => `<div class="rozmiary">${lista.map(({ r, ok, wyb }) => `<button aria-pressed="${!!wyb}" ${ok ? '' : `class="niedostepny" aria-label="${esc(r)}, niedostępny"`} data-akcja="rozmiar" data-id="${p.id}" data-v="${esc(r)}">${esc(r)}</button>`).join('')}</div>`;
+    const chipy = (lista) => `<div class="rozmiary">${lista.map(({ r, et, ok, wyb }) => `<button aria-pressed="${!!wyb}" ${ok ? '' : `class="niedostepny" aria-label="${esc(et || r)}, niedostępny"`} data-akcja="rozmiar" data-id="${p.id}" data-v="${esc(r)}">${esc(et || r)}</button>`).join('')}</div>`;
     if (!prawdziwy(p)) return naglowek() + (rp.length ? chipy(rp.map((r) => ({ r, ok: !(p.brak || []).includes(r), wyb: st.rozmiar[p.id] === r }))) : '');
     if (!d || d.laduje) return naglowek() + (rp.length ? chipy(rp.map((r) => ({ r, ok: true, wyb: st.rozmiar[p.id] === r }))) : '') + '<p class="maly szary" style="margin:12px 0 0">Sprawdzam tabelę rozmiarów…</p>';
     const t = d.tabela;
@@ -499,13 +499,41 @@
       return naglowek() + (rp.length ? chipy(rp.map((r) => ({ r, ok: true, wyb: st.rozmiar[p.id] === r }))) : '')
         + `<p class="maly szary" style="margin:12px 0 0">${pow}${p.uzywany ? '' : ` <a class="link" href="${esc(p.url)}" target="_blank" rel="noopener">Sprawdź w sklepie</a>`}</p>`;
     }
+    // sam przelicznik (Showroom): rozmiar uniwersalny i jego odpowiedniki, bez centymetrów
+    if (t.rodzaj === 'przelicznik') {
+      let wi = Math.max(0, t.rozmiary.findIndex((r) => normR(r) === normR(st.rozmiar[p.id])));
+      if (!st.rozmiar[p.id]) wi = Math.max(0, t.rozmiary.findIndex((r) => normR(r) === 'M'));
+      const odp = (t.aliasy || []).filter((a) => a.rozmiary[wi]).map((a) => `${esc(a.nazwa)} <b>${esc(a.rozmiary[wi])}</b>`).join('<span class="szary"> · </span>');
+      return naglowek() + chipy(t.rozmiary.map((r, i) => ({ r, ok: true, wyb: i === wi })))
+        + `<p class="rozm-odp">${odp}</p>`
+        + (rp.length ? `<p class="maly" style="margin:8px 0 0"><span class="szary">Rozmiary w sklepie:</span> ${rp.map(esc).join(', ')}</p>` : '')
+        + `<p class="maly szary" style="margin:10px 0 0">Sklep podaje tylko przelicznik rozmiarów, bez wymiarów w cm. Marki w Showroom mają różne rozmiarówki. ${d.zrodlo_url ? `<a class="link" href="${esc(d.zrodlo_url)}" target="_blank" rel="noopener">Źródło</a>` : ''}</p>`;
+    }
     // kolumny tabeli i dostępność według rozmiarów sklepu
-    const kol = t.rozmiary.map((r, i) => ({ r, i, ok: !rp.length || rp.some((x) => zgodnyRozmiar(t, i, x)) }));
+    const dostT = !rp.length && t.dostepne && t.dostepne.length ? t.dostepne : null;
+    const kol = t.rozmiary.map((r, i) => ({ r, i, ok: dostT ? dostT.includes(r) : !rp.length || rp.some((x) => zgodnyRozmiar(t, i, x)) }));
     const pozaTabela = rp.filter((x) => !t.rozmiary.some((_, i) => zgodnyRozmiar(t, i, x)));
     const zapisany = st.rozmiar[p.id];
     let wi = kol.findIndex((k) => zapisany && (normR(k.r) === normR(zapisany) || zgodnyRozmiar(t, k.i, zapisany)));
-    if (wi < 0) { const dost = kol.filter((k) => k.ok); const m = dost.find((k) => /^M$|^38$|^50$/.test(normR(k.r).split('/')[0])); wi = (m || dost[Math.floor((dost.length - 1) / 2)] || kol[0]).i; }
-    const lista = kol.map((k) => ({ r: k.r, ok: k.ok, wyb: k.i === wi })).concat(pozaTabela.map((r) => ({ r, ok: true, wyb: zapisany === r })));
+    const G = t.grupy && t.grupy.lista && t.grupy.lista.length > 1 ? t.grupy : null;
+    // grupa rozmiaru: podana przez serwer albo część przed „/” („176-182/41” → „176-182”)
+    const grupaR = (r) => { const i = t.rozmiary.indexOf(r); return G && G.klucze ? G.klucze[i] : String(r).split('/')[0]; };
+    const krotka = (r) => { const i = t.rozmiary.indexOf(r); return G && G.etykiety ? G.etykiety[i] : String(r).slice(grupaR(r).length + 1); };
+    if (wi < 0) {
+      const gr = G ? G.lista[Math.floor((G.lista.length - 1) / 2)] : null;
+      const dost = kol.filter((k) => k.ok && (!gr || grupaR(k.r) === gr)), wszystkie = kol.filter((k) => !gr || grupaR(k.r) === gr);
+      const m = dost.find((k) => /^M$|^38$|^50$|^41$/.test(normR(k.r).split('/').pop()) || /^M$|^38$/.test(normR(k.r).split('/')[0]));
+      wi = (m || dost[Math.floor((dost.length - 1) / 2)] || wszystkie[0] || kol[0]).i;
+    }
+    // koszule i garnitury z grupą wzrostu: najpierw wzrost, potem rozmiar w tej grupie
+    const grWyb = G ? grupaR(t.rozmiary[wi]) : null;
+    const lista = kol.filter((k) => !G || grupaR(k.r) === grWyb).map((k) => ({ r: k.r, et: G ? krotka(k.r) : k.r, ok: k.ok, wyb: k.i === wi }))
+      .concat(G ? [] : pozaTabela.map((r) => ({ r, ok: true, wyb: zapisany === r })));
+    const wierszGrup = G ? `<div class="rozm-grupy"><span class="maly szary">${esc(G.nazwa)}</span>${G.lista.map((g) => {
+      const reszta = krotka(t.rozmiary[wi]);
+      const cel = t.rozmiary.find((r) => grupaR(r) === g && krotka(r) === reszta) || t.rozmiary.find((r) => grupaR(r) === g && kol[t.rozmiary.indexOf(r)].ok) || t.rozmiary.find((r) => grupaR(r) === g);
+      return `<button aria-pressed="${g === grWyb}" data-akcja="rozmiar" data-id="${p.id}" data-v="${esc(cel)}">${esc(g.replace('-', '–'))}${/^\d/.test(g) ? ' cm' : ''}</button>`;
+    }).join('')}</div>` : '';
     // szkic z liniami pomiarów
     const nazwaSz = szkicProduktu(p, d), sz = SZKICE && SZKICE[nazwaSz];
     const W = t.wymiary || {}, rysowane = new Set();
@@ -517,7 +545,7 @@
         const klucze = k === 'biust' || k === 'klatka' ? ['biust', 'klatka'] : k === 'stopa' ? ['wkladka', 'stopa'] : [k];
         const kk = klucze.find((x) => W[x] && wartosc(x)); if (!kk) return;
         rysowane.add(kk);
-        const nazwa = kk === 'klatka' && nazwaSz.startsWith('d') ? 'Biust' : kk === 'biust' && nazwaSz.startsWith('m') ? 'Klatka' : kk === 'wkladka' ? 'Długość wkładki' : kk === 'stopa' ? 'Długość stopy' : NAZWY_POM[kk];
+        const nazwa = t.rodzaj === 'rzecz' ? esc(czystaNazwa(W[kk].nazwa)) : kk === 'klatka' && nazwaSz.startsWith('d') ? 'Biust' : kk === 'biust' && nazwaSz.startsWith('m') ? 'Klatka' : kk === 'wkladka' ? 'Długość wkładki' : kk === 'stopa' ? 'Długość stopy' : NAZWY_POM[kk];
         poziome.push({ y, x0, x1, html: `${nazwa} <b>${cm(wartosc(kk))}</b>` });
       });
       // etykieta nad linią, a gdy zachodziłaby na poprzednią, pod linią (wysokość etykiety ok. 9% szkicu)
@@ -537,10 +565,12 @@
     const reszta = Object.entries(W).filter(([k]) => !rysowane.has(k)).map(([, v]) => v).concat(t.inne || [])
       .filter((v) => v.wartosci[wi]).map((v) => `<div><span class="szary">${esc(czystaNazwa(v.nazwa))}</span><b>${cm(v.wartosci[wi])}</b></div>`).join('');
     const k = kroj(p.nazwa);
-    const opis = d.zrodlo === 'produkt' ? 'Tabela ze strony tego produktu' : `Ogólna tabela sklepu${d.nazwa_tabeli ? ': ' + esc(d.nazwa_tabeli.toLowerCase()) : ''}, wymiary ciała`;
+    const jakie = t.rodzaj === 'rzecz' ? 'wymiary ubrania mierzone na płasko' : 'wymiary ciała';
+    const opis = d.zrodlo === 'produkt' ? `Tabela dla tego produktu${d.nazwa_tabeli ? ' (' + esc(d.nazwa_tabeli.charAt(0).toLowerCase() + d.nazwa_tabeli.slice(1)) + ')' : ''}, ${jakie}`
+      : `Ogólna tabela sklepu${d.nazwa_tabeli ? ': ' + esc(d.nazwa_tabeli.toLowerCase()) : ''}, ${jakie}`;
     const kiedy = d.sprawdzono ? `, sprawdzona ${new Date(d.sprawdzono).toLocaleDateString('pl-PL')}` : '';
-    return naglowek('w cm') + chipy(lista)
-      + (rp.length ? '' : '<p class="maly szary" style="margin:8px 0 0">Dostępność rozmiarów sprawdzisz w sklepie.</p>')
+    return naglowek('w cm') + wierszGrup + chipy(lista)
+      + (rp.length || dostT ? '' : '<p class="maly szary" style="margin:8px 0 0">Dostępność rozmiarów sprawdzisz w sklepie.</p>')
       + (sz ? `<div class="pom-szkic" style="aspect-ratio:${sz.w}/${sz.h}"><img src="img/rozmiary/${nazwaSz}.webp" alt="">${linie}</div>` : '')
       + (reszta ? `<div class="pom-lista">${reszta}</div>` : '')
       + (k ? `<p class="maly" style="margin:10px 0 0">Krój: <b style="font-weight:500">${k}</b> <span class="szary">(z nazwy produktu)</span></p>` : '')

@@ -18,7 +18,7 @@ with _baza_blokada:
     DB.commit()
 
 POLA = ("id", "sklep", "nazwa", "cena", "stara", "stara_sklepu", "omnibus", "url", "zdjecie", "zrodlo", "dzial", "plec_sklepu",
-        "weryf", "rozmiary", "sprawdzono", "dostepnosc", "uzywany", "stan", "kolor", "material")
+        "weryf", "rozmiary", "sprawdzono", "dostepnosc", "uzywany", "stan", "kolor", "material", "rozm_ref")
 ODSWIEZ_CO = 12 * 3600
 
 
