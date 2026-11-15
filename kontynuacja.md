@@ -181,3 +181,7 @@ Najlepsza droga dla każdego sklepu:
 - nadzor: sneakersy na smart casual z wnioskowania tylko w stonowanym kolorze (STONOWANE; kodeks 6 „minimalistyczne”); wesele z wnioskowania „wieczór f≥4” nie dla błyszczących pojedynczych części (cekiny_brokat_metaliczny i r ≠ sukienka; kodeks 14). Kalibracja na 6 przebiegach: 0 krytycznych we wszystkich, ukryte dobre bez zmian (42–52). Kodeks uzupełniony o te interpretacje.
 - kontrola: zamiast odcisku — gdy są ≥2 zapisane przebiegi tego modelu z aktualną OCENA_WERSJA i kompletem produktów wzorca, instalator odtwarza je z aktualnymi zasadami i wzorcem (0 USD, test haseł z pamięci). Płatna kontrola tylko po zmianie polecenia AI (OCENA_WERSJA), modelu albo z --wymus.
 - Koszt AI do 15.11: 7,49 z 12 USD miesięcznie (głównie kontrole przy instalacjach); od teraz instalacje nie kosztują.
+
+## 0.12.2 (15.11.2026): kafelki brakujących trendów
+- Instalacja 0.12.1: kontrola bez kosztów na 6 przebiegach, 0 krytycznych, hasła 28/28.
+- Arkusze 9 (3×3) i 10 (2×2) wycięte: 10 męskich trendów + Broszki + na zapas Dzianinowa estetyka (d) i Buty z noskiem w szpic (d). Pokrycie: 30/30 damskich i 20/20 męskich.

@@ -30,7 +30,10 @@
     "welurowe dresy": "trendy/d-welurowy-dres",
     "koronkowe bufiaste spodnie": "trendy/d-koronkowe-bufiaste-szorty",
     "wzory zwierzece": "trendy/d-wzory-zwierzece",
-    "buty celine reebok": "trendy/retro-sneakersy"
+    "buty celine reebok": "trendy/retro-sneakersy",
+    "broszki": "trendy/d-broszki",
+    "dzianinowa estetyka": "trendy/d-dzianinowa-estetyka",
+    "buty z noskiem w szpic": "trendy/d-buty-szpic"
   },
   "m": {
     "krata": "wzorce/m-koszule-3",
@@ -47,7 +50,17 @@
     "kurtki typu barn jacket": "trendy/m-barn-jacket",
     "zamszowe sneakersy": "trendy/m-zamszowe-sneakersy",
     "fredzle": "trendy/m-fredzle",
-    "sztruksowe spodnie": "trendy/m-sztruksowe-spodnie"
+    "sztruksowe spodnie": "trendy/m-sztruksowe-spodnie",
+    "biale jeansy": "trendy/m-biale-jeansy",
+    "proste t shirty": "trendy/m-proste-tshirty",
+    "kurtki trucker": "trendy/m-kurtka-trucker",
+    "plaszcz o ponadczasowym kroju": "trendy/m-plaszcz-ponadczasowy",
+    "dzianinowa estetyka": "trendy/m-dzianinowa-estetyka",
+    "strukturalna odziez wierzchnia": "trendy/m-strukturalny-plaszcz",
+    "sportowe buty do biegania": "trendy/m-buty-do-biegania",
+    "ubrania z efektem mokrego polysku": "trendy/m-mokry-polysk",
+    "czarne garnitury": "trendy/m-czarny-garnitur",
+    "dwurzedowe marynarki": "trendy/m-dwurzedowa-marynarka"
   },
   "cechy": {
     "wzor": {
