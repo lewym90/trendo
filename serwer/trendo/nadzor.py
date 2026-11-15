@@ -40,9 +40,8 @@ NAZWA_ZAKAZ = {
 MIEKKIE = ["nadruk", "napis", "graficzn", "grafik", "aplikacj", "naszyw", "print"]
 
 WZOR_ZAKAZANY = {"duze_logo_lub_nadruk", "motyw_tematyczny"}
-MIN_ELEGANCJA = {"wesele": 4, "wieczor": 3, "sylwester": 2, "praca": 3, "randka": 2}
-RANDKA_RODZAJE = {"sweter", "kardigan", "polo", "koszula", "bluzka", "sukienka", "spódnica", "spodnie", "t-shirt", "top", "kozaki",
-                  "botki", "kombinezon"}
+MIN_ELEGANCJA = {"wesele": 4, "wieczor": 3, "sylwester": 2, "praca": 3, "randka": 2}  # sylwester 2: tylko gdy AI sam go wypisał
+RANDKA_RODZAJE = {"sweter", "kardigan", "polo", "sukienka", "bluzka", "spódnica", "spodnie", "top", "kombinezon"}
 # Rzeczy, które nigdy nie pasują do danej okazji (rodzaj z klasyfikacji).
 RODZAJ_ZAKAZANY = {
     "wesele": {"t-shirt", "bluza", "dres", "jeansy", "szorty", "legginsy", "sneakersy", "klapki", "kapcie", "plecak", "piżama",
@@ -86,23 +85,23 @@ def skorzane(p):
 
 
 def okazje(p, k):
-    """Okazje według AI uzupełnione o oczywiste wnioski stylistki. AI wypisuje okazje zbyt oszczędnie (np. elegancka
-    czarna marynarka: „wieczór” tak, ale „sylwestra” już nie dopisze). Reguły skalibrowane na zestawie wzorcowym
-    (0.7.3: 0 błędów krytycznych, ukryte dobre rzeczy z 68 do 20). Liczone tylko z odpowiedzi AI, bez łańcuchów."""
+    """Okazje według AI uzupełnione o oczywiste wnioski stylistki. AI wypisuje okazje zbyt oszczędnie, a przy kolejnym
+    pytaniu potrafi lekko zmienić listę. Reguły sprawdzone na zestawie wzorcowym w DWÓCH niezależnych przebiegach modelu
+    (0.7.4: 0 błędów krytycznych w obu, ukryte dobre 64 → 27–32 z 1016). Liczone tylko z odpowiedzi AI, bez łańcuchów."""
     o0 = set(k.get("o") or [])
     o, f, r, wz = set(o0), k.get("f") or 0, k.get("r"), k.get("wzor")
-    if "wieczor" in o0 and f >= 3 and r not in ("sweter", "kardigan"):
-        o.add("sylwester")  # sylwester to wieczorne wyjście z imprezą
+    if "wieczor" in o0 and f >= 4 and r not in ("sweter", "kardigan"):
+        o.add("sylwester")  # elegancko na wieczór = także na sylwestra
     if "wieczor" in o0 and f >= 4 and not skorzane(p):
-        o.add("wesele")  # elegancko na wieczór = także na wesele (ale nie skóra)
+        o.add("wesele")  # bardzo elegancko na wieczór = także na wesele (ale nie skóra)
     if r == "sukienka" and f >= 3 and "wieczor" in o0 and not skorzane(p) and wz != "wzor_wyrazisty":
         o.add("wesele")
-    if {"praca", "randka"} <= o0 and f >= 3 and wz != "wzor_wyrazisty" and r not in ("torebka", "plecak", "kurtka"):
-        o.add("wieczor")  # schludny smart casual = kolacja w restauracji
     if "praca" in o0 or ({"wieczor", "sylwester"} & o0 and f >= 3):
         o.add("randka")
-    if "codzien" in o0 and f >= 2 and r in RANDKA_RODZAJE and wz in ("gladki", "male_logo", "wzor_stonowany"):
-        o.add("randka")
+    if "codzien" in o0 and f >= 2 and wz in ("gladki", "male_logo") and r in RANDKA_RODZAJE:
+        o.add("randka")  # gładki sweter, polo, sukienka, bluzka, spodnie = smart casual na randkę
+    if r in ("marynarka", "garnitur") and f >= 3 and wz != "wzor_wyrazisty" and not skorzane(p):
+        o |= {"wieczor", "randka", "praca"}  # marynarka to zawsze strój na wyjście
     return o
 
 

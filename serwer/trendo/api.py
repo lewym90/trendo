@@ -16,7 +16,7 @@ import threading
 from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.7.3"
+WERSJA = "0.7.4"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -236,7 +236,8 @@ class Obsluga(BaseHTTPRequestHandler):
                 return self._wyslij(200, {"ok": True})
             if u.path == "/kontrola":
                 return self._wyslij(200, {"wynik": json.loads(klasyfikator.ustawienie("kontrola_wynik") or "null"),
-                                          "szczegoly": json.loads(klasyfikator.ustawienie("kontrola_szczegoly") or "[]")})
+                                          "szczegoly": json.loads(klasyfikator.ustawienie("kontrola_szczegoly") or "[]"),
+                                          "przebiegi": json.loads(klasyfikator.ustawienie("kontrola_przebiegi") or "[]")})
             if u.path == "/zgloszenia":
                 with _baza_blokada:
                     r = DB.execute("SELECT * FROM zgloszenia ORDER BY czas DESC LIMIT 300").fetchall()

@@ -113,9 +113,15 @@ def main():
     if len(modele) > 1 or not klasyfikator.ustawienie("model_ai"):
         klasyfikator.ustawienie("model_ai", naj["model"])
     klasyfikator.ustawienie("kontrola_szczegoly", json.dumps(naj["szczegoly"], ensure_ascii=False))
+    # Zbieramy kolejne przebiegi (model odpowiada za każdym razem odrobinę inaczej): reguły kalibrujemy na wszystkich naraz.
+    przebiegi = json.loads(klasyfikator.ustawienie("kontrola_przebiegi") or "[]")
+    przebiegi = (przebiegi + [{"czas": int(time.time()), "model": naj["model"], "szczegoly": naj["szczegoly"]}])[-6:]
+    klasyfikator.ustawienie("kontrola_przebiegi", json.dumps(przebiegi, ensure_ascii=False))
     klasyfikator.ustawienie("kontrola_wynik", json.dumps({
         "czas": int(time.time()), "model": naj["model"], "krytyczne": len(naj["krytyczne"]), "sprawdzen": naj["sprawdzen"],
         "trafione": naj["trafione"], "ukryte_dobre": len(naj["ukryte_dobre"]), "plec": len(naj["plec"])}))
+    if naj["krytyczne"]:
+        print("\nUWAGA: są błędy krytyczne. Wklej ten wynik, poprawię zasady.")
     print(f"\nKONTROLA: model w użyciu: {naj['model']}. Błędy krytyczne: {len(naj['krytyczne'])}, "
           f"zgodność z wzorcem {round(100 * naj['trafione'] / max(1, naj['sprawdzen']))}%.")
 
