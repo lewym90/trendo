@@ -57,12 +57,24 @@ fi
 sleep 6
 if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; then
   echo; echo "Status: OK"; cat /tmp/trendo-zdrowie.json; echo
-  echo; echo "Próbne wyszukiwanie (skórzane spodnie):"
-  curl -fsS "https://$HOST/trendo-api/szukaj?q=sk%C3%B3rzane%20spodnie&dzial=damskie" | "$PY" -c "import json,sys; d=json.load(sys.stdin); [print(' ', s['nazwa'], '-', s['stan'], '-', s['ile'], 'produktów') for s in d['sklepy']]"
+  echo; echo "Kontrola jakości oceny na produktach wzorcowych (pierwszy raz kilka minut)..."
+  ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && "$PY" -m trendo.kontrola ) || echo "Kontrola: błąd uruchomienia."
+  systemctl restart trendo; sleep 6
+  echo; echo "Próbne wyszukiwanie (koszula męska na wieczór, pierwsze może potrwać do 2 minut):"
+  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie&okazja=wieczor" | "$PY" -c "
+import json,sys; d=json.load(sys.stdin)
+[print(' ', s['nazwa'], '-', s['stan'], '-', s['ile'], 'produktów') for s in d['sklepy']]
+print('  Ocena:', d.get('klasyfikacja'), '| pokazane:', len(d['produkty']), '| w tym Może pasować:', d.get('moze'), '| pominięte:', d.get('pominiete'), '| czas:', d.get('czas'), 's')
+for p in [p for p in d['produkty'] if p.get('pewnosc') == 'tak'][:8]: print('   +', p['sklep'], '-', p['nazwa'][:70])
+" || echo "Próbne wyszukiwanie: brak odpowiedzi."
 else
   echo "Status: BŁĄD, https://$HOST/trendo-api/zdrowie nie odpowiada."
   journalctl -u trendo -n 15 --no-pager
 fi
+echo; echo "Twoje pozostałe aplikacje:"
+for u in "https://$HOST/smart-home-push/health" "https://planer.$HOST/" "https://dom.$HOST/" "https://$HOST/nav-tts/"; do
+  echo "  $(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$u")  $u"
+done
 echo; echo "TRENDO GOTOWE"
 }
 main </dev/null

@@ -1,33 +1,73 @@
-"""Klasyfikator produktów (Gemini). Ocenia WYŁĄCZNIE to, co podał sklep (nazwa, sklep, materiał, kategoria):
-rodzaj rzeczy, dla kogo, poziom elegancji i okazje. Niczego nie dopisuje do oferty.
-Oceny zapisujemy w bazie na stałe (produkt się nie zmienia), więc każdy produkt oceniamy raz.
-Klucz: /root/.trendo-gemini (albo zmienna GEMINI_KEY)."""
-import json, os, time
+"""Klasyfikator produktów (płatne Gemini). Ocenia ZDJĘCIE i nazwę produktu ze sklepu:
+rodzaj rzeczy, dla kogo, elegancję, wzór (gładki, małe logo, duży nadruk...) i okazje. Niczego nie dopisuje do oferty.
+Ocena jest tylko jednym głosem: ostateczną decyzję podejmuje nadzor.py.
+Każdy produkt oceniamy raz i zapisujemy na stałe (tabela klasy2).
+Klucz: /root/.trendo-gemini (albo zmienna GEMINI_KEY). Dzienny budżet: GEMINI_BUDZET_DZIENNY (USD, domyślnie 0.4)."""
+import base64, json, os, re, time
 from concurrent.futures import ThreadPoolExecutor
-from .wspolne import DB, _baza_blokada, pobierz_json, licznik
+from .wspolne import DB, _baza_blokada, licznik, pobierz, pobierz_json
 
-RODZAJE = ["koszula", "bluzka", "t-shirt", "top", "sweter", "kardigan", "bluza", "marynarka", "kamizelka", "kurtka", "płaszcz",
+RODZAJE = ["koszula", "bluzka", "t-shirt", "polo", "top", "sweter", "kardigan", "bluza", "marynarka", "kamizelka", "kurtka", "płaszcz",
            "sukienka", "spódnica", "spodnie", "jeansy", "szorty", "legginsy", "kombinezon", "garnitur", "dres",
            "buty", "botki", "kozaki", "sneakersy", "półbuty", "szpilki", "czółenka", "mokasyny", "baleriny", "sandały", "klapki", "kapcie",
            "torebka", "plecak", "portfel", "pasek", "biżuteria", "zegarek", "okulary", "czapka", "kapelusz", "szal", "rękawiczki",
            "krawat", "bielizna", "piżama", "strój kąpielowy", "skarpety", "rajstopy", "kosmetyk", "dom", "inne"]
 OKAZJE = ["codzien", "praca", "randka", "wieczor", "wesele", "sylwester", "wyjazd", "sport", "plaza", "dom"]
 PLEC = ["damskie", "meskie", "unisex", "dzieciece"]
+WZORY = ["gladki", "male_logo", "duze_logo_lub_nadruk", "wzor_stonowany", "wzor_wyrazisty", "motyw_tematyczny"]
 BUTY = {"botki", "kozaki", "sneakersy", "półbuty", "szpilki", "czółenka", "mokasyny", "baleriny", "sandały", "klapki", "kapcie"}
-GRUPY = {"buty": BUTY, "spodnie": {"spodnie", "jeansy"}, "góra": {"koszula", "bluzka", "t-shirt", "top"},
-         "sweter": {"sweter", "kardigan"}, "kurtka": {"kurtka", "płaszcz"}, "płaszcz": {"płaszcz", "kurtka"}}
-MODELE = [m for m in os.environ.get("GEMINI_MODELE", "gemini-flash-lite-latest,gemini-2.5-flash-lite,gemini-flash-latest,gemini-2.5-flash").split(",") if m]
-LIMIT_DZIENNY = int(os.environ.get("GEMINI_LIMIT_DZIENNY", "900"))
 
-ZASADY = """Jesteś doświadczonym stylistą. Oceniasz produkty ze sklepów odzieżowych WYŁĄCZNIE na podstawie podanej nazwy,
-sklepu i opisu. Nie zgaduj ponad to, co wynika z nazwy. Dla każdego produktu zwróć:
-r = rodzaj rzeczy (jedna wartość z listy),
-p = dla kogo: damskie / meskie / unisex / dzieciece (gdy nazwa nie mówi, oceń po fasonie i sklepie; „unisex” tylko gdy naprawdę pasuje obu płciom),
-f = elegancja od 1 do 5 (1 = plaża, sport, dom, śmieszne nadruki; 2 = luźna codzienność; 3 = smart casual; 4 = elegancko; 5 = gala, smoking, suknia wieczorowa),
-o = lista okazji, na które ta rzecz NAPRAWDĘ się nadaje według dobrego stylisty:
-  codzien, praca (biuro, schludnie, bez krzykliwych nadruków), randka, wieczor (wyjście do restauracji, teatru, na drinka: elegancko lub smart, bez nadruków z logo i postaciami, bez motywów plażowych, sportowych, krzykliwych wzorów), wesele (strój wizytowy), sylwester (elegancko, błysk, cekiny), wyjazd, sport, plaza, dom.
-Rzeczy z nadrukami marek (np. Coca-Cola), postaci, napisów, motywów plażowych (palmy, flamingi), hawajskie, dresowe, sportowe NIE nadają się na wieczor, wesele, praca ani sylwester.
-Koszule z krótkim rękawem NIE nadają się na wesele."""
+DOMYSLNE_MODELE = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"]
+KANDYDACI_TESTU = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-2.5-flash-lite"]
+# Cena USD za milion tokenów (wejście, wyjście). Nieznany model liczymy drożej, żeby budżet był bezpieczny.
+CENY = [("3.8-flash", 0.75, 3.75), ("3.7-flash", 0.75, 3.75), ("3.5-flash-lite", 0.30, 2.50), ("flash-lite-latest", 0.30, 2.50),
+        ("3.1-flash-lite", 0.25, 1.50), ("2.5-flash-lite", 0.10, 0.40), ("2.5-flash", 0.30, 2.50)]
+BUDZET = float(os.environ.get("GEMINI_BUDZET_DZIENNY", "0.4"))
+PACZKA = 10
+
+ZASADY = """Jesteś doświadczoną, surową stylistką. Oceniasz produkty ze sklepów odzieżowych na podstawie ZDJĘCIA i nazwy.
+Zdjęcie jest ważniejsze niż nazwa, bo sklepy nadają mylące nazwy. Oceniasz WYŁĄCZNIE produkt z nazwy, a nie resztę
+stylizacji modela (przy spodniach nie oceniaj koszuli modela). Marka nie podnosi ani nie obniża oceny.
+
+Dla każdego produktu zwróć:
+r = rodzaj rzeczy (jedna wartość z listy).
+p = dla kogo: damskie / meskie / unisex / dzieciece (po zdjęciu i kroju; unisex tylko gdy naprawdę dla obu płci).
+f = elegancja 1-5: 1 = sport, dres, plaża, dom, zabawne nadruki; 2 = luźna codzienność; 3 = smart casual;
+    4 = elegancko; 5 = wizytowo, gala.
+wzor = jak wygląda powierzchnia rzeczy:
+  gladki: jeden kolor, ewentualnie faktura, splot, prążek, jodełka, drobna pepitka;
+  male_logo: rzecz gładka z MAŁYM logo lub haftem marki (np. na piersi, kołnierzu, mankiecie, kilka centymetrów;
+    EA7, Calvin Klein, Lacoste, Ralph Lauren, BOSS, Tommy Hilfiger). MAŁE LOGO NIE OBNIŻA ELEGANCJI I NIE WYKLUCZA
+    ŻADNEJ OKAZJI. Oceniaj taką rzecz dokładnie tak, jakby logo nie było;
+  duze_logo_lub_nadruk: duże logo lub napis (np. przez pół klatki), grafika, nadruk, naszywki, aplikacje;
+  wzor_stonowany: klasyczne wzory: paski, krata garniturowa, kropki, drobne kwiaty, stonowany paisley;
+  wzor_wyrazisty: duże, kolorowe lub krzykliwe wzory: zwierzęce, moro, duże kwiaty, kolorowa krata, etniczne;
+  motyw_tematyczny: postaci, bajki, marki niemodowe (np. Coca-Cola), motywy świąteczne, zwierzątka, żartobliwe napisy.
+zgodne = true, gdy zdjęcie pokazuje rzecz z nazwy; false, gdy zdjęcie pokazuje wyraźnie co innego.
+o = okazje, na które ta rzecz NAPRAWDĘ się nadaje według dobrej stylistki (może być pusta lista):
+  codzien = na co dzień;
+  praca = biuro, smart lub business casual: stonowanie i schludnie;
+  randka = zadbanie i stylowo, smart casual dozwolony, ale nie sportowo ani niechlujnie;
+  wieczor = kolacja w dobrej restauracji, teatr, drink w eleganckim lokalu: elegancko lub dopracowany smart casual.
+    Mężczyźni: koszula z długim rękawem, marynarka, elegancki sweter lub golf z cienkiej dzianiny, spodnie materiałowe
+    lub eleganckie ciemne, skórzane półbuty, mokasyny, sztyblety. Gładka polówka z dobrego materiału najwyżej jako smart casual.
+    Kobiety: sukienka, elegancka bluzka (satyna, jedwab, koronka), spódnica, eleganckie spodnie, szpilki, czółenka, botki,
+    mała elegancka torebka;
+  wesele = gość na weselu: garnitur, marynarka, koszula z długim rękawem, eleganckie spodnie, skórzane buty wizytowe;
+    sukienka, kombinezon, elegancka spódnica i bluzka, szpilki, czółenka, mała torebka. Kobiety NIE na biało;
+  sylwester = impreza: elegancko i efektownie, cekiny, satyna, skóra, błysk, czerń;
+  wyjazd, sport, plaza, dom.
+Nigdy na wieczor, wesele, sylwester ani praca: bluzy (zwłaszcza z kapturem), dresy, legginsy, t-shirty z nadrukiem,
+flanela i kolorowa krata, moro, rzeczy plażowe i hawajskie, sneakersy sportowe, biegowe i do koszykówki, kurtki puchowe,
+parki, wiatrówki, plecaki, duże torby na zakupy, rzeczy z dziurami i przetarciami.
+Na wesele nigdy: dżins, len, t-shirty, polówki, swetry codzienne, sneakersy, krótki rękaw w koszulach męskich."""
+
+SCHEMAT_PROD = {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
+    "i": {"type": "INTEGER"}, "r": {"type": "STRING", "enum": RODZAJE}, "p": {"type": "STRING", "enum": PLEC},
+    "f": {"type": "INTEGER"}, "wzor": {"type": "STRING", "enum": WZORY}, "zgodne": {"type": "BOOLEAN"},
+    "o": {"type": "ARRAY", "items": {"type": "STRING", "enum": OKAZJE}}},
+    "required": ["i", "r", "p", "f", "wzor", "zgodne", "o"]}}
+SCHEMAT_HASLO = {"type": "OBJECT", "properties": {"r": {"type": "STRING", "enum": RODZAJE}}, "required": ["r"]}
 
 
 def _klucz():
@@ -46,90 +86,168 @@ def dostepny():
     return bool(_klucz())
 
 
-def _tabela():
+with _baza_blokada:
+    DB.execute("CREATE TABLE IF NOT EXISTS klasy2 (pid TEXT PRIMARY KEY, dane TEXT, model TEXT, czas INTEGER)")
+    DB.execute("CREATE TABLE IF NOT EXISTS ustawienia (klucz TEXT PRIMARY KEY, wartosc TEXT)")
+    DB.commit()
+
+
+def ustawienie(k, v=None):
     with _baza_blokada:
-        DB.execute("CREATE TABLE IF NOT EXISTS klasy (pid TEXT PRIMARY KEY, dane TEXT, czas INTEGER)")
-        DB.commit()
+        if v is not None:
+            DB.execute("INSERT OR REPLACE INTO ustawienia VALUES (?,?)", (k, v)); DB.commit()
+            return v
+        r = DB.execute("SELECT wartosc FROM ustawienia WHERE klucz=?", (k,)).fetchone()
+    return r[0] if r else None
 
 
-_tabela()
-_model_ok = {"nazwa": None}
+def modele():
+    wyb = ustawienie("model_ai")
+    return ([wyb] if wyb else []) + [m for m in DOMYSLNE_MODELE if m != wyb]
 
 
-def _zapytaj(tresc, schemat):
+def _cena(model):
+    for k, a, b in CENY:
+        if k in model:
+            return a, b
+    return 1.0, 6.0
+
+
+def koszt_dzis():
+    return licznik(time.strftime("ai-koszt-%Y-%m-%d")) / 1e6
+
+
+def _dolicz(model, uz):
+    a, b = _cena(model)
+    wej = uz.get("promptTokenCount", 0)
+    wyj = uz.get("candidatesTokenCount", 0) + uz.get("thoughtsTokenCount", 0)
+    usd = wej * a / 1e6 + wyj * b / 1e6
+    licznik(time.strftime("ai-koszt-%Y-%m-%d"), int(usd * 1e6) + 1)
+    return usd
+
+
+def _konfiguracje(model):
+    baza = {"temperature": 0, "responseMimeType": "application/json"}
+    m = dict(baza, mediaResolution="MEDIA_RESOLUTION_MEDIUM")
+    if model.startswith("gemini-2.5"):
+        return [dict(m, thinkingConfig={"thinkingBudget": 0}), baza]
+    return [dict(m, thinkingConfig={"thinkingLevel": "low"}), m, baza]
+
+
+_martwe = set()
+
+
+def _wywolaj(model, czesci, schemat, budzet=True):
+    """Zwraca (kod, odpowiedź JSON albo None)."""
     k = _klucz()
     if not k:
-        return None
-    dzien = time.strftime("gemini-%Y-%m-%d")
-    if licznik(dzien) >= LIMIT_DZIENNY:
-        return None
-    modele = ([_model_ok["nazwa"]] if _model_ok["nazwa"] else []) + [m for m in MODELE if m != _model_ok["nazwa"]]
-    for model in modele:
-        for myslenie in (True, False):
-            cfg = {"temperature": 0, "responseMimeType": "application/json", "responseSchema": schemat}
-            if myslenie:
-                cfg["thinkingConfig"] = {"thinkingBudget": 0}
-            licznik(dzien, 1)
+        return 0, None
+    if budzet and koszt_dzis() >= BUDZET:
+        return 402, None
+    for cfg in _konfiguracje(model):
+        cfg = dict(cfg, responseSchema=schemat)
+        cialo = json.dumps({"contents": [{"role": "user", "parts": czesci}], "generationConfig": cfg})
+        for proba in range(3):
             kod, d = pobierz_json(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                                  naglowki={"Content-Type": "application/json", "x-goog-api-key": k}, czas=45,
-                                  dane=json.dumps({"contents": [{"role": "user", "parts": [{"text": tresc}]}],
-                                                   "generationConfig": cfg}))
-            if d and d.get("candidates"):
-                try:
-                    tekst = d["candidates"][0]["content"]["parts"][0]["text"]
-                    _model_ok["nazwa"] = model
-                    return json.loads(tekst)
-                except Exception:
-                    return None
-            if kod == 404:
-                break  # nie ma takiego modelu, następny
-            if kod == 429:
-                return None  # limit
-    return None
+                                  naglowki={"Content-Type": "application/json", "x-goog-api-key": k}, czas=90, dane=cialo)
+            if kod in (429, 500, 503) and proba < 2:
+                time.sleep(3 * (proba + 1)); continue
+            break
+        if kod == 404:
+            _martwe.add(model)
+            return 404, None
+        if kod == 400:
+            continue  # model nie zna któregoś ustawienia, próbujemy prostszej konfiguracji
+        if not d:
+            return kod, None
+        _dolicz(model, d.get("usageMetadata") or {})
+        try:
+            return 200, json.loads(d["candidates"][0]["content"]["parts"][0]["text"])
+        except Exception:
+            return 200, None
+    return 400, None
 
 
-SCHEMAT_PROD = {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
-    "i": {"type": "INTEGER"}, "r": {"type": "STRING", "enum": RODZAJE}, "p": {"type": "STRING", "enum": PLEC},
-    "f": {"type": "INTEGER"}, "o": {"type": "ARRAY", "items": {"type": "STRING", "enum": OKAZJE}}},
-    "required": ["i", "r", "p", "f", "o"]}}
-SCHEMAT_HASLO = {"type": "OBJECT", "properties": {"r": {"type": "STRING", "enum": RODZAJE}}, "required": ["r"]}
+def miniatura(url):
+    if not url:
+        return None
+    u = re.sub(r"([?&])w=\d+", r"\1w=400", url)
+    kod, b = pobierz(u, czas=15, limit=4_000_000)
+    if kod != 200 or not b or len(b) < 800:
+        return None
+    if b[:4] == b"\x89PNG":
+        typ = "image/png"
+    elif b[8:12] == b"WEBP":
+        typ = "image/webp"
+    elif b[:3] == b"\xff\xd8\xff":
+        typ = "image/jpeg"
+    else:
+        return None  # np. AVIF albo strona błędu: oceniamy wtedy bez zdjęcia
+    return {"inline_data": {"mime_type": typ, "data": base64.b64encode(b).decode()}}
 
 
-def _partia(lista):
-    linie = "\n".join(f"{i}|{p['sklep']}|{p['nazwa'][:140]}|{(p.get('material') or '')[:60]}" for i, p in enumerate(lista))
-    wyn = _zapytaj(f"{ZASADY}\n\nRodzaje: {', '.join(RODZAJE)}\n\nProdukty (numer|sklep|nazwa|opis):\n{linie}", SCHEMAT_PROD)
+_POBIERANIE = ThreadPoolExecutor(max_workers=12)
+
+
+def _partia(lista, model):
+    obrazy = list(_POBIERANIE.map(lambda p: miniatura(p.get("zdjecie")), lista))
+    czesci = [{"text": f"{ZASADY}\n\nRodzaje: {', '.join(RODZAJE)}\n\nOceń {len(lista)} produktów (numery 0-{len(lista) - 1}). "
+                       "Zwróć listę z oceną dla każdego numeru."}]
+    for i, (p, obr) in enumerate(zip(lista, obrazy)):
+        czesci.append({"text": f"Produkt {i}: {p['nazwa'][:160]} | sklep: {p['sklep']} | opis: {(p.get('material') or '')[:80]}"
+                               f"{'' if obr else ' | BRAK ZDJĘCIA, oceń ostrożnie po nazwie'}"})
+        if obr:
+            czesci.append(obr)
+    kod, wyn = _wywolaj(model, czesci, SCHEMAT_PROD)
+    if kod != 200 or not isinstance(wyn, list):
+        return kod, {}
     out = {}
-    for x in wyn or []:
+    for x in wyn:
         try:
             i = int(x["i"])
-            if 0 <= i < len(lista):
-                out[lista[i]["id"]] = {"r": x["r"], "p": x["p"], "f": max(1, min(5, int(x["f"]))), "o": list(x.get("o") or [])}
+            if 0 <= i < len(lista) and lista[i]["id"] not in out:
+                out[lista[i]["id"]] = {"r": x["r"], "p": x["p"], "f": max(1, min(5, int(x["f"]))), "wzor": x.get("wzor", "gladki"),
+                                       "zgodne": bool(x.get("zgodne", True)), "o": [o for o in (x.get("o") or []) if o in OKAZJE],
+                                       "zdj": obrazy[i] is not None}
         except Exception:
             continue
-    return out
+    return 200, out
 
 
-def klasyfikuj(produkty, maks=260):
-    """Uzupełnia p['klasa'] = {r, p, f, o}. Najpierw z bazy, brakujące przez Gemini (partiami równolegle)."""
-    ids = [p["id"] for p in produkty]
+def klasyfikuj(produkty, maks=240, swiezo=False, model=None, zapisuj=True):
+    """Uzupełnia p['klasa']. Najpierw z bazy, brakujące przez Gemini (paczkami równolegle).
+    Zwraca liczbę ocenionych produktów."""
     znane = {}
-    with _baza_blokada:
-        for i in range(0, len(ids), 500):
-            cz = ids[i:i + 500]
-            for pid, dane in DB.execute(f"SELECT pid, dane FROM klasy WHERE pid IN ({','.join('?' * len(cz))})", cz):
-                znane[pid] = json.loads(dane)
-    brak = [p for p in produkty if p["id"] not in znane][:maks]
+    if not swiezo:
+        ids = [p["id"] for p in produkty]
+        with _baza_blokada:
+            for i in range(0, len(ids), 500):
+                cz = ids[i:i + 500]
+                for pid_, dane in DB.execute(f"SELECT pid, dane FROM klasy2 WHERE pid IN ({','.join('?' * len(cz))})", cz):
+                    znane[pid_] = json.loads(dane)
+    brak, widziane = [], set()
+    for p in produkty:
+        if p["id"] not in znane and p["id"] not in widziane:
+            widziane.add(p["id"]); brak.append(p)
+    brak = brak[:maks]
     if brak and dostepny():
-        partie = [brak[i:i + 45] for i in range(0, len(brak), 45)]
-        with ThreadPoolExecutor(max_workers=4) as ex:
-            for wynik in ex.map(_partia, partie):
-                if not wynik:
+        kolejka = [model] if model else [m for m in modele() if m not in _martwe]
+        for m in kolejka:
+            partie = [brak[i:i + PACZKA] for i in range(0, len(brak), PACZKA)]
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                wyniki = list(ex.map(lambda pa: _partia(pa, m), partie))
+            if all(k == 404 for k, _ in wyniki):
+                continue  # nie ma takiego modelu, próbujemy następnego
+            for _, w in wyniki:
+                if not w:
                     continue
-                znane.update(wynik)
-                with _baza_blokada:
-                    DB.executemany("INSERT OR REPLACE INTO klasy VALUES (?,?,?)",
-                                   [(pid, json.dumps(v, ensure_ascii=False), int(time.time())) for pid, v in wynik.items()])
-                    DB.commit()
+                znane.update(w)
+                if zapisuj:
+                    with _baza_blokada:
+                        DB.executemany("INSERT OR REPLACE INTO klasy2 VALUES (?,?,?,?)",
+                                       [(pid_, json.dumps(v, ensure_ascii=False), m, int(time.time())) for pid_, v in w.items()])
+                        DB.commit()
+            break
     for p in produkty:
         if p["id"] in znane:
             p["klasa"] = znane[p["id"]]
@@ -143,20 +261,47 @@ def rodzaj_hasla(q):
     q = q.lower().strip()
     if q in _haslo_pamiec:
         return _haslo_pamiec[q]
-    wyn = _zapytaj(f"Jaki rodzaj rzeczy (jedna wartość z listy) opisuje hasło wyszukiwania w sklepie odzieżowym: „{q}”?\n"
-                   f"Rodzaje: {', '.join(RODZAJE)}", SCHEMAT_HASLO)
-    r = (wyn or {}).get("r")
-    if r:
-        _haslo_pamiec[q] = r
-    return r
+    zap = ustawienie("haslo|" + q)
+    if zap:
+        _haslo_pamiec[q] = zap
+        return zap
+    for m in [x for x in modele() if x not in _martwe]:
+        kod, wyn = _wywolaj(m, [{"text": f"Jaki rodzaj rzeczy (jedna wartość z listy) opisuje hasło wyszukiwania w sklepie "
+                                         f"odzieżowym: „{q}”?\nRodzaje: {', '.join(RODZAJE)}"}], SCHEMAT_HASLO)
+        if kod == 404:
+            continue
+        r = (wyn or {}).get("r") if isinstance(wyn, dict) else None
+        if r:
+            _haslo_pamiec[q] = r
+            ustawienie("haslo|" + q, r)
+        return r
+    return None
 
 
 def zgodny_rodzaj(r_hasla, r_produktu):
     """Czy produkt jest tym rodzajem rzeczy, którego szukamy."""
     if not r_hasla or r_hasla == "inne" or r_hasla == r_produktu:
         return True
-    pary = {("spodnie", "jeansy"), ("koszula", "bluzka"), ("bluzka", "koszula"), ("sweter", "kardigan"),
-            ("t-shirt", "top"), ("top", "t-shirt"), ("szpilki", "czółenka"), ("czółenka", "szpilki")}
+    pary = {("spodnie", "jeansy"), ("koszula", "bluzka"), ("bluzka", "koszula"), ("sweter", "kardigan"), ("t-shirt", "top"),
+            ("top", "t-shirt"), ("t-shirt", "polo"), ("polo", "t-shirt"), ("szpilki", "czółenka"), ("czółenka", "szpilki"),
+            ("marynarka", "garnitur"), ("garnitur", "marynarka"), ("kurtka", "płaszcz"), ("płaszcz", "kurtka"), ("bluzka", "top"),
+            ("top", "bluzka"), ("sweter", "golf")}
     if (r_hasla, r_produktu) in pary:
         return True
     return r_hasla == "buty" and r_produktu in BUTY
+
+
+def lista_modeli():
+    k = _klucz()
+    if not k:
+        return []
+    kod, d = pobierz_json("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", naglowki={"x-goog-api-key": k})
+    return [m["name"].split("/", 1)[1] for m in (d or {}).get("models", []) if "generateContent" in (m.get("supportedGenerationMethods") or [])]
+
+
+def stan():
+    with _baza_blokada:
+        ile = DB.execute("SELECT COUNT(*) FROM klasy2").fetchone()[0]
+    return {"klucz": dostepny(), "model": modele()[0], "ocenione_produkty": ile,
+            "koszt_dzis_usd": round(koszt_dzis(), 4), "budzet_dzienny_usd": BUDZET,
+            "kontrola": json.loads(ustawienie("kontrola_wynik") or "null")}

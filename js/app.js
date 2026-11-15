@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.6.0';
+  const WERSJA = '0.7.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -174,7 +174,7 @@
         const li = [...document.querySelectorAll('#kroki li')];
         let i = 0, gotowe = false;
         const ctrl = new AbortController();
-        const czas = setTimeout(() => ctrl.abort(), 60000);
+        const czas = setTimeout(() => ctrl.abort(), 150000);
         fetch(`${API}/szukaj?q=${encodeURIComponent(st.zapytanie)}&dzial=${st.dzial}&okazja=${st.okazja || ''}`, { signal: ctrl.signal })
           .then((r) => r.json())
           .then((d) => { wynik = d && d.produkty ? d : null; if (wynik) wynik.kodOkazji = st.okazja || ''; })
@@ -239,13 +239,20 @@
     return 'drozej';
   }
   function siatkaWynikow(lista, q) {
-    const dokladne = lista.filter((p) => p.trafnosc !== 1);
-    const podobne = lista.filter((p) => p.trafnosc === 1);
-    let h = dokladne.length ? `<div class="siatka">${dokladne.map(kartaProduktu).join('')}</div>` : '';
+    const moze = lista.filter((p) => p.pewnosc === 'moze');
+    const dokladne = lista.filter((p) => p.trafnosc !== 1 && p.pewnosc !== 'moze');
+    const podobne = lista.filter((p) => p.trafnosc === 1 && p.pewnosc !== 'moze');
+    let h = dokladne.length ? `<div class="siatka">${dokladne.map(kartaProduktu).join('')}</div>`
+      : moze.length ? `<div class="info neutral" style="margin-bottom:14px">${IK.info}<p>W tej grupie nie ma rzeczy, które przeszły pełne sprawdzenie. Poniżej te, co do których nie mamy pewności.</p></div>` : '';
     if (podobne.length) {
       h += `<div class="sekcja-tytul" style="margin:${dokladne.length ? 28 : 4}px 0 12px"><h2>Podobne</h2><span class="maly szary">${podobne.length}</span></div>
         <p class="maly szary" style="margin:-6px 0 14px">Ten sam rodzaj rzeczy, ale nie każde słowo z hasła „${esc(q)}” jest w opisie sklepu.</p>
         <div class="siatka">${podobne.map(kartaProduktu).join('')}</div>`;
+    }
+    if (moze.length) {
+      h += `<div class="sekcja-tytul" style="margin:28px 0 12px"><h2>Może pasować</h2><span class="maly szary">${moze.length}</span></div>
+        <p class="maly szary" style="margin:-6px 0 14px">Tu trafiają rzeczy, przy których coś się nie zgadza, na przykład sklep pisze „z nadrukiem”, a na zdjęciu jest gładka rzecz. Obejrzyj je, zanim wybierzesz.</p>
+        <div class="siatka">${moze.map(kartaProduktu).join('')}</div>`;
     }
     return h;
   }
@@ -269,7 +276,7 @@
       akt: 'szukaj',
       html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
       <p class="szary maly" style="text-align:center;margin:-6px 0 14px">${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
-      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> ${wynik.klasyfikacja === 'ai' ? 'Każdą rzecz ocenił stylista AI na podstawie opisu ze sklepu.' : 'Dopasowanie uproszczone (stylista AI chwilowo niedostępny).'} Najpierw rzeczy najbardziej eleganckie.${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} na tę okazję się nie nadają.` : ''}</p></div>` : ''}
+      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> ${wynik.klasyfikacja === 'ai' ? 'Każdą rzecz sprawdził stylista AI na zdjęciu, a potem nasze stałe zasady (np. bez dużych nadruków, bluz i dresów). Małe logo marki na piersi nie jest przeszkodą.' : 'Stylista AI jest chwilowo niedostępny, więc nic nie przeszło pełnego sprawdzenia. Wszystko trafiło do sekcji „Może pasować”.'}${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} na tę okazję się nie nadają.` : ''} Coś nie pasuje? Otwórz produkt i dotknij „Nie pasuje”.</p></div>` : ''}
       <div class="przelacznik" role="tablist" aria-label="Wyniki">
         <button role="tab" aria-selected="${zakladka === 'sklepy'}" data-akcja="zakladka" data-v="sklepy">W sklepach (${P.length})</button>
         <button role="tab" aria-selected="${zakladka === 'stylizacje'}" data-akcja="zakladka" data-v="stylizacje">Stylizacje</button>
@@ -351,7 +358,7 @@
       </div>
       <div class="produkt-tresc">
         ${prawdziwy(p) ? '' : demoZnak()}
-        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500">${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Otwórz w sklepie ${ikonaW('link', 15)}</a></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500;display:flex;align-items:center;gap:8px">${logoSklepu(p.sklep, 'logo-sr')}${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Otwórz w sklepie ${ikonaW('link', 15)}</a></div>
         <h1 style="font-size:30px;margin-top:-8px">${esc(p.nazwa)}</h1>
         <div class="ceny"><span class="cena" style="font-size:38px">${zl(p.cena)}</span>${p.stara ? `<span class="stara" style="font-size:16px">${zl(p.stara)}</span><span class="rabat">−${r}%</span>` : ''}</div>
         ${werInfo}
@@ -365,6 +372,7 @@
           <button class="btn drugi" data-akcja="alert" data-id="${p.id}">${IK.dzwonek} ${alert ? `Alert ustawiony: ${zl(alert.cel)}` : 'Powiadom, gdy stanieje'}</button>
           <button class="btn drugi" data-akcja="dodajProdukt" data-id="${p.id}">${IK.torba} ${st.koszyk.includes(p.id) ? 'Jest w zakupach' : 'Dodaj do zakupów'}</button>
           ${prawdziwy(p) ? '' : `<a class="btn drugi" href="#/wyniki" data-akcja="dobierz">${IK.iskra} Dobierz do tego stylizację</a>`}
+          ${prawdziwy(p) ? `<button class="link" style="margin:6px auto 0;display:flex;gap:6px;align-items:center" data-akcja="niePasuje" data-id="${p.id}">${IK.uwaga} Nie pasuje? Zgłoś</button>` : ''}
         </div>
       </div>`
     };
@@ -432,7 +440,7 @@
       const darmo = d && s >= d.prog;
       if (d && !darmo) sumaD += d.koszt;
       return `<section class="grupa" aria-label="${esc(sk)}">
-        <div class="grupa-gora"><b>${esc(sk)}</b><a class="link" href="${ps[0].sklepUrl || ps[0].url}" target="_blank" rel="noopener" ${viaGoogle(ps[0]) && !ps[0].sklepUrl ? `data-akcja="doSklepu" data-id="${ps[0].id}"` : ''}>Zamów w sklepie ${ikonaW('link', 14)}</a></div>
+        <div class="grupa-gora"><b style="display:flex;align-items:center;gap:8px">${logoSklepu(sk, 'logo-sr')}${esc(sk)}</b><a class="link" href="${ps[0].sklepUrl || ps[0].url}" target="_blank" rel="noopener" ${viaGoogle(ps[0]) && !ps[0].sklepUrl ? `data-akcja="doSklepu" data-id="${ps[0].id}"` : ''}>Zamów w sklepie ${ikonaW('link', 14)}</a></div>
         ${ps.map((p) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
           <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${st.rozmiar[p.id] ? 'Rozmiar ' + esc(st.rozmiar[p.id]) : 'Rozmiar wybierzesz w sklepie'}</div>
           <div class="ceny"><span class="cena" style="font-size:19px">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</div></div>
@@ -510,6 +518,9 @@
       return `<div class="el" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%;transform:rotate(${rot}deg)">${foto(p)}</div>`;
     }).join('');
   }
+  function logoSklepu(nazwa, klasa) {
+    return `<img class="${klasa || 'logo-sk'}" src="${API}/logo?sklep=${encodeURIComponent(nazwa)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`;
+  }
   function kartaProduktu(p) {
     const r = rabat(p), ul = st.ulubione.includes(p.id);
     const wer = p.weryf === 'ok' ? `<div class="weryf ok">${IK.ok}Obniżka potwierdzona</div>`
@@ -519,18 +530,18 @@
     return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
       <button class="serce" style="position:relative;margin:-50px 8px 14px auto;width:36px;height:36px;border-radius:18px;background:rgba(14,9,12,.6);border:none;display:flex;align-items:center;justify-content:center" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj'}">${(ul ? IK.sercePelne : IK.serce).replace('<svg', '<svg width="18" height="18"')}</button>
       <a href="#/produkt/${p.id}" style="text-decoration:none;color:var(--tekst);display:flex;flex-direction:column;gap:4px">
-      <span class="sklep">${esc(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
+      <span class="sklep">${logoSklepu(p.sklep)}${esc(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</span>${wer}</a></div>`;
   }
   function wierszElementu(p) {
     const r = rabat(p);
     return `<a class="element" href="#/produkt/${p.id}"><span class="miniatura">${foto(p)}</span>
-      <span class="opis"><span class="nazwa" style="display:block">${esc(p.nazwa)}</span><span class="sklep">${esc(p.sklep)}</span>
+      <span class="opis"><span class="nazwa" style="display:block">${esc(p.nazwa)}</span><span class="sklep">${logoSklepu(p.sklep)}${esc(p.sklep)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}${r && p.weryf === 'ok' ? `<span class="rabat">−${r}%</span>` : ''}</span></span>
       <span class="zewn">${IK.dalej}</span></a>`;
   }
   function kartaOkazji(o) {
-    return `<div class="okazja"><span class="znak-sklepu">${esc(o.sklep)}</span><div class="opis"><b>${esc(o.tytul)}</b><p>${esc(o.opis)}</p>
+    return `<div class="okazja"><span class="znak-sklepu">${logoSklepu(o.sklep, 'logo-duze')}<span>${esc(o.sklep)}</span></span><div class="opis"><b>${esc(o.tytul)}</b><p>${esc(o.opis)}</p>
       ${o.weryf === 'ok' ? `<div class="weryf ok" style="margin-top:4px">${IK.ok}Sprawdzone</div>` : `<div class="weryf uwaga" style="margin-top:4px">${IK.uwaga}Częściowo pozorna</div>`}</div>
       <span class="rabat" style="align-self:flex-start">−${o.rabat}%</span></div>`;
   }
@@ -563,6 +574,18 @@
     const r = document.getElementById('cel');
     const odsw = () => { r.style.setProperty('--p', ((r.value - r.min) / (r.max - r.min) * 100) + '%'); document.getElementById('celv').textContent = zl(+r.value); };
     r.addEventListener('input', odsw); odsw();
+  }
+  function arkuszZgloszenia(id) {
+    const p = prod(id); if (!p) return;
+    const ok = wynik && wynik.okazja ? wynik.okazja : '';
+    const pow = [ok ? ['okazja', `Nie pasuje na okazję: ${ok}`] : null, ['rzecz', 'To inna rzecz, niż szukałam / szukałem'],
+      ['plec', 'Nie ten dział (damskie / męskie)'], ['zdjecie', 'Zdjęcie nie zgadza się z opisem'], ['inne', 'Inny powód']].filter(Boolean);
+    ARK.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-labelledby="ark-t"><div class="uchwyt"></div>
+      <h2 id="ark-t">Co jest nie tak?</h2><p class="szary" style="margin:6px 0 18px">${esc(p.sklep)}, ${esc(p.nazwa)}.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">${pow.map(([v, t]) => `<button class="btn drugi" data-akcja="wyslijZgloszenie" data-id="${p.id}" data-v="${v}">${esc(t)}</button>`).join('')}</div>
+      <p class="maly szary" style="margin:14px 0 4px">${ok ? 'Po zgłoszeniu ta rzecz od razu zniknie z wyników na tę okazję. ' : ''}Zgłoszenie pomaga nam poprawić zasady dla wszystkich.</p>
+      <button class="link" style="margin:10px auto 0;display:flex" data-akcja="zamknijArkusz">Anuluj</button></div>`;
+    ARK.hidden = false;
   }
   ARK.addEventListener('click', (e) => { if (e.target === ARK) ARK.hidden = true; });
 
@@ -640,6 +663,18 @@
     },
     usunAlert(el) { st.alerty = st.alerty.filter((a) => a.id !== el.dataset.id); zapisz(); ARK.hidden = true; render(true); },
     zamknijArkusz() { ARK.hidden = true; },
+    niePasuje(el) { arkuszZgloszenia(el.dataset.id); },
+    wyslijZgloszenie(el) {
+      const p = prod(el.dataset.id); if (!p) return;
+      const okazja = el.dataset.v === 'okazja' && wynik ? (wynik.kodOkazji || '') : '';
+      const par = new URLSearchParams({ id: p.id, okazja, q: (wynik && wynik.zapytanie) || st.zapytanie || '', dzial: st.dzial, powod: el.dataset.v, nazwa: p.nazwa, sklep: p.sklep, zdjecie: p.zdjecie || '' });
+      ARK.hidden = true;
+      fetch(`${API}/zglos?${par}`).then((r) => {
+        if (!r.ok) throw new Error();
+        if (okazja && wynik) { wynik.produkty = wynik.produkty.filter((x) => x.id !== p.id); try { sessionStorage.setItem('trendo-wynik', JSON.stringify(wynik)); } catch (e) {} }
+        komunikat(okazja ? 'Dziękujemy. Ta rzecz zniknęła z wyników na tę okazję.' : 'Dziękujemy, zgłoszenie zapisane.');
+      }).catch(() => komunikat('Nie udało się wysłać zgłoszenia. Spróbuj za chwilę.'));
+    },
     wstecz() { if (history.length > 1) history.back(); else location.hash = '#/wyniki'; },
     dobierz() { zakladka = 'stylizacje'; },
     dzialTrendow(el) { dzialTrendow = el.dataset.v; render(); },

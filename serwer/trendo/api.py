@@ -3,16 +3,20 @@ Endpointy (za Caddy pod /trendo-api/):
   GET /zdrowie                    stan łączników i konta Google Shopping
   GET /szukaj?q=...&dzial=damskie produkty ze wszystkich łączników naraz
   GET /historia?id=...            historia ceny produktu z naszej bazy
+  GET /zglos?id=&okazja=&...      zgłoszenie „Nie pasuje” (od razu ukrywa produkt na tę okazję)
+  GET /zgloszenia                 ostatnie zgłoszenia (do poprawiania zasad)
+  GET /logo?sklep=...             logo sklepu pobrane z jego strony (pamięć 14 dni)
 """
 import json, os, re, time, traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote_plus, urlparse
 
-from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, ocena_ai
-from .wspolne import historia, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
+import threading
+from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor
+from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
 
-WERSJA = "0.6.0"
+WERSJA = "0.7.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -51,48 +55,22 @@ def trafnosc(p, tok):
     return 0
 
 
-# Okazje: czego na pewno nie pokazywać i co premiować. Słowa szukane w nazwie i opisie produktu (małe litery).
-NIEFORMALNE = ["coca", "cola", "pepsi", "disney", "marvel", "star wars", "harry potter", "hello kitty", "z motywem", "motyw ",
-               "logo", "napis", "retro print", "palm", "hawaj", "plaż", "plaz", "tropik", "flaming", "dres", "sportow", "jogger", "bojówk", "cargo",
-               "z kapturem", "kapturem", "nadruk", "print", "graficzn", "dziur", "przetarc", "ripped", "kąpiel", "piżam",
-               "polar", "trekking", "biegow", "treningow", "kraciaste szorty", "szorty", "klapk", "japonk", "crocs",
-               "coca", "cola", "logo", "disney", "marvel", "myszk", "licencj", "napis", "motyw", "komiks", "anime", "pepsi"]
-ELEGANCKIE = ["elegan", "wizytow", "satyn", "jedwab", "smoking", "garnitur", "koronk", "aksamit", "welur", "wełn",
-              "kaszmir", "slim", "gładk", "klasycz", "taliowan", "marynar", "szpilk", "lakierk", "oxford", "derby"]
-OKAZJE = {
-    "wieczor": {"nazwa": "Wieczór", "nie": NIEFORMALNE + ["krótkim rękaw", "krótki rękaw", "lnian", "lnu", "flanel", "jeans", "denim", "krat", "wzorzyst", "kolorow", "w paski", "workowat"],
-                "tak": ELEGANCKIE + ["cekin", "brokat", "czarn"]},
-    "wesele": {"nazwa": "Wesele", "nie": NIEFORMALNE + ["krótkim rękaw", "krótki rękaw", "lnian", "lnu", "flanel", "jeans", "denim", "sneaker", "trampk", "krat", "wzorzyst", "w paski", "workowat"],
-               "tak": ELEGANCKIE},
-    "sylwester": {"nazwa": "Sylwester", "nie": NIEFORMALNE + ["lnian", "flanel"], "tak": ELEGANCKIE + ["cekin", "brokat", "metaliczn", "złot", "srebrn"]},
-    "randka": {"nazwa": "Randka", "nie": NIEFORMALNE, "tak": ELEGANCKIE + ["koronk"]},
-    "praca": {"nazwa": "Praca", "nie": NIEFORMALNE + ["cekin", "brokat", "prześwit", "crop", "mini "], "tak": ["biur", "klasycz", "wizytow", "oxford", "garnitur", "marynar", "gładk", "slim", "taliowan"]},
-}
+OKAZJE = {"wieczor": "Wieczór", "wesele": "Wesele", "sylwester": "Sylwester", "randka": "Randka", "praca": "Praca"}
+
+with _baza_blokada:
+    DB.execute("CREATE TABLE IF NOT EXISTS zgloszenia (czas INTEGER, pid TEXT, okazja TEXT, q TEXT, dzial TEXT, powod TEXT, nazwa TEXT, sklep TEXT, zdjecie TEXT)")
+    DB.commit()
 
 
-def ocen_okazje(p, okazja):
-    """Zwraca None, gdy produkt nie pasuje do okazji, inaczej liczbę punktów (więcej = lepiej)."""
-    o = OKAZJE.get(okazja)
-    if not o:
-        return 0
-    t = (p["nazwa"] + " " + (p.get("material") or "")).lower()
-    if any(x in t for x in o["nie"]):
-        return None
-    return sum(1 for x in o["tak"] if x in t)
+def wykluczone():
+    with _baza_blokada:
+        return {(a, b) for a, b in DB.execute("SELECT pid, okazja FROM zgloszenia WHERE okazja != ''")}
 
 
-def szukaj(q, dzial, okazja=""):
-    q = " ".join(q.split())[:80]
-    okazja = okazja if okazja in OKAZJE else ""
-    klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}|{okazja}"
-    zap = pamiec_czytaj(klucz, WIEK_PAMIECI)
-    if zap:
-        zap["z_pamieci"] = True
-        return zap
-    t0 = time.time()
-    zad = {PULA.submit(l.szukaj, q, dzial): l.NAZWA for l in LACZNIKI}
+def pobierz_produkty(q, dzial, laczniki):
+    zad = {PULA.submit(l.szukaj, q, dzial): l.NAZWA for l in laczniki}
     gotowe, _ = wait(zad, timeout=55)
-    sklepy, produkty, widziane, pominiete = [], [], set(), 0
+    sklepy, produkty, widziane = [], [], set()
     tok = tokeny(q)
     wlasne = {s.lower() for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}
     for f, nazwa in zad.items():
@@ -111,66 +89,95 @@ def szukaj(q, dzial, okazja=""):
             p["trafnosc"] = trafnosc(p, tok) if tok else 2
             if not p["trafnosc"]:
                 continue
-            pkt = ocen_okazje(p, okazja)
-            if pkt is None:
-                pominiete += 1
-                continue
-            p["punkty"] = pkt
             widziane.add(k)
+            logo.poznaj(p)
             zapisz_cene(p)
             p["weryf"] = weryfikuj(p)
             produkty.append(p); ile += 1
         sklepy.append({"nazwa": nazwa, "stan": stan, "ile": ile})
-    ocena_stan = ""
-    if okazja and produkty:
-        kandydaci = sorted(produkty, key=lambda p: -p.get("trafnosc", 2))[:150]
-        oceny, ocena_stan = ocena_ai.ocen(kandydaci, okazja, dzial, q)
-        if oceny:
-            zostaw = []
-            for p in kandydaci:
-                w = oceny.get(p["id"])
-                if w is None:
-                    continue  # bez oceny nie pokazujemy w trybie okazji
-                if not w[0]:
-                    pominiete += 1
-                    continue
-                p["punkty"] = w[1]
-                zostaw.append(p)
-            pominiete += len(produkty) - len(kandydaci)
-            produkty = zostaw
-    # Ocena AI (rodzaj, dla kogo, elegancja, okazje) na podstawie tego, co podał sklep.
-    klasyfikacja = "slowa"
+    return sklepy, produkty
+
+
+def szukaj(q, dzial, okazja=""):
+    q = " ".join(q.split())[:80]
+    okazja = okazja if okazja in OKAZJE else ""
+    klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}|{okazja}"
+    zap = pamiec_czytaj(klucz, WIEK_PAMIECI)
+    if zap:
+        zap["z_pamieci"] = True
+        return zap
+    t0 = time.time()
+    sklepy, produkty = pobierz_produkty(q, dzial, LACZNIKI)
+    # Ocena każdego produktu (zdjęcie + nazwa), raz na zawsze. Rodzaj hasła równolegle.
+    klasyfikacja, nieocenione = "slowa", 0
     if produkty and klasyfikator.dostepny():
         f_haslo = PULA.submit(klasyfikator.rodzaj_hasla, q)
-        ocenione = klasyfikator.klasyfikuj(produkty)
+        ocenione = klasyfikator.klasyfikuj(produkty, maks=400)
         try:
-            r_hasla = f_haslo.result(timeout=30)
+            r_hasla = f_haslo.result(timeout=40)
         except Exception:
             r_hasla = None
+        nieocenione = len(produkty) - ocenione
         if ocenione:
             klasyfikacja = "ai"
-            zostaja = []
-            for p in produkty:
-                k = p.get("klasa")
-                if not k:
-                    zostaja.append(p); continue
-                if k["p"] == "dzieciece" or (dzial == "damskie" and k["p"] == "meskie") or (dzial == "meskie" and k["p"] == "damskie"):
-                    continue
-                if not klasyfikator.zgodny_rodzaj(r_hasla, k["r"]):
-                    continue
-                if okazja:
-                    if okazja not in k["o"]:
-                        pominiete += 1
-                        continue
-                    p["punkty"] = k["f"] if okazja in ("wieczor", "wesele", "sylwester", "praca", "randka") else 0
-                zostaja.append(p)
-            produkty = zostaja
-    wynik = {"zapytanie": q, "dzial": dzial, "ocena_ai": ocena_stan, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
-             "sklepy": sklepy, "produkty": sorted(produkty, key=lambda p: -p.get("punkty", 0)),
-             "okazja": OKAZJE[okazja]["nazwa"] if okazja else "", "pominiete": pominiete, "klasyfikacja": klasyfikacja}
-    if produkty:
+            produkty = [p for p in produkty if nadzor.zgodna_plec(p.get("klasa"), dzial)
+                        and (not p.get("klasa") or klasyfikator.zgodny_rodzaj(r_hasla, p["klasa"]["r"]))]
+    pominiete, moze = 0, 0
+    if okazja:
+        wyk = wykluczone()
+        zostaja = []
+        for p in produkty:
+            if klasyfikacja == "ai" and not p.get("klasa"):
+                continue  # jeszcze nieoceniona: nie pokazujemy (wynik nie trafi do pamięci, następne wyszukiwanie oceni resztę)
+            werdykt, powod = nadzor.decyzja(p, okazja, wyk)
+            if werdykt == "nie":
+                pominiete += 1
+                continue
+            p["pewnosc"] = werdykt
+            if werdykt == "moze":
+                p["powod"] = powod
+                moze += 1
+            p["punkty"] = nadzor.punkty(p, okazja)
+            zostaja.append(p)
+        produkty = zostaja
+    wynik = {"zapytanie": q, "dzial": dzial, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
+             "sklepy": sklepy, "produkty": sorted(produkty, key=lambda p: (p.get("pewnosc") == "moze", -p.get("punkty", 0))),
+             "okazja": OKAZJE.get(okazja, ""), "pominiete": pominiete, "moze": moze, "nieocenione": nieocenione,
+             "klasyfikacja": klasyfikacja}
+    # Bez pełnej oceny nie zapamiętujemy wyniku na 12 godzin, żeby następne wyszukiwanie spróbowało ocenić resztę.
+    if produkty and (nieocenione == 0 or not klasyfikator.dostepny()):
         pamiec_zapisz(klucz, wynik)
     return wynik
+
+
+# Ocena w tle: raz na dobę popularne hasła (bez Google Shopping, żeby nie zużywać kredytów), żeby wyszukiwania były szybkie.
+ROZGRZEWKA = {
+    "damskie": ["sukienka", "bluzka", "koszula", "spódnica", "spodnie", "jeansy", "marynarka", "sweter", "płaszcz", "kurtka",
+                "kombinezon", "szpilki", "botki", "kozaki", "sneakersy", "torebka", "t-shirt", "kardigan", "sukienka wieczorowa",
+                "sukienka na wesele", "bluzka satynowa", "spodnie skórzane", "czółenka", "baleriny"],
+    "meskie": ["koszula", "marynarka", "garnitur", "spodnie", "jeansy", "sweter", "golf", "płaszcz", "kurtka", "polo", "t-shirt",
+               "bluza", "półbuty", "mokasyny", "sneakersy", "sztyblety", "chinosy", "kamizelka"],
+}
+
+
+def rozgrzewka():
+    time.sleep(120)
+    while True:
+        if klasyfikator.dostepny():
+            dzien = time.strftime("rozgrzewka-%Y-%m-%d")
+            if not licznik(dzien):
+                licznik(dzien, 1)
+                bez_google = [l for l in LACZNIKI if l is not lacznik_google]
+                for dzial, hasla in ROZGRZEWKA.items():
+                    for q in hasla:
+                        if klasyfikator.koszt_dzis() >= klasyfikator.BUDZET * 0.6:
+                            break
+                        try:
+                            _, produkty = pobierz_produkty(q, dzial, bez_google)
+                            klasyfikator.klasyfikuj(produkty, maks=400)
+                        except Exception:
+                            traceback.print_exc()
+        time.sleep(1800)
 
 
 class Obsluga(BaseHTTPRequestHandler):
@@ -197,7 +204,7 @@ class Obsluga(BaseHTTPRequestHandler):
             if u.path in ("/", "/zdrowie"):
                 return self._wyslij(200, {"ok": True, "wersja": WERSJA, "laczniki": [l.NAZWA for l in LACZNIKI], "ai": klasyfikator.dostepny(),
                                       "sklepy_bezposrednio": sorted({s for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}),
-                                          "google": lacznik_google.stan()})
+                                          "google": lacznik_google.stan(), "ocena": klasyfikator.stan()})
             if u.path == "/szukaj":
                 q = a.get("q", "").strip()
                 if len(q) < 2:
@@ -216,6 +223,34 @@ class Obsluga(BaseHTTPRequestHandler):
                 if url:
                     pamiec_zapisz(klucz, wyn)
                 return self._wyslij(200, wyn)
+            if u.path == "/zglos":
+                if licznik(time.strftime("zgloszenia-%Y-%m-%d"), 1) > 500:
+                    return self._wyslij(429, {"blad": "Za dużo zgłoszeń dzisiaj."})
+                ok = a.get("okazja", "") if a.get("okazja", "") in OKAZJE else ""
+                with _baza_blokada:
+                    DB.execute("INSERT INTO zgloszenia VALUES (?,?,?,?,?,?,?,?,?)", (int(time.time()), a.get("id", "")[:40], ok,
+                               a.get("q", "")[:80], a.get("dzial", "")[:10], a.get("powod", "")[:80], a.get("nazwa", "")[:200],
+                               a.get("sklep", "")[:80], a.get("zdjecie", "")[:400]))
+                    DB.execute("DELETE FROM pamiec WHERE klucz LIKE 'szukaj|%'")  # wyniki od razu bez tej rzeczy
+                    DB.commit()
+                return self._wyslij(200, {"ok": True})
+            if u.path == "/zgloszenia":
+                with _baza_blokada:
+                    r = DB.execute("SELECT * FROM zgloszenia ORDER BY czas DESC LIMIT 300").fetchall()
+                pola = ["czas", "id", "okazja", "q", "dzial", "powod", "nazwa", "sklep", "zdjecie"]
+                return self._wyslij(200, {"zgloszenia": [dict(zip(pola, x)) for x in r]})
+            if u.path == "/logo":
+                typ, dane = logo.logo(a.get("sklep", "")[:80])
+                if not dane:
+                    return self._wyslij(404, {"blad": "Brak logo."})
+                self.send_response(200)
+                self.send_header("Content-Type", typ)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control", "public, max-age=604800")
+                self.send_header("Content-Length", str(len(dane)))
+                self.end_headers()
+                self.wfile.write(dane)
+                return
             if u.path == "/historia":
                 return self._wyslij(200, {"id": a.get("id"), "ceny": historia(a.get("id", ""))})
             return self._wyslij(404, {"blad": "Nie ma takiej ścieżki."})
@@ -230,6 +265,7 @@ class Obsluga(BaseHTTPRequestHandler):
 def main():
     port = int(os.environ.get("PORT", "18890"))
     print(f"Trendo {WERSJA} nasłuchuje na 127.0.0.1:{port}", flush=True)
+    threading.Thread(target=rozgrzewka, daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", port), Obsluga).serve_forever()
 
 

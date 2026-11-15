@@ -191,7 +191,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .miniatura svg{width:78%;height:78%}
 .element .opis{flex:1;min-width:0}
 .element .nazwa{font-size:15px;font-weight:500;line-height:1.25}
-.element .sklep{font-size:13px;color:var(--szary)}
+.element .sklep{font-size:13px;color:var(--szary);display:flex;align-items:center;gap:6px}
 .ceny{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:3px}
 .cena{font-family:var(--szeryf);font-size:21px;font-weight:600;color:#FBE3D8;white-space:nowrap}
 .stara{font-size:13px;color:var(--szary2);text-decoration:line-through;white-space:nowrap}
@@ -214,7 +214,12 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .produkt .foto .rabat{position:absolute;top:10px;left:10px}
 .produkt .foto .serce{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:18px;background:rgba(14,9,12,.55);border:none;color:var(--tekst);display:flex;align-items:center;justify-content:center}
 .produkt .foto .serce svg{width:18px;height:18px}
-.produkt .sklep{font-size:13px;color:var(--szary)}
+.produkt .sklep{font-size:13px;color:var(--szary);display:flex;align-items:center;gap:6px}
+.logo-sk{width:18px;height:18px;border-radius:5px;background:#fff;object-fit:contain;padding:1px;flex:none}
+.logo-sr{width:26px;height:26px;border-radius:7px;background:#fff;object-fit:contain;padding:2px;flex:none}
+.znak-sklepu{position:relative;overflow:hidden}
+.logo-duze{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10px;background:#fff}
+.logo-duze+span{visibility:hidden}
 .produkt .nazwa{font-size:14.5px;line-height:1.3}
 .weryf{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;line-height:1.3;font-weight:500}
 .weryf svg{flex:none;width:14px;height:14px;margin-top:2px}
