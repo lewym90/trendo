@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.7.0';
+  const WERSJA = '0.7.1';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -251,7 +251,7 @@
     }
     if (moze.length) {
       h += `<div class="sekcja-tytul" style="margin:28px 0 12px"><h2>Może pasować</h2><span class="maly szary">${moze.length}</span></div>
-        <p class="maly szary" style="margin:-6px 0 14px">Tu trafiają rzeczy, przy których coś się nie zgadza, na przykład sklep pisze „z nadrukiem”, a na zdjęciu jest gładka rzecz. Obejrzyj je, zanim wybierzesz.</p>
+        <p class="maly szary" style="margin:-6px 0 14px">Tu trafiają rzeczy, przy których coś się nie zgadza: na przykład sklep pisze „z nadrukiem”, a na zdjęciu jest gładka rzecz, albo nie da się pewnie ocenić, czy to damskie, czy męskie. Obejrzyj je, zanim wybierzesz.</p>
         <div class="siatka">${moze.map(kartaProduktu).join('')}</div>`;
     }
     return h;

@@ -127,7 +127,7 @@ def _showroom(sklep, url, dzial):
             continue
         stara = (x.get("price") or {}).get("originalPrice")
         nazwa = f"{x.get('brand', '')} {x.get('title', '')}".strip()
-        foto = ((x.get("photo") or {}).get("url") or "").replace("width=268&height=402", "width=600&height=900")
+        foto = ((x.get("photo") or {}).get("url") or "").split("?")[0]  # pełny obraz; inne rozmiary niż 268x402 dają 404
         wyn.append(produkt(sklep, nazwa[:1].upper() + nazwa[1:], cena / 100, urljoin(url, x["url"]), foto,
                            stara=(stara / 100 if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
                            extra={"rozmiary": x.get("sizes") or None}))

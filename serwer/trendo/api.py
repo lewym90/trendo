@@ -16,7 +16,7 @@ import threading
 from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
 
-WERSJA = "0.7.0"
+WERSJA = "0.7.1"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -120,16 +120,28 @@ def szukaj(q, dzial, okazja=""):
         nieocenione = len(produkty) - ocenione
         if ocenione:
             klasyfikacja = "ai"
-            produkty = [p for p in produkty if nadzor.zgodna_plec(p.get("klasa"), dzial)
-                        and (not p.get("klasa") or klasyfikator.zgodny_rodzaj(r_hasla, p["klasa"]["r"]))]
-    pominiete, moze = 0, 0
+            zostaja = []
+            for p in produkty:
+                k = p.get("klasa")
+                if k and (k["p"] == "dzieciece" or not klasyfikator.zgodny_rodzaj(r_hasla, k["r"])):
+                    continue
+                if k and not nadzor.zgodna_plec(k, dzial):
+                    # Płeć z samego zdjęcia bywa niepewna (np. buty, kurtki): nie ukrywamy, tylko odsuwamy do „Może pasować”.
+                    p["pewnosc"], p["powod"] = "moze", "może być z drugiego działu"
+                zostaja.append(p)
+            produkty = zostaja
+    pominiete = 0
+    moze = sum(1 for p in produkty if p.get("pewnosc") == "moze")
     if okazja:
+        moze = 0
         wyk = wykluczone()
         zostaja = []
         for p in produkty:
             if klasyfikacja == "ai" and not p.get("klasa"):
                 continue  # jeszcze nieoceniona: nie pokazujemy (wynik nie trafi do pamięci, następne wyszukiwanie oceni resztę)
             werdykt, powod = nadzor.decyzja(p, okazja, wyk)
+            if werdykt == "tak" and p.get("pewnosc") == "moze":
+                werdykt, powod = "moze", p.get("powod", "")
             if werdykt == "nie":
                 pominiete += 1
                 continue
@@ -151,7 +163,7 @@ def szukaj(q, dzial, okazja=""):
 
 
 # Ocena w tle: raz na dobę popularne hasła (bez Google Shopping, żeby nie zużywać kredytów), żeby wyszukiwania były szybkie.
-# Tylko rozgrzewka ma własny hamulec (do 0,3 USD dziennie i do połowy budżetu miesięcznego), wyszukiwania użytkowników nie mają limitu dziennego.
+# Tylko rozgrzewka ma własny hamulec (do 0,1 USD na noc i do 30% budżetu miesięcznego), wyszukiwania użytkowników nie mają limitu dziennego.
 ROZGRZEWKA = {
     "damskie": ["sukienka", "bluzka", "koszula", "spódnica", "spodnie", "jeansy", "marynarka", "sweter", "płaszcz", "kurtka",
                 "kombinezon", "szpilki", "botki", "kozaki", "sneakersy", "torebka", "t-shirt", "kardigan", "sukienka wieczorowa",
@@ -171,7 +183,7 @@ def rozgrzewka():
                 bez_google = [l for l in LACZNIKI if l is not lacznik_google]
                 for dzial, hasla in ROZGRZEWKA.items():
                     for q in hasla:
-                        if klasyfikator.koszt_miesiac() >= klasyfikator.BUDZET * 0.5 or klasyfikator.koszt_dzis() >= 0.3:
+                        if klasyfikator.koszt_miesiac() >= klasyfikator.BUDZET * 0.3 or klasyfikator.koszt_dzis() >= 0.1:
                             break
                         try:
                             _, produkty = pobierz_produkty(q, dzial, bez_google)

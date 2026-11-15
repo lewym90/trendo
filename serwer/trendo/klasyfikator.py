@@ -24,6 +24,7 @@ CENY = [("3.8-flash", 0.75, 3.75), ("3.7-flash", 0.75, 3.75), ("3.5-flash-lite",
         ("3.1-flash-lite", 0.25, 1.50), ("2.5-flash-lite", 0.10, 0.40), ("2.5-flash", 0.30, 2.50)]
 BUDZET = float(os.environ.get("GEMINI_BUDZET_MIESIECZNY", "12"))
 PACZKA = 10
+OCENA_WERSJA = 2  # zmiana zasad = ponowna ocena produktów
 
 ZASADY = """Jesteś doświadczoną, surową stylistką. Oceniasz produkty ze sklepów odzieżowych na podstawie ZDJĘCIA i nazwy.
 Zdjęcie jest ważniejsze niż nazwa, bo sklepy nadają mylące nazwy. Oceniasz WYŁĄCZNIE produkt z nazwy, a nie resztę
@@ -31,9 +32,11 @@ stylizacji modela (przy spodniach nie oceniaj koszuli modela). Marka nie podnosi
 
 Dla każdego produktu zwróć:
 r = rodzaj rzeczy (jedna wartość z listy).
-p = dla kogo: damskie / meskie / unisex / dzieciece (po zdjęciu i kroju; unisex tylko gdy naprawdę dla obu płci).
-f = elegancja 1-5: 1 = sport, dres, plaża, dom, zabawne nadruki; 2 = luźna codzienność; 3 = smart casual;
-    4 = elegancko; 5 = wizytowo, gala.
+p = dla kogo: damskie / meskie / unisex / dzieciece (po zdjęciu, kroju i nazwie). Gdy zdjęcie pokazuje sam produkt bez osoby
+    (np. buty sportowe, kurtka, sweter) i z wyglądu nie da się rozstrzygnąć, wybierz unisex. Nie zgaduj płci po kolorze.
+f = elegancja 1-5: 1 = sport, dres, plaża, dom, zabawne nadruki; 2 = luźna codzienność (t-shirty, bluzy, jeansy, sneakersy);
+    3 = smart casual (gładkie bluzki i koszule, golfy i topy z cienkiej dzianiny, chinosy, swetry, skórzane botki);
+    4 = elegancko (satyna, jedwab, koronka, koszule wizytowe, marynarki, spodnie w kant, szpilki); 5 = wizytowo, gala.
 wzor = jak wygląda powierzchnia rzeczy:
   gladki: jeden kolor, ewentualnie faktura, splot, prążek, jodełka, drobna pepitka;
   male_logo: rzecz gładka z MAŁYM logo lub haftem marki (np. na piersi, kołnierzu, mankiecie, kilka centymetrów;
@@ -44,7 +47,11 @@ wzor = jak wygląda powierzchnia rzeczy:
   wzor_wyrazisty: duże, kolorowe lub krzykliwe wzory: zwierzęce, moro, duże kwiaty, kolorowa krata, etniczne;
   motyw_tematyczny: postaci, bajki, marki niemodowe (np. Coca-Cola), motywy świąteczne, zwierzątka, żartobliwe napisy.
 zgodne = true, gdy zdjęcie pokazuje rzecz z nazwy; false, gdy zdjęcie pokazuje wyraźnie co innego.
-o = okazje, na które ta rzecz NAPRAWDĘ się nadaje według dobrej stylistki (może być pusta lista):
+o = okazje, na które ta rzecz NAPRAWDĘ się nadaje według dobrej stylistki (może być pusta lista).
+  Oceniasz rzecz jako ELEMENT stroju: zakładasz, że reszta stroju zostanie dobrana właściwie. Pytanie brzmi: czy ta rzecz
+  może być częścią dobrego stroju na tę okazję? Przykłady: satynowa bluzka + elegancka spódnica = wesele, wieczor, sylwester;
+  gładki dopasowany golf z cienkiej dzianiny + skórzane spodnie = wieczor, praca, randka; czarne skórzane kozaki + sukienka =
+  wieczor, randka; koszula wizytowa + garnitur = wesele, wieczor, praca.
   codzien = na co dzień;
   praca = biuro, smart lub business casual: stonowanie i schludnie;
   randka = zadbanie i stylowo, smart casual dozwolony, ale nie sportowo ani niechlujnie;
@@ -52,7 +59,8 @@ o = okazje, na które ta rzecz NAPRAWDĘ się nadaje według dobrej stylistki (m
     Mężczyźni: koszula z długim rękawem, marynarka, elegancki sweter lub golf z cienkiej dzianiny, spodnie materiałowe
     lub eleganckie ciemne, skórzane półbuty, mokasyny, sztyblety. Gładka polówka z dobrego materiału najwyżej jako smart casual.
     Kobiety: sukienka, elegancka bluzka (satyna, jedwab, koronka), spódnica, eleganckie spodnie, szpilki, czółenka, botki,
-    mała elegancka torebka;
+    mała elegancka torebka. Satynowe, jedwabne, koronkowe i szyfonowe bluzki oraz koszule nadają się na wieczor, wesele,
+    sylwester i randkę. Gładkie dopasowane golfy i topy z cienkiej dzianiny: wieczor, praca, randka;
   wesele = gość na weselu: garnitur, marynarka, koszula z długim rękawem, eleganckie spodnie, skórzane buty wizytowe;
     sukienka, kombinezon, elegancka spódnica i bluzka, szpilki, czółenka, mała torebka. Kobiety NIE na biało;
   sylwester = impreza: elegancko i efektownie, cekiny, satyna, skóra, błysk, czerń;
@@ -211,7 +219,7 @@ def _partia(lista, model):
         try:
             i = int(x["i"])
             if 0 <= i < len(lista) and lista[i]["id"] not in out:
-                out[lista[i]["id"]] = {"r": x["r"], "p": x["p"], "f": max(1, min(5, int(x["f"]))), "wzor": x.get("wzor", "gladki"),
+                out[lista[i]["id"]] = {"v": OCENA_WERSJA, "r": x["r"], "p": x["p"], "f": max(1, min(5, int(x["f"]))), "wzor": x.get("wzor", "gladki"),
                                        "zgodne": bool(x.get("zgodne", True)), "o": [o for o in (x.get("o") or []) if o in OKAZJE],
                                        "zdj": obrazy[i] is not None}
         except Exception:
@@ -229,7 +237,9 @@ def klasyfikuj(produkty, maks=240, swiezo=False, model=None, zapisuj=True):
             for i in range(0, len(ids), 500):
                 cz = ids[i:i + 500]
                 for pid_, dane in DB.execute(f"SELECT pid, dane FROM klasy2 WHERE pid IN ({','.join('?' * len(cz))})", cz):
-                    znane[pid_] = json.loads(dane)
+                    d = json.loads(dane)
+                    if d.get("v") == OCENA_WERSJA:
+                        znane[pid_] = d
     brak, widziane = [], set()
     for p in produkty:
         if p["id"] not in znane and p["id"] not in widziane:

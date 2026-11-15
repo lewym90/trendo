@@ -69,3 +69,10 @@ Najlepsza droga dla każdego sklepu:
 - „Nie pasuje”: /zglos (od razu ukrywa produkt na tę okazję, czyści pamięć wyników), /zgloszenia do przeglądu.
 - Rozgrzewka: raz na dobę popularne hasła (bez Google Shopping) oceniane w tle.
 - Loga sklepów: logo.py, /logo?sklep= (apple-touch-icon/ikona ze strony sklepu, zapas: favicony Google i DuckDuckGo), pamięć 14 dni, domeny poznawane z adresów produktów. Pliki logo nie są w repozytorium.
+
+## 0.7.1 (15.11.2026): po pierwszej kontroli
+- Kontrola 0.7.0 (271 produktów, 1016 sprawdzeń): gemini-3.5-flash-lite 2 błędy krytyczne / 114 ukrytych dobrych / 0,111 USD; gemini-3.1-flash-lite 4 / 85 / 0,108 USD; gemini-3.8-flash 0 / 93 / 0,222 USD (wybrany, zgodność 91%); gemini-2.5-flash-lite niedostępny. Koszt 3.8-flash ≈ 0,82 USD za 1000 produktów.
+- Poprawki: zasady oceniają rzecz jako ELEMENT stroju (satynowa bluzka = wesele/wieczór; gładki golf = wieczór/praca), doprecyzowana skala elegancji, płeć „unisex”, gdy ze zdjęcia nie da się rozstrzygnąć. OCENA_WERSJA=2 (stare oceny liczone od nowa).
+- Płeć według AI sprzeczna z działem → „Może pasować” zamiast ukrycia (błędy AI dotyczyły głównie butów sportowych i kurtek).
+- Showroom: zdjęcia z parametrami width=600&height=900 dawały 404 (ocena bez zdjęcia, w aplikacji pusty obraz) → pełny adres bez parametrów.
+- Rozgrzewka: do 0,1 USD na noc i do 30% budżetu miesięcznego.
