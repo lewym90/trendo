@@ -250,3 +250,10 @@ Najlepsza droga dla każdego sklepu:
 - C&A: ogólne tabele z ich API (POST /api?o=sizeGuide, persistedQuery 73fa97a3…, klucze 1-top, 1-bottom, 2-top, 2-bottom) pobierane przeglądarką w kontrola/rozmiary_sklepow.py (curl dostaje 403). Baza ma teraz 41 tabel.
 - Aplikacja: wybór grupy przed rozmiarem (Wzrost 164–170/176–182/188–194 w koszulach VRG, wzrost w garniturach Bytom, Długość L30/L32/L34 w Big Star; serwer podaje t.grupy {nazwa, lista[, klucze, etykiety]}), dostępność z tabeli (t.dostepne), etykiety linii z nazw sklepu przy wymiarach ubrania, opis „wymiary ubrania mierzone na płasko” / „wymiary ciała”, karta przelicznika dla Showroom (odpowiedniki wybranego rozmiaru, rozmiary w sklepie).
 - Bez tabeli dalej: Zara (okienko tylko w skrypcie, strona za zaporą), Deichmann (okienko nie otwiera się poza prawdziwą przeglądarką, dane produktu bez długości), Molton (brak tabeli na stronach produktów), Wittchen (paski „S/M 90 cm”, niewarte), Vinted (z założenia). Google Shopping bez zmian.
+
+## 0.18.1 (15.11.2026): poprawki po instalacji 0.18.0
+- Instalacja 0.18.0 OK (inne aplikacje 200/200/200/400). Tabele działają: Vistula, Wólczanka, Bytom (wybór wzrostu), CCC, eobuwie, Big Star, Kappahl, Modivo (ogólna), C&A (ogólna), Showroom (przelicznik).
+- Renee i Born2Be zmieniły stronę: komórka rozmiaru ma dwie etykiety („S S”, „XXL 2XL”) → rozmiary._bez_dubla. Brak tabeli był pamiętany 7 dni → teraz klucz „rozm2|” (tabela 7 dni) i „rozm2n|” (brak tylko dobę).
+- Zdjęcie po instalacji: Gemini 403/429 (zaraz po setkach ocen z próbnych wyszukiwań). klasyfikator._wywolaj zapisuje teraz w ai_ostatni_blad status i treść błędu Google (rozróżnienie limitu na minutę od limitu wydatków); instalator ponawia próbę zdjęcia po minucie i wypisuje odpowiedź Google. Uwaga: koszt listopada 11,54 USD, a w AI Studio użytkownik miał ustawiony limit miesięczny 50 zł — możliwe, że to on.
+- Test rozmiarówki w instalatorze tylko dla sklepów podłączonych bezpośrednio. Kazar: tabela ubrań nie istnieje (paski 80–125 pominięte, rozmiary trzycyfrowe).
+- Bytom 500 w próbie sklepów: chwilowa awaria po stronie sklepu.

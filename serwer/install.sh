@@ -124,11 +124,16 @@ from concurrent.futures import ThreadPoolExecutor
 H = sys.argv[1]
 def daj(u, t=200):
     return json.load(urllib.request.urlopen(u, timeout=t))
+try:
+    BEZP = set(daj(f"https://{H}/trendo-api/zdrowie", 30).get("sklepy_bezposrednio") or [])
+except Exception:
+    BEZP = set()
 wybrane = {}
 for q, dz in (("koszula", "meskie"), ("sukienka", "damskie"), ("jeansy", "damskie"), ("botki", "damskie")):
     try:
         for p in daj(f"https://{H}/trendo-api/szukaj?q={urllib.parse.quote(q)}&dzial={dz}")["produkty"]:
-            wybrane.setdefault(p["sklep"], (q, p))
+            if p["sklep"] in BEZP:  # sklepy z Google Shopping nie mają tabel, nie zaśmiecamy wyniku
+                wybrane.setdefault(p["sklep"], (q, p))
     except Exception as e:
         print(f"  szukanie {q}: {str(e)[:50]}")
 def sprawdz(sk):
@@ -153,8 +158,16 @@ print('  $dz:', len(o), 'okazji' + (', np. ' + ', '.join(f\"{x['sklep']} −{x['
   echo; echo "Szukanie ze zdjęcia (próba na zdjęciu produktu z wyników):"
   FOTO=$("$PY" -c "import json; P=json.load(open('/tmp/trendo-szukaj.json'))['produkty']; print(next((p['zdjecie'] for p in P if p.get('zdjecie','').startswith('http') and p['sklep'] in ('Zara','Reserved','House','Modivo')), ''))" 2>/dev/null)
   if [ -n "$FOTO" ] && curl -fsSL --max-time 30 -A "Mozilla/5.0" "$FOTO" -o /tmp/trendo-foto.jpg; then
-    curl -sS --max-time 90 -X POST -H "Content-Type: image/jpeg" --data-binary @/tmp/trendo-foto.jpg "https://$HOST/trendo-api/zdjecie" | "$PY" -c "
-import json,sys; d=json.load(sys.stdin); print('  Rozpoznane hasło:', d.get('q') or d.get('blad'))"
+    for proba in 1 2; do
+      ODP=$(curl -sS --max-time 90 -X POST -H "Content-Type: image/jpeg" --data-binary @/tmp/trendo-foto.jpg "https://$HOST/trendo-api/zdjecie")
+      echo "$ODP" | grep -q '"q"' && break
+      [ $proba = 1 ] && echo "  Pierwsza próba nieudana (zaraz po instalacji serwer ocenia setki produktów naraz), ponawiam za minutę..." && sleep 60
+    done
+    echo "$ODP" | "$PY" -c "
+import json,sys; d=json.load(sys.stdin); print('  Rozpoznane hasło:', d.get('q') or d.get('blad'))" 2>/dev/null || echo "  Brak odpowiedzi serwera."
+    if ! echo "$ODP" | grep -q '"q"'; then curl -fsS --max-time 20 "https://$HOST/trendo-api/zdrowie" | "$PY" -c "
+import json,sys; b=(json.load(sys.stdin).get('ocena') or {}).get('ostatni_blad') or {}
+print('  Odpowiedź Google:', b.get('kod'), b.get('status') or '', '-', b.get('opis') or '(brak treści)')" || true; fi
   else echo "  Nie udało się pobrać zdjęcia próbnego (to nie błąd aplikacji)."; fi
   rm -f /tmp/trendo-szukaj.json /tmp/trendo-foto.jpg
 else

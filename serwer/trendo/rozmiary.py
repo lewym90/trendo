@@ -53,6 +53,14 @@ def _czysc(s):
     return re.sub(r"\s+", " ", _html.unescape(re.sub(r"<br\s*/?>", " ", re.sub(r"<(?!br)[^>]+>", " ", s)))).strip()
 
 
+def _bez_dubla(txt):
+    """Strony z dwiema wersjami etykiety w jednej komórce („S S”, „XXL 2XL”: na telefon i na komputer) → jedna etykieta."""
+    c = txt.split(" ")
+    if len(c) == 2 and _rozmiar(c[0]) and _rozmiar(c[1]) and (c[0] == c[1] or not re.search(r"\d", c[0])):
+        return c[0]
+    return txt
+
+
 def siatki(t):
     """Wszystkie tabele HTML jako prostokątne siatki tekstu (scalone komórki rowspan/colspan rozwinięte)."""
     if "&lt;table" in t:  # tabela zakodowana w opisie produktu (np. w JSON strony)
@@ -65,7 +73,7 @@ def siatki(t):
             for m in re.finditer(r"<t([dh])\b([^>]*)>(.*?)</t[dh]>", tr, re.S | re.I):
                 while (r, k) in czeka:
                     wiersz.append(czeka.pop((r, k))); k += 1
-                atr, txt = m.group(2), _czysc(m.group(3))
+                atr, txt = m.group(2), _bez_dubla(_czysc(m.group(3)))
                 cs = int((re.search(r'colspan="?(\d+)', atr) or [0, 1])[1])
                 rs = int((re.search(r'rowspan="?(\d+)', atr) or [0, 1])[1])
                 for _ in range(min(cs, 20)):
@@ -491,13 +499,13 @@ def dla_produktu(p):
                         "rodzaj_wymiarow": t.get("rodzaj")})
             return wyn
     if p.get("sklep") not in BEZ_STRONY_PRODUKTU and p.get("zrodlo") == "sklep" and p.get("url"):
-        klucz = "rozm|" + p["url"]
-        z = pamiec_czytaj(klucz, 7 * 86400)
+        klucz = "rozm2|" + p["url"]  # tabela pamiętana 7 dni, jej brak tylko dobę (sklep mógł zmienić stronę)
+        z = pamiec_czytaj(klucz, 7 * 86400) or pamiec_czytaj("rozm2n|" + p["url"], 86400)
         if z is None:
             kod, b = pobierz(p["url"], czas=20)
             z = {"t": z_html(b.decode("utf-8", "ignore")) if kod == 200 else None}
             if kod == 200:
-                pamiec_zapisz(klucz, z)
+                pamiec_zapisz(klucz if z["t"] else "rozm2n|" + p["url"], z)
         if z and z.get("t"):
             wyn.update({"tabela": z["t"], "zrodlo": "produkt", "zrodlo_url": p["url"]})
             return wyn

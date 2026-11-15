@@ -183,16 +183,24 @@ def _wywolaj(model, czesci, schemat):
         cfg = dict(cfg, responseSchema=schemat)
         cialo = json.dumps({"contents": [{"role": "user", "parts": czesci}], "generationConfig": cfg})
         for proba in range(3):
-            kod, d = pobierz_json(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                                  naglowki={"Content-Type": "application/json", "x-goog-api-key": k}, czas=90, dane=cialo)
+            kod, b = pobierz(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                             {"Content-Type": "application/json", "Accept": "application/json", "x-goog-api-key": k}, czas=90, dane=cialo)
+            try:
+                d = json.loads(b.decode("utf-8", "ignore")) if b else None
+            except Exception:
+                d = None
+            if kod != 200:
+                blad, d = (d or {}).get("error") if isinstance(d, dict) else None, None
             if kod in (429, 500, 503) and proba < 2:
-                time.sleep(3 * (proba + 1)); continue
+                time.sleep(4 * (proba + 1)); continue
             break
         if kod == 404:
             _martwe.add(model)
             return 404, None
         if kod in (403, 429):
-            ustawienie("ai_ostatni_blad", json.dumps({"kod": kod, "czas": int(time.time())}))  # np. brak środków na koncie
+            # treść od Google rozróżnia chwilowy limit na minutę od limitu wydatków albo braku środków
+            ustawienie("ai_ostatni_blad", json.dumps({"kod": kod, "czas": int(time.time()), "model": model,
+                                                     "status": (blad or {}).get("status"), "opis": ((blad or {}).get("message") or "")[:300]}))
         if kod == 400:
             continue  # model nie zna któregoś ustawienia, próbujemy prostszej konfiguracji
         if not d:
