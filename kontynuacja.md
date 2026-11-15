@@ -85,3 +85,8 @@ Najlepsza droga dla każdego sklepu:
 - Klasyfikacja ponawiana: paczki po 10, potem po 4, potem model zapasowy; zdjęcie: w=400 → oryginał → bez parametrów.
 - AI niedostępne (np. budżet) → decyzja_slowna: tylko jednoznacznie eleganckie z opisu.
 - Kontrola zapisuje szczegóły ocen wzorca (/kontrola) → kalibracja zasad u mnie na prawdziwych odpowiedziach modelu bez kolejnych kosztów.
+
+## 0.7.3 (15.11.2026): kalibracja na prawdziwych odpowiedziach modelu
+- Po 0.7.2: 0 błędów krytycznych, 68 dobrych ukrytych, 1 błąd płci (Amazon „T-shirt z mężczyzn”, nazwa sklepu myląca). Odpowiedzi modelu dla wzorca pobrane z /kontrola, reguły testowane lokalnie (serwer/kontrola/kalibracja.py) bez kosztów.
+- Wszystkie 68 pominięć: AI zbyt oszczędnie wypisuje okazje. nadzor.okazje(): wieczor (f≥3, nie sweter) ⇒ sylwester; wieczor f≥4 i nie skóra ⇒ wesele; sukienka f≥3 z wieczorem ⇒ wesele (min. elegancja 3 dla sukienek na wesele); praca+randka f≥3 ⇒ wieczor (nie torebka/kurtka/wyrazisty wzór); praca albo wieczor/sylwester f≥3 ⇒ randka; codzien f≥2 dla ubrań gładkich/stonowanych ⇒ randka. Sylwester min. elegancja 2 (gdy AI go wypisało). Usunięty zakaz wyrazistego wzoru do pracy (AI i wzorzec się zgadzały).
+- Wynik na wzorcu: 0 błędów krytycznych, ukryte dobre 68 → 20, zgodność 98% (996/1016). Uwaga: reguły dobrane na tym samym zestawie — kolejny krok to drugi, nowy zestaw sprawdzający (żeby wykluczyć dopasowanie „pod test”) i zgłoszenia „Nie pasuje”.
