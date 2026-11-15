@@ -26,15 +26,15 @@ ZRODLA = [
      "przegladarka": True},
     {"nazwa": "Heuritech", "typ": "dane", "kraj": "INT", "sposob": "linki", "url": "https://heuritech.com/blog/", "sciezka": r"/articles/"},
     {"nazwa": "WGSN", "typ": "dane", "kraj": "INT", "sposob": "linki", "url": "https://www.wgsn.com/en/blogs", "sciezka": r"/blog/"},
-    {"nazwa": "Vogue", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.vogue.com/feed/rss", "sciezka": r"/article/"},
-    {"nazwa": "Harper's Bazaar", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.harpersbazaar.com/rss/fashion.xml/"},
-    {"nazwa": "Who What Wear", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.whowhatwear.com/rss"},
+    {"nazwa": "Vogue", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.vogue.com/feed/rss", "sciezka": r"/article/", "profil": "damski"},
+    {"nazwa": "Harper's Bazaar", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.harpersbazaar.com/rss/fashion.xml/", "profil": "damski"},
+    {"nazwa": "Who What Wear", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.whowhatwear.com/rss", "profil": "damski"},
     {"nazwa": "FashionUnited", "typ": "branza", "kraj": "INT", "sposob": "rss", "url": "https://fashionunited.com/rss-news", "sciezka": r"/news/fashion/"},
-    {"nazwa": "Vogue Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.vogue.pl/", "przegladarka": True},
-    {"nazwa": "Harper's Bazaar Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.harpersbazaar.pl/", "przegladarka": True},
-    {"nazwa": "Elle Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.elle.pl/", "sciezka": r"/moda/"},
-    {"nazwa": "Glamour Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.glamour.pl/", "sciezka": r"/moda/"},
-    {"nazwa": "Twój Styl", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.twojstyl.pl/", "sciezka": r"/artykul/"},
+    {"nazwa": "Vogue Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.vogue.pl/", "przegladarka": True, "profil": "damski"},
+    {"nazwa": "Harper's Bazaar Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.harpersbazaar.pl/", "przegladarka": True, "profil": "damski"},
+    {"nazwa": "Elle Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.elle.pl/", "sciezka": r"/moda/", "profil": "damski"},
+    {"nazwa": "Glamour Polska", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.glamour.pl/", "sciezka": r"/moda/", "profil": "damski"},
+    {"nazwa": "Twój Styl", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.twojstyl.pl/", "sciezka": r"/artykul/", "profil": "damski"},
     {"nazwa": "fashionbiznes.pl", "typ": "branza", "kraj": "PL", "sposob": "rss", "url": "https://fashionbiznes.pl/feed/"},
     {"nazwa": "Breuninger Magazyn", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.breuninger.com/pl/magazyn/moda/",
      "sciezka": r"/magazyn/moda/trendy"},
@@ -50,6 +50,9 @@ ZRODLA = [
     {"nazwa": "Mr Vintage", "typ": "redakcja", "kraj": "PL", "sposob": "rss", "url": "https://mrvintage.pl/feed", "dzial": "meskie", "modowy": True},
     {"nazwa": "K MAG", "typ": "redakcja", "kraj": "PL", "sposob": "rss", "url": "https://kmag.pl/rss", "sciezka": r"/article/"},
 ]
+
+
+PROFIL_DAMSKI = {z["nazwa"] for z in ZRODLA if z.get("profil") == "damski"}
 
 
 def _kolejnosc():
@@ -202,6 +205,66 @@ def zweryfikowany(cytat, tekst):
 SCHEMAT_TYTULY = {"type": "ARRAY", "items": {"type": "INTEGER"}}
 
 
+SCHEMAT_NAZWY = {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {"nr": {"type": "INTEGER"}, "nazwa": {"type": "STRING"}},
+                                             "required": ["nr", "nazwa"]}}
+
+with _baza_blokada:
+    DB.execute("CREATE TABLE IF NOT EXISTS tr_nazwy (nazwa TEXT PRIMARY KEY, poprawiona TEXT)")
+    DB.commit()
+
+
+def popraw_nazwy(nazwy):
+    """Korekta językowa nazw trendów, raz na nazwę (pamiętana w tr_nazwy): polskie znaki, pisownia, mianownik, naturalna polszczyzna.
+    Znaczenie bez zmian. Zwraca słownik {stara: poprawiona}."""
+    nazwy = sorted({n.strip() for n in nazwy if n and n.strip()})
+    if not nazwy:
+        return {}
+    with _baza_blokada:
+        znane = dict(DB.execute(f"SELECT nazwa, poprawiona FROM tr_nazwy WHERE nazwa IN ({','.join('?' * len(nazwy))})", nazwy).fetchall())
+    nowe = [n for n in nazwy if n not in znane]
+    for i in range(0, len(nowe), 60):
+        paczka = nowe[i:i + 60]
+        tresc = ("Popraw językowo nazwy trendów mody. Każda nazwa: poprawna polszczyzna z polskimi znakami (ą ć ę ł ń ó ś ź ż), "
+                 "bez literówek, mianownik, 1-5 słów, naturalnie brzmiąca, zaczyna się wielką literą. NIE zmieniaj znaczenia, "
+                 "nie dopisuj niczego od siebie, zostaw nazwy marek. Gdy nazwa jest poprawna, zwróć ją bez zmian. "
+                 "Przykłady: „Wysokie kozaki ze skory” → „Wysokie kozaki ze skóry”, „Biżuteria broszki” → „Broszki”, "
+                 "„Ubrania mokry połysk” → „Ubrania z efektem mokrego połysku”.\n" + "\n".join(f"{j}: {n}" for j, n in enumerate(paczka)))
+        wyn = None
+        for m in _modele_tanie():
+            kod, wyn = K._wywolaj(m, [{"text": tresc}], SCHEMAT_NAZWY)
+            if kod == 404:
+                continue
+            break
+        popr = {}
+        for x in wyn or []:
+            try:
+                j, n = int(x["nr"]), " ".join(str(x["nazwa"]).split())
+            except Exception:
+                continue
+            if 0 <= j < len(paczka) and 0 < len(n) <= 60:
+                popr[paczka[j]] = n[:1].upper() + n[1:]
+        if not wyn:
+            continue  # AI chwilowo niedostępne: spróbujemy przy następnym zbieraniu
+        with _baza_blokada:
+            DB.executemany("INSERT OR REPLACE INTO tr_nazwy VALUES (?,?)", [(n, popr.get(n, n)) for n in paczka])
+            DB.commit()
+        znane.update({n: popr.get(n, n) for n in paczka})
+    return {n: znane.get(n, n) for n in nazwy}
+
+
+def popraw_zapisane_nazwy():
+    """Jednorazowo i potem dla każdej nowej nazwy: poprawia nazwy już zapisanych wzmianek."""
+    with _baza_blokada:
+        nazwy = [r[0] for r in DB.execute("SELECT DISTINCT nazwa FROM tr_wzm WHERE nazwa NOT IN (SELECT poprawiona FROM tr_nazwy)").fetchall()]
+    mapa = popraw_nazwy(nazwy)
+    zmiany = [(nowa, stara) for stara, nowa in mapa.items() if nowa != stara]
+    if zmiany:
+        with _baza_blokada:
+            DB.executemany("UPDATE tr_wzm SET nazwa=? WHERE nazwa=?", zmiany)
+            DB.commit()
+    return zmiany
+
+
 def _modele_tanie():
     return [m for m in TANIE_MODELE if m not in K._martwe] + [m for m in K.modele() if m not in TANIE_MODELE and m not in K._martwe]
 
@@ -252,7 +315,7 @@ def wyciagnij(zrodlo, tytul, tekst):
              "„Szerokie spodnie z zakładkami”, „Mokasyny z frędzlami”). Jeśli trend jest na tej liście znanych nazw, użyj DOKŁADNIE tej nazwy: "
              f"{'; '.join(nazwy) if nazwy else '(brak)'}\n"
              "kategoria, kolor, material, wzor, rodzaj = ujednolicone cechy trendu (brak, gdy nie dotyczy).\n"
-             "dzial = dla kogo (oba, gdy tekst nie rozróżnia). kierunek = co tekst mówi o trendzie. "
+             "dzial = dla kogo tekst przedstawia trend: damskie albo meskie; oba TYLKO wtedy, gdy tekst wprost mówi o kobietach i mężczyznach albo o rzeczach unisex. kierunek = co tekst mówi o trendzie. "
              "kiedy = teraz (obecny sezon) albo nastepny_sezon (zapowiedź z pokazów na kolejny sezon).\n"
              "haslo = polskie hasło do wyszukania takich rzeczy w sklepie (np. „fioletowy sweter”, „spódnica midi satynowa”, „marynarka dwurzędowa”).\n"
              "cytat = DOSŁOWNY fragment tekstu (3-30 słów, w oryginalnym języku, skopiowany znak w znak), który mówi o tym trendzie. "
@@ -269,6 +332,13 @@ def wyciagnij(zrodlo, tytul, tekst):
 def zbierz(maks=MAKS_NA_DOBE, wypisuj=False):
     """Pobiera nowe artykuły, wyciąga i weryfikuje wzmianki. Zwraca statystykę."""
     stat = {"zrodla": {}, "artykuly": 0, "wzmianki": 0, "odrzucone_cytaty": 0}
+    try:
+        zm = popraw_zapisane_nazwy()
+        stat["poprawione_nazwy"] = len(zm)
+        if wypisuj and zm:
+            print("Poprawione nazwy trendów: " + "; ".join(f"{s} → {n}" for n, s in zm))
+    except Exception as e:
+        print("Korekta nazw: błąd", e)
     for z in _kolejnosc():
         if stat["artykuly"] >= maks:
             break
@@ -319,6 +389,9 @@ def zbierz(maks=MAKS_NA_DOBE, wypisuj=False):
                         stat["odrzucone_cytaty"] += 1
                         continue
                     dobre.append(w)
+                popr = popraw_nazwy([w["nazwa"] for w in dobre])
+                for w in dobre:
+                    w["nazwa"] = popr.get(w["nazwa"].strip(), w["nazwa"].strip())
                 with _baza_blokada:
                     DB.executemany("INSERT INTO tr_wzm VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [
                         (url, z["nazwa"], z["typ"], z["kraj"], int(time.time()), z.get("dzial") or w["dzial"], w["kategoria"],
@@ -339,49 +412,88 @@ def zbierz(maks=MAKS_NA_DOBE, wypisuj=False):
 
 
 # ---------- nasze dane ze sklepów ----------
-RODZAJ_W_NAZWIE = re.compile(r"\w+")
-
-
 def klucz_trendu(s):
     """Klucz nazwy trendu jak w img/trendy/mapa.json: małe litery, bez polskich znaków i interpunkcji."""
     s = unicodedata.normalize("NFKD", (s or "").lower().replace("ł", "l")).encode("ascii", "ignore").decode()
     return " ".join(re.sub(r"[^a-z0-9 ]+", " ", s).split())
 
 
-def mierzalny(t):
-    """Czy nasze cechy produktów oddają ten trend w całości. Fason, detal, styl, marki i zestawienia kolorów: nie
-    (np. „Spodnie Capri” to nie wszystkie spodnie, „Pudrowy róż i żółty” to nie sam róż). Wtedy nie podajemy udziału w sklepach."""
+# Rodzaj rzeczy wymieniony w nazwie trendu (formy słów: początki wyrazów po usunięciu polskich znaków). Kolejność ma znaczenie:
+# dłuższe i bardziej szczegółowe początki przed krótszymi (spódnica przed spodniami, bluzka przed bluzą).
+RODZAJ_Z_SLOWA = [
+    ("spodnic", {"spódnica"}), ("spodni", {"spodnie"}), ("jeans", {"jeansy"}), ("dzins", {"jeansy"}), ("bluzk", {"bluzka"}), ("bluz", {"bluza"}),
+    ("koszulk", {"t-shirt", "polo"}), ("t shirt", {"t-shirt"}), ("tshirt", {"t-shirt"}), ("koszul", {"koszula"}), ("polo", {"polo"}),
+    ("swetr", {"sweter"}), ("sweter", {"sweter"}), ("kardigan", {"kardigan"}), ("marynark", {"marynarka"}), ("kamizel", {"kamizelka"}),
+    ("kurtk", {"kurtka"}), ("plaszcz", {"płaszcz"}), ("sukien", {"sukienka"}), ("szort", {"szorty"}), ("legins", {"legginsy"}),
+    ("kombinezon", {"kombinezon"}), ("garnitur", {"garnitur"}), ("dres", {"dres"}), ("botk", {"botki"}), ("kozak", {"kozaki"}),
+    ("sneakers", {"sneakersy"}), ("polbut", {"półbuty"}), ("szpilk", {"szpilki"}), ("czolen", {"czółenka"}), ("mokasyn", {"mokasyny"}),
+    ("balerin", {"baleriny"}), ("baletk", {"baleriny"}), ("sandal", {"sandały"}), ("klapk", {"klapki"}), ("toreb", {"torebka"}),
+    ("torb", {"torebka"}), ("plecak", {"plecak"}), ("portfel", {"portfel"}), ("bizuteri", {"biżuteria"}), ("zegark", {"zegarek"}),
+    ("okular", {"okulary"}), ("czapk", {"czapka"}), ("kapelusz", {"kapelusz"}), ("szal", {"szal"}), ("rekawiczk", {"rękawiczki"}),
+    ("krawat", {"krawat"}), ("buty", {"buty", "botki", "kozaki", "sneakersy", "półbuty", "szpilki", "czółenka", "mokasyny", "baleriny", "sandały"}),
+]
+GRUPY_W_NAZWIE = [("odziez wierzchni", {"kurtka", "płaszcz"}), ("okrycia", {"kurtka", "płaszcz"})]
+
+
+def rodzaje_z_nazwy(nazwa):
+    k = klucz_trendu(nazwa)
+    wyn = set()
+    for fraza, r in GRUPY_W_NAZWIE:
+        if fraza in k:
+            wyn |= r
+    for slowo in k.split():
+        for poczatek, r in RODZAJ_Z_SLOWA:
+            if slowo.startswith(poczatek) or (" " in poczatek and poczatek in k):
+                wyn |= r
+                break
+    return wyn
+
+
+def cechy_pomiaru(t):
+    """Co dokładnie mierzymy w nowościach sklepów, albo None, gdy nasze cechy nie oddają trendu w całości.
+    Liczy się cecha, która definiuje trend (wzór, materiał, kolor), plus rodzaj rzeczy tylko wtedy, gdy nazwa go wymienia
+    („Krata” = każda rzecz w kratę, „Białe jeansy” = białe jeansy). Fason, detal, styl, marki i zestawienia kolorów: bez pomiaru."""
     nazwa = (t.get("nazwa") or "").lower()
-    if t["kategoria"] in ("fason", "detal", "styl") or " i " in f" {nazwa} " or "," in nazwa:
-        return False
-    cechy = [t[k] for k in ("kolor", "material", "wzor", "rodzaj") if t.get(k) and t[k] != "brak"]
-    if not cechy:
-        return False
-    if t["kategoria"] == "rzecz":
-        # sama rzecz (np. „Mokasyny”): nazwa to tylko rodzaj, bez przymiotników, których nie mierzymy
-        return len(RODZAJ_W_NAZWIE.findall(nazwa)) == 1 and t.get("rodzaj") not in (None, "brak")
-    return True
-
-
-def _pasuje(dane, t):
-    """Produkt ma WSZYSTKIE cechy trendu (kolor, materiał, wzór, rodzaj; pomijamy „brak”)."""
-    if not mierzalny(t):
+    kat = t.get("kategoria")
+    if kat in ("fason", "detal", "styl") or " i " in f" {nazwa} " or "," in nazwa:
         return None
-    for k, pole in (("kolor", "kolor"), ("material", "material"), ("wzor", "wzor_rodzaj"), ("rodzaj", "r")):
-        v = t.get(k)
+    rodzaje = rodzaje_z_nazwy(nazwa)
+    if kat in ("kolor", "material", "wzor"):
+        v = t.get(kat)
         if not v or v == "brak":
-            continue
-        if k == "material":
-            if dane.get(pole) not in K.ZGODNE_MATERIALY.get(v, {v}):
-                return False
-        elif dane.get(pole) != v:
-            return False
+            return None
+        wyn = {kat: v}
+        if rodzaje:
+            wyn["rodzaj"] = rodzaje
+        return wyn
+    if kat == "rzecz" and rodzaje and len(nazwa.split()) == 1:
+        return {"rodzaj": rodzaje}  # sama rzecz, np. „Mokasyny”
+    return None
+
+
+def mierzalny(t):
+    return cechy_pomiaru(t) is not None
+
+
+def _pasuje(dane, req):
+    if "rodzaj" in req and dane.get("r") not in req["rodzaj"]:
+        return False
+    if "kolor" in req and dane.get("kolor") != req["kolor"]:
+        return False
+    if "wzor" in req and dane.get("wzor_rodzaj") != req["wzor"]:
+        return False
+    if "material" in req and dane.get("material") not in K.ZGODNE_MATERIALY.get(req["material"], {req["material"]}):
+        return False
     return True
 
 
 def dane_sklepow(dzial, cechy, tygodni=8):
     """Udział rzeczy o danej cesze wśród produktów, które pojawiły się w sklepach (pierwszy raz u nas) w kolejnych tygodniach.
-    Zwraca (seria procentów od najstarszego tygodnia, liczebność ostatnich 4 tygodni) albo (None, 0), gdy za mało danych."""
+    Zwraca (seria procentów od najstarszego tygodnia, liczebność ostatnich 4 tygodni) albo (None, 0), gdy za mało danych
+    albo gdy trendu nie da się zmierzyć naszymi cechami."""
+    req = cechy_pomiaru(cechy)
+    if not req:
+        return None, 0
     teraz = int(time.time())
     with _baza_blokada:
         wiersze = DB.execute("SELECT k.dane, MIN(c.czas) FROM klasy2 k JOIN ceny c ON c.pid = k.pid "
@@ -396,9 +508,7 @@ def dane_sklepow(dzial, cechy, tygodni=8):
             continue
         i = tygodni - 1 - (teraz - pierwszy) // (7 * 86400)
         if 0 <= i < tygodni:
-            p = _pasuje(d, cechy)
-            if p is None:
-                return None, 0
+            p = _pasuje(d, req)
             tyg[i][1] += 1
             tyg[i][0] += 1 if p else 0
     proba = sum(t[1] for t in tyg[-4:])
@@ -418,6 +528,9 @@ def zestawienie(dzial):
         w = DB.execute("SELECT w.url, w.zrodlo, w.typ, w.kraj, w.czas, w.dzial, w.kategoria, w.nazwa, w.kolor, w.material, w.wzor, "
                        "w.rodzaj, w.kierunek, w.kiedy, w.haslo, a.tytul FROM tr_wzm w LEFT JOIN tr_art a ON a.url = w.url "
                        "WHERE w.czas > ? AND w.dzial IN (?, 'oba')", (od, dzial)).fetchall()
+    # Redakcje piszące głównie o modzie kobiecej: wzmianka bez wyraźnego „dla mężczyzn” (oba) nie zasila działu męskiego.
+    if dzial == "meskie":
+        w = [r for r in w if not (r[5] == "oba" and r[1] in PROFIL_DAMSKI)]
     grupy = {}
     for r in w:
         grupy.setdefault(r[7].lower(), []).append(r)

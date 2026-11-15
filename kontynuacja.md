@@ -160,3 +160,10 @@ Najlepsza droga dla każdego sklepu:
 
 ## 0.11.5 (15.11.2026): ekran analizy z przedmiotami
 - Arkusz 8 (2×2, tnij_arkusz.py rozpoznaje siatkę po liczbie plików): krok-trendy (magazyny), krok-sklepy (butik), krok-promocje (waga), krok-stylizacje (nożyczki z nicią) w img/ikony/. Każdy krok analizy ma swój przedmiot, a środek pierścienia płynnie zmienia przedmiot na aktywny krok.
+
+## 0.11.6 (15.11.2026): porządki na serwerze (koszty, trendy męskie, procenty, nazwy)
+- Koszt AI 15.11: 6,05 USD w jeden dzień (połowa budżetu 12 USD), głównie kontrola jakości (2 × ok. 0,3 USD przy każdej instalacji). Teraz kontrola tylko przy zmianie zasad: kontrola.odcisk_zasad() = skrót polecenia AI, cech, nadzor.py, plec_ze_sklepu, kontrola.py, zloty.json i modelu, zapisany w ustawieniu kontrola_odcisk; bez zmian → wypisuje ostatni wynik. Wymuszenie: `python -m trendo.kontrola --wymus`.
+- Wzorzec #145 (polo Sinsay z wakacyjnym wzorem): etykieta smartcasual usunięta jako sporna (kodeks reguły 5–6 dopuszczają polo i ciekawsze wzory), powód w polu „sporne”.
+- Trendy męskie: redakcje o profilu damskim (Vogue, Harper's Bazaar, Who What Wear, Vogue PL, Harper's Bazaar PL, Elle PL, Glamour PL, Twój Styl) z dzial="oba" nie zasilają działu męskiego (filtr w zestawienie, działa też na zapisane dane). Polecenie: „oba” tylko, gdy tekst wprost mówi o obu płciach lub unisex.
+- Udział w nowościach: trendy.cechy_pomiaru() — mierzymy cechę definiującą trend (wzór/materiał/kolor) plus rodzaj tylko, gdy nazwa go wymienia (RODZAJ_Z_SLOWA, grupy „odzież wierzchnia” = kurtka/płaszcz). Było: AND wszystkich cech z AI (np. „Krata” liczona tylko jako beżowa krata → 0,0%).
+- Nazwy trendów: popraw_nazwy() — korekta pisowni przez tani model raz na nazwę (tabela tr_nazwy), nowe nazwy przed zapisem, zapisane jednorazowo na starcie zbierania (UPDATE tr_wzm). Klucze grafik w mapa.json są bez polskich znaków, więc poprawki typu „skory” → „skóry” nie gubią grafik.

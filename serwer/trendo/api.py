@@ -17,7 +17,7 @@ import threading
 from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.11.1"
+WERSJA = "0.11.6"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600

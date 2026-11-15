@@ -2577,10 +2577,12 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false,
-   "smartcasual": false
+   "sylwester": false
   },
-  "kodeks": "2026-11-15"
+  "kodeks": "2026-11-15",
+  "sporne": {
+   "smartcasual": "Polo z całościowym wzorem w stylu wakacyjnym: kodeks (reguły 5–6) dopuszcza polówki i ciekawsze wzory w smart casual, ale nadruk wakacyjny jest na granicy. Bez twardej etykiety."
+  }
  },
  {
   "nr": 146,

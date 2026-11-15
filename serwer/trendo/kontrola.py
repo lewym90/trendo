@@ -131,12 +131,38 @@ def drukuj(r):
     print(f"  Punkty karne: {r['punkty_karne']} (mniej = lepiej)")
 
 
+def odcisk_zasad(model):
+    """Odcisk wszystkiego, co wpływa na ocenę: polecenie i cechy AI, zasady nadzoru, płeć ze sklepu, wzorzec, sama kontrola, model.
+    Kontrola kosztuje (ok. 0,3 USD za przebieg), więc powtarzamy ją tylko, gdy coś z tego się zmieniło."""
+    import hashlib, inspect
+    from . import nadzor, wspolne
+    czesci = [model, str(klasyfikator.OCENA_WERSJA), getattr(klasyfikator, "ZASADY", ""),
+              inspect.getsource(nadzor), inspect.getsource(wspolne.plec_ze_sklepu), inspect.getsource(sys.modules[__name__])]
+    for n in ("MATERIALY", "WZORY_RODZAJ", "NADRUKI", "KOLORY", "STYLE", "OKAZJE", "RODZAJE"):
+        czesci.append(repr(getattr(klasyfikator, n, "")))
+    with open(os.path.join(os.path.dirname(__file__), "..", "kontrola", "zloty.json"), "rb") as p:
+        czesci.append(hashlib.sha256(p.read()).hexdigest())
+    return hashlib.sha256("\n".join(map(str, czesci)).encode()).hexdigest()[:16]
+
+
 def main():
     if not klasyfikator.dostepny():
         print("Kontrola: brak klucza Gemini, pomijam.")
         return
-    klasyfikator.BUDZET = max(klasyfikator.BUDZET, klasyfikator.koszt_miesiac() + 3.0)  # kontrola zawsze może się wykonać
     arg = sys.argv[1:]
+    model_teraz = klasyfikator.ustawienie("model_ai")
+    if model_teraz and not any(a in arg for a in ("--wymus", "--model", "--wybierz")):
+        odc = odcisk_zasad(model_teraz)
+        if klasyfikator.ustawienie("kontrola_odcisk") == odc:
+            try:
+                w = json.loads(klasyfikator.ustawienie("kontrola_wynik") or "{}")
+            except Exception:
+                w = {}
+            print(f"Kontrola jakości: zasady oceny bez zmian od ostatniej kontroli, pomijam (oszczędność ok. 0,6 USD). "
+                  f"Ostatni wynik: model {w.get('model', model_teraz)}, błędy krytyczne {w.get('krytyczne', '?')}, "
+                  f"zgodność {round(100 * w.get('trafione', 0) / max(1, w.get('sprawdzen', 1)))}%, hasła z błędami {w.get('hasla_bledy', '?')}.")
+            return
+    klasyfikator.BUDZET = max(klasyfikator.BUDZET, klasyfikator.koszt_miesiac() + 3.0)  # kontrola zawsze może się wykonać
     if "--model" in arg:
         modele = [arg[arg.index("--model") + 1]]
     elif "--wybierz" in arg or not klasyfikator.ustawienie("model_ai"):
@@ -180,6 +206,7 @@ def main():
     klasyfikator.ustawienie("kontrola_wynik", json.dumps({
         "czas": int(time.time()), "model": naj["model"], "krytyczne": len(naj["krytyczne"]), "sprawdzen": naj["sprawdzen"],
         "trafione": naj["trafione"], "ukryte_dobre": len(naj["ukryte_dobre"]), "plec": len(naj["plec"]), "hasla_bledy": bledy_hasel}))
+    klasyfikator.ustawienie("kontrola_odcisk", odcisk_zasad(klasyfikator.ustawienie("model_ai")))
     if naj["krytyczne"]:
         print("\nUWAGA: są błędy krytyczne. Wklej ten wynik, poprawię zasady.")
     print(f"\nKONTROLA: model w użyciu: {naj['model']}. Błędy krytyczne: {len(naj['krytyczne'])}, "

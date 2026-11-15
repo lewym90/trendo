@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.11.5';
+  const WERSJA = '0.11.6';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
