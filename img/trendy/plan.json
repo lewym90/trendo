@@ -1,5 +1,5 @@
 {
-  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor. Arkusze 5–6: kafelki okazji (img/okazje/okazja-<d|m>-<okazja>.webp) i ilustracje pustych ekranów (img/puste/). Arkusz 7: przedmioty w różowym złocie (img/ikony/): tryby wyszukiwania i puste ekrany. Grafiki 8–9: slajdy powitania (img/powitanie-2.jpg, img/powitanie-3.jpg, pionowe, całe). Arkusz 8 (2x2): kroki ekranu analizy (img/ikony/krok-*.webp).",
+  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor. Arkusze 5–6: kafelki okazji (img/okazje/okazja-<d|m>-<okazja>.webp) i ilustracje pustych ekranów (img/puste/). Arkusz 7: przedmioty w różowym złocie (img/ikony/): tryby wyszukiwania i puste ekrany. Grafiki 8–9: slajdy powitania (img/powitanie-2.jpg, img/powitanie-3.jpg, pionowe, całe). Arkusz 8 (2x2): kroki ekranu analizy (img/ikony/krok-*.webp). Arkusze 11–13: świat męski (img/m/...; ta sama nazwa co damska grafika). Pole siatki: niestandardowy układ [wiersze, kolumny].",
   "arkusze": {
     "1": [
       {
@@ -427,6 +427,94 @@
           "buty z noskiem w szpic"
         ]
       }
+    ],
+    "11": [
+      {
+        "plik": "tryb-rzecz",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "tryb-outfit",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "tryb-dodatki",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "tryb-zdjecie",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "pusty-obserwowane",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "pusty-wyniki",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "pusty-trendy",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "pusty-okazje",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "rozmiary",
+        "katalog": "m/ikony"
+      }
+    ],
+    "12": [
+      {
+        "plik": "krok-trendy",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "krok-sklepy",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "krok-promocje",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "krok-stylizacje",
+        "katalog": "m/ikony"
+      },
+      {
+        "plik": "pusty-koszyk",
+        "katalog": "m/puste"
+      },
+      {
+        "plik": "pusty-alerty",
+        "katalog": "m/puste"
+      }
+    ],
+    "13": [
+      {
+        "plik": "rosnie",
+        "katalog": "m/status"
+      },
+      {
+        "plik": "nadchodzi",
+        "katalog": "m/status"
+      },
+      {
+        "plik": "szczyt",
+        "katalog": "m/status"
+      },
+      {
+        "plik": "wygasa",
+        "katalog": "m/status"
+      }
+    ]
+  },
+  "siatki": {
+    "12": [
+      2,
+      3
     ]
   }
 }

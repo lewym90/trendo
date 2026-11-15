@@ -74,6 +74,8 @@
 
   /* ---------- wykresy ---------- */
   let nrWykresu = 0;
+  // kolory ze świata (damski: różowe złoto, męski: mosiądz)
+  const kol = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   // Gładka krzywa bez przestrzeleń (monotoniczna, Fritsch–Carlson): nie rysuje wzrostu, którego nie było.
   function krzywa(p) {
     if (p.length < 2) return '';
@@ -115,11 +117,11 @@
     const ost = zn[zn.length - 1];
     return `<svg class="wykres-trendu" width="${o.w}" height="${o.h}" viewBox="0 0 ${o.w} ${o.h}" aria-hidden="true">
       <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${kolor}" stop-opacity=".34"/><stop offset=".75" stop-color="${kolor}" stop-opacity="0"/></linearGradient></defs>
-      ${o.os ? `<line x1="${lewo}" x2="${prawo}" y1="${dol + .5}" y2="${dol + .5}" stroke="rgba(240,196,182,.16)" stroke-width="1"/>` : ''}
+      ${o.os ? `<line x1="${lewo}" x2="${prawo}" y1="${dol + .5}" y2="${dol + .5}" stroke="rgba(${kol('--linia-rgb')},.16)" stroke-width="1"/>` : ''}
       <path d="${mgla}" fill="url(#${id})"/>
       <path d="${linie}" fill="none" stroke="${kolor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       <circle cx="${X(ost[0]).toFixed(1)}" cy="${Y(ost[1]).toFixed(1)}" r="7" fill="${kolor}" opacity=".16"/>
-      <circle cx="${X(ost[0]).toFixed(1)}" cy="${Y(ost[1]).toFixed(1)}" r="3.4" fill="${kolor}" stroke="#160E13" stroke-width="2"/></svg>`;
+      <circle cx="${X(ost[0]).toFixed(1)}" cy="${Y(ost[1]).toFixed(1)}" r="3.4" fill="${kolor}" stroke="${kol('--tlo2')}" stroke-width="2"/></svg>`;
   }
 
   /* Znak statusu, gdy danych jest za mało na wykres (mniej niż 3 tygodnie): pierścień w różowym złocie i strzałka w kolorze statusu. */
@@ -156,16 +158,16 @@
     const data = (t) => new Date(t * 1000).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
     return `<div class="wykres-ceny" data-wykres-ceny='${JSON.stringify({ t0, t1, l, p, W, g, d, pmin, pmax, punkty })}'>
       <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Cena ${data(t0)}: ${zl(ceny[0])}, dziś: ${zl(ost[0])}, najniższa: ${zl(min)}">
-      <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#EBBBA7" stop-opacity=".26"/><stop offset="1" stop-color="#EBBBA7" stop-opacity="0"/></linearGradient></defs>
-      <line x1="${l}" x2="${W - p}" y1="${d + .5}" y2="${d + .5}" stroke="rgba(240,196,182,.16)"/>
+      <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${kol('--roz')}" stop-opacity=".26"/><stop offset="1" stop-color="${kol('--roz')}" stop-opacity="0"/></linearGradient></defs>
+      <line x1="${l}" x2="${W - p}" y1="${d + .5}" y2="${d + .5}" stroke="rgba(${kol('--linia-rgb')},.16)"/>
       ${min !== max ? `<line x1="${l}" x2="${W - p}" y1="${Y(min).toFixed(1)}" y2="${Y(min).toFixed(1)}" stroke="rgba(158,217,180,.35)" stroke-width="1"/>
       <text x="${l}" y="${(Y(min) - 6).toFixed(1)}" class="opis-wykresu">najniższa ${zl(min)} · ${data(naj[1])}</text>` : ''}
       <path d="${s}V${d}H${X(t0).toFixed(1)}Z" fill="url(#${id})"/>
-      <path d="${s}" fill="none" stroke="#EBBBA7" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-      <circle cx="${X(t1).toFixed(1)}" cy="${Y(ost[0]).toFixed(1)}" r="7" fill="#EBBBA7" opacity=".18"/>
-      <circle cx="${X(t1).toFixed(1)}" cy="${Y(ost[0]).toFixed(1)}" r="4" fill="#F8DACB" stroke="#160E13" stroke-width="2"/>
+      <path d="${s}" fill="none" stroke="${kol('--roz')}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(t1).toFixed(1)}" cy="${Y(ost[0]).toFixed(1)}" r="7" fill="${kol('--roz')}" opacity=".18"/>
+      <circle cx="${X(t1).toFixed(1)}" cy="${Y(ost[0]).toFixed(1)}" r="4" fill="${kol('--akcent-jasny')}" stroke="${kol('--tlo2')}" stroke-width="2"/>
       <text x="${l}" y="${H - 6}" class="os-wykresu">${data(t0)}</text><text x="${W - p}" y="${H - 6}" text-anchor="end" class="os-wykresu">dziś</text>
-      <g class="celownik" visibility="hidden"><line y1="${g - 6}" y2="${d}" stroke="rgba(246,236,231,.35)"/><circle r="4" fill="#F8DACB" stroke="#160E13" stroke-width="2"/></g>
+      <g class="celownik" visibility="hidden"><line y1="${g - 6}" y2="${d}" stroke="rgba(${kol('--jasny-rgb')},.35)"/><circle r="4" fill="${kol('--akcent-jasny')}" stroke="${kol('--tlo2')}" stroke-width="2"/></g>
       </svg><div class="dymek" hidden></div></div>`;
   }
   // Dotyk lub kursor nad wykresem ceny: pionowa linia i cena z tego dnia.

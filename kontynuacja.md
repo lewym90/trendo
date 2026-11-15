@@ -185,3 +185,9 @@ Najlepsza droga dla każdego sklepu:
 ## 0.12.2 (15.11.2026): kafelki brakujących trendów
 - Instalacja 0.12.1: kontrola bez kosztów na 6 przebiegach, 0 krytycznych, hasła 28/28.
 - Arkusze 9 (3×3) i 10 (2×2) wycięte: 10 męskich trendów + Broszki + na zapas Dzianinowa estetyka (d) i Buty z noskiem w szpic (d). Pokrycie: 30/30 damskich i 20/20 męskich.
+
+## 0.13.0 (15.11.2026): dwa światy (damski i męski)
+- styles.css: wszystkie kolory przez zmienne (rgb jako --*-rgb do rgba()), paleta damska bez zmian, html[data-swiat="m"]: mosiądz (#D9B77E, gradient #F0DDB0→#CFA866→#8F6A36), koniak (--wino #4A2E1C), grafit (tło #0C0B0A). Atrybut na <html>, bo zmienne zależne od zmiennych liczą się na elemencie, gdzie je zdefiniowano.
+- app.js: ustawSwiat() przy każdym renderze (powitanie zawsze damskie), theme-color; przełącznik działu w trendach i ustawieniach zmienia świat; ostatni slajd powitania: „Dla niej / Dla niego”.
+- Grafiki męskie: img/m/<ta sama ścieżka> + GOTOWE_M (lista gotowych) + podmienGrafikiSwiata() po renderze (klasa wlasna-m wyłącza przemalowanie). Do czasu grafik: --przemaluj (hue-rotate 24°, saturate .62) na przedmiotach w różowym złocie. Wykresy biorą kolory ze zmiennych (grafika.js kol()).
+- tnij_arkusz.py: dowolna siatka z plan.json „siatki”: {"12": [2,3]}. Plan arkuszy 11 (3×3 tryby+puste), 12 (2×3 kroki analizy+koszyk+alerty), 13 (2×2 medaliony), okładki sezonu m/sezon-jz.jpg i m/sezon-wl.jpg.

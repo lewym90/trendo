@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.12.2';
+  const WERSJA = '0.13.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -77,6 +77,7 @@
       <div class="powitanie-znak">Trendo</div>
       <div class="powitanie-dol">
         <button class="btn" data-akcja="witajDalej" id="witaj-btn">Dalej ${IK.dalej}</button>
+        <div class="wybor-swiata" id="wybor-swiata" style="display:none"><button class="btn" data-akcja="zacznijSwiat" data-v="damskie">Dla niej</button><button class="btn drugi" data-akcja="zacznijSwiat" data-v="meskie">Dla niego</button></div>
         <div class="kropki" role="tablist" aria-label="Slajdy">${SLAJDY.map((_, i) => `<button role="tab" aria-label="Slajd ${i + 1}" data-akcja="witajSlajd" data-i="${i}" class="${i ? '' : 'tak'}"></button>`).join('')}</div>
       </div></section>`,
     po: () => {
@@ -85,9 +86,9 @@
       sl.addEventListener('scroll', () => {
         const i = nr();
         document.querySelectorAll('.kropki button').forEach((k, j) => k.classList.toggle('tak', j === i));
-        const b = document.getElementById('witaj-btn');
-        b.innerHTML = (i === SLAJDY.length - 1 ? 'Zacznijmy ' : 'Dalej ') + IK.dalej;
-        b.dataset.akcja = i === SLAJDY.length - 1 ? 'zacznij' : 'witajDalej';
+        const ost = i === SLAJDY.length - 1;
+        document.getElementById('witaj-btn').style.display = ost ? 'none' : '';
+        document.getElementById('wybor-swiata').style.display = ost ? 'grid' : 'none';
       }, { passive: true });
     }
   });
@@ -120,8 +121,8 @@
       ${ost.length ? `<div class="sekcja" style="margin-top:16px"><div class="chipy">${ost.map((q) => `<button class="chip" data-akcja="szukajOstatnie" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>` : ''}
 
       <div class="sekcja">
-        <a href="#/trendy" class="okladka" style="--foto:url('img/${s.plik}.jpg');text-decoration:none;color:var(--tekst)">
-          <div><p class="maly" style="color:#E7CFC6;margin:0 0 6px">Raport trendów</p><h2>${s.nazwa}<br>${s.rok}</h2><p>Co jest teraz w modzie i dokąd to zmierza.</p></div>
+        <a href="#/trendy" class="okladka" style="--foto:url('${obrazSwiata(s.plik + '.jpg')}');text-decoration:none;color:var(--tekst)">
+          <div><p class="maly" style="color:var(--tekst2);margin:0 0 6px">Raport trendów</p><h2>${s.nazwa}<br>${s.rok}</h2><p>Co jest teraz w modzie i dokąd to zmierza.</p></div>
         </a>
       </div>
 
@@ -251,7 +252,7 @@
           if (i === li.length) { setTimeout(() => { location.hash = '#/wyniki'; }, 450); return; }
           li[i].classList.add('aktywny');
           const pi = document.getElementById('pierscien-img');
-          if (pi && i) { pi.classList.add('znika'); const nowy = `img/ikony/${li[i].dataset.ik}.webp`; setTimeout(() => { pi.src = nowy; pi.classList.remove('znika'); }, 220); }
+          if (pi && i) { pi.classList.add('znika'); const nowy = obrazSwiata(`ikony/${li[i].dataset.ik}.webp`); setTimeout(() => { pi.src = nowy; pi.classList.remove('znika'); }, 220); }
           i++;
           EKRANY.analiza.timer = setTimeout(krok, 700);
         };
@@ -503,7 +504,7 @@
       <div class="przelacznik" role="radiogroup" aria-label="Dział">
         <button role="radio" aria-checked="${d === 'damskie'}" data-akcja="dzialTrendow" data-v="damskie">Damskie</button>
         <button role="radio" aria-checked="${d === 'meskie'}" data-akcja="dzialTrendow" data-v="meskie">Męskie</button></div>
-      <div class="okladka wejscie" style="--foto:url('img/${s.plik}.jpg');margin-top:14px"><div><p class="maly" style="color:#E7CFC6;margin:0 0 6px">Kluczowe trendy</p><h2>${s.nazwa}<br>${s.rok}</h2></div></div>
+      <div class="okladka wejscie" style="--foto:url('${obrazSwiata(s.plik + '.jpg')}');margin-top:14px"><div><p class="maly" style="color:var(--tekst2);margin:0 0 6px">Kluczowe trendy</p><h2>${s.nazwa}<br>${s.rok}</h2></div></div>
       <div class="chipy" style="margin-top:16px">
         ${[['wszystkie', 'Wszystkie'], ['rosnie', 'Rosnące'], ['nadchodzi', 'Nadchodzące'], ['szczyt', 'Na szczycie'], ['wygasa', 'Wygasające']].map(([v, n]) => `<button class="chip" aria-pressed="${filtrTrendow === v}" data-akcja="filtrTrendow" data-v="${v}">${n}</button>`).join('')}</div>
       <div style="margin-top:4px">${!dane ? '<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-trendy.webp" alt=""><p>Sprawdzam aktualne trendy w źródłach…</p></div>'
@@ -623,7 +624,7 @@
     const el = s.el.map(prod);
     const suma = el.reduce((a, p) => a + p.cena, 0);
     return `<a class="styl-karta" href="#/stylizacja/${s.id}"><div class="kolaz">${kolaz(s)}</div>
-      <div class="podpis"><p class="maly" style="color:#E7CFC6">Stylizacja ${DEMO.S.indexOf(s) + 1} z ${DEMO.S.length}</p><h3>${esc(s.nazwa)}</h3>
+      <div class="podpis"><p class="maly" style="color:var(--tekst2)">Stylizacja ${DEMO.S.indexOf(s) + 1} z ${DEMO.S.length}</p><h3>${esc(s.nazwa)}</h3>
         <div class="meta"><span>${el.length} elementów</span><b>~ ${zl(Math.round(suma * 100) / 100)}</b></div>
         <span class="btn maly" style="align-self:flex-start">Zobacz szczegóły ${IK.dalej}</span></div></a>`;
   }
@@ -652,7 +653,7 @@
       : p.weryf === 'second' ? `<div class="weryf" style="color:var(--szary)">${IK.second}Z drugiej ręki</div>`
       : p.weryf === 'sklep' ? `<div class="weryf" style="color:var(--promo)">${IK.okazje}Promocja według sklepu</div>` : '';
     return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
-      <button class="serce" style="position:relative;margin:-50px 8px 14px auto;width:36px;height:36px;border-radius:18px;background:rgba(14,9,12,.6);border:none;display:flex;align-items:center;justify-content:center" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj'}">${(ul ? IK.sercePelne : IK.serce).replace('<svg', '<svg width="18" height="18"')}</button>
+      <button class="serce" style="position:relative;margin:-50px 8px 14px auto;width:36px;height:36px;border-radius:18px;background:rgba(var(--pasek-rgb),.6);border:none;display:flex;align-items:center;justify-content:center" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj'}">${(ul ? IK.sercePelne : IK.serce).replace('<svg', '<svg width="18" height="18"')}</button>
       <a href="#/produkt/${p.id}" style="text-decoration:none;color:var(--tekst);display:flex;flex-direction:column;gap:4px">
       <span class="sklep">${marka(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</span>${wer}</a></div>`;
@@ -706,6 +707,7 @@
   /* ---------- akcje ---------- */
   const A = {
     zacznij() { st.witaj = true; zapisz(); location.hash = '#/start'; },
+    zacznijSwiat(el) { st.dzial = el.dataset.v; st.witaj = true; zapisz(); location.hash = '#/start'; },
     witajDalej() { const sl = document.getElementById('slajdy'); sl.scrollTo({ left: (Math.round(sl.scrollLeft / sl.clientWidth) + 1) * sl.clientWidth, behavior: 'smooth' }); },
     witajSlajd(el) { const sl = document.getElementById('slajdy'); sl.scrollTo({ left: Number(el.dataset.i) * sl.clientWidth, behavior: 'smooth' }); },
     dzial(el) { st.dzial = el.dataset.v; zapisz(); render(); },
@@ -803,7 +805,7 @@
       }).catch(() => komunikat('Nie udało się wysłać zgłoszenia. Spróbuj za chwilę.'));
     },
     wstecz() { if (history.length > 1) history.back(); else location.hash = '#/wyniki'; },
-    dzialTrendow(el) { dzialTrendow = el.dataset.v; render(); },
+    dzialTrendow(el) { dzialTrendow = null; st.dzial = el.dataset.v; zapisz(); render(); },
     filtrTrendow(el) { filtrTrendow = el.dataset.v; render(); },
     zakladkaOkazji(el) { zakladkaOkazji = el.dataset.v; render(); },
     pokazPowitanie() { st.witaj = false; zapisz(); location.hash = '#/witaj'; },
@@ -834,6 +836,7 @@
     if (t.dataset.ust) {
       if (t.dataset.ust === 'dzial') { st.dzial = t.value; dzialTrendow = null; } else st.ust[t.dataset.ust] = t.value;
       zapisz(); komunikat('Zapisano');
+      if (t.dataset.ust === 'dzial') render(true);
     }
     if (t.id === 'plik' && t.files && t.files[0]) {
       komunikat('Szukanie po zdjęciu zadziała po podłączeniu serwera.');
@@ -844,6 +847,27 @@
     if (e.key === 'Enter' && e.target.id === 'q') { e.preventDefault(); A.szukaj(); }
     if (e.key === 'Escape' && !ARK.hidden) ARK.hidden = true;
   });
+
+  /* Dwa światy w jednej aplikacji: dział zmienia cały wygląd (kolory, akcenty, grafiki).
+     Grafiki świata męskiego leżą w img/m/ pod tą samą ścieżką co damskie. Do czasu ich przygotowania
+     damskie przedmioty w różowym złocie są w świecie męskim przemalowywane filtrem na mosiądz (styles.css, --przemaluj). */
+  const GOTOWE_M = new Set([]); // ścieżki względem img/, np. 'ikony/tryb-rzecz.webp'
+  const swiatM = () => document.documentElement.dataset.swiat === 'm';
+  const obrazSwiata = (r) => 'img/' + (swiatM() && GOTOWE_M.has(r) ? 'm/' + r : r);
+  function podmienGrafikiSwiata(root) {
+    if (!swiatM() || !GOTOWE_M.size) return;
+    root.querySelectorAll('img[src^="img/"]').forEach((im) => {
+      const r = im.getAttribute('src').slice(4);
+      if (GOTOWE_M.has(r)) { im.src = 'img/m/' + r; im.classList.add('wlasna-m'); }
+    });
+  }
+  const META_KOLOR = document.querySelector('meta[name="theme-color"]');
+  function ustawSwiat(dzial) {
+    const sw = dzial === 'meskie' ? 'm' : 'd';
+    if (document.documentElement.dataset.swiat === sw) return;
+    document.documentElement.dataset.swiat = sw;
+    if (META_KOLOR) META_KOLOR.setAttribute('content', sw === 'm' ? '#0C0B0A' : '#0E090C');
+  }
 
   /* ---------- router ---------- */
   function render(zachowajPozycje) {
@@ -859,9 +883,11 @@
       ekran = { akt: 'start', menu: false, klasa: 'bez-menu', html: `<div class="naglowek"><a class="ikonka bez" href="javascript:history.back()" aria-label="Wróć">${IK.wstecz}</a><h1>Coś poszło nie tak</h1><span class="puste"></span></div>
         <div class="info uwaga">${IK.uwaga}<p>Nie udało się otworzyć tego ekranu. Wróć i spróbuj jeszcze raz. Jeśli to się powtarza, zgłoś to przy produkcie przyciskiem „Nie pasuje? Zgłoś”.</p></div>` };
     }
+    ustawSwiat(nazwa === 'witaj' ? 'damskie' : st.dzial);
     const y = window.scrollY;
     E.className = ekran.klasa || '';
     E.innerHTML = ekran.html;
+    podmienGrafikiSwiata(E);
     if (ekran.menu === false) MENU.hidden = true; else { MENU.hidden = false; rysujMenu(ekran.akt); }
     if (zachowajPozycje) window.scrollTo(0, y); else window.scrollTo(0, 0);
     if (ekran.po) { try { ekran.po(); } catch (e) { console.error(e); } }

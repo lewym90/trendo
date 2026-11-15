@@ -1,10 +1,10 @@
 """Tnie arkusz 3x3 (rzeczy na jednolitym ciemnym tle) na osobne pliki WebP z przezroczystym tłem, przycięte jak img/wzorce."""
-import sys, json
+import sys, json, os
 import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-def tnij(sciezka, pliki, katalog, maks=420):
+def tnij(sciezka, pliki, katalog, maks=420, siatka=None):
     im = Image.open(sciezka).convert('RGB'); a = np.asarray(im).astype(np.float32)
     H, W = a.shape[:2]
     # tło: mediana pikseli z ramki 8 px
@@ -17,12 +17,12 @@ def tnij(sciezka, pliki, katalog, maks=420):
     etyk, n = ndimage.label(maska)
     rozm = ndimage.sum(maska, etyk, range(1, n + 1))
     srodki = ndimage.center_of_mass(maska, etyk, range(1, n + 1))
-    g = 2 if len(pliki) == 4 else 3  # siatka 2x2 albo 3x3
-    komorki = {i: [] for i in range(g * g)}
+    wi, ko = siatka or ((2, 2) if len(pliki) == 4 else (3, 3))  # wiersze, kolumny
+    komorki = {i: [] for i in range(wi * ko)}
     for k, (s, (cy, cx)) in enumerate(zip(rozm, srodki), start=1):
         if s < 400:
             continue
-        komorki[min(g - 1, int(cy / (H / g))) * g + min(g - 1, int(cx / (W / g)))].append(k)
+        komorki[min(wi - 1, int(cy / (H / wi))) * ko + min(ko - 1, int(cx / (W / ko)))].append(k)
     wyn = []
     for i, plik in enumerate(pliki):
         if not komorki[i]:
@@ -50,5 +50,8 @@ if __name__ == '__main__':
     for nr, sciezka in zip(sys.argv[3::2], sys.argv[4::2]):
         ark = plan['arkusze'][nr]
         kat = [sys.argv[2].rstrip('/').rsplit('/', 1)[0] + '/' + c['katalog'] if c.get('katalog') else sys.argv[2] for c in ark]
-        for p in tnij(sciezka, [c['plik'] for c in ark], kat, maks=560 if any(c.get('katalog') for c in ark) else 420):
+        for k in set(kat):
+            os.makedirs(k, exist_ok=True)
+        siatka = tuple(plan.get('siatki', {}).get(nr, [])) or None
+        for p in tnij(sciezka, [c['plik'] for c in ark], kat, maks=560 if any(c.get('katalog') for c in ark) else 420, siatka=siatka):
             print(nr, *p)
