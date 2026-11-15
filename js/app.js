@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.20.0';
+  const WERSJA = '0.20.1';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -38,7 +38,7 @@
   }
   const prawdziwy = (p) => !!(p && p.zrodlo);
 
-  /* ---------- historia (0.20.0, prośba użytkownika): oglądane produkty, wyszukiwania i stylizacje, tylko na tym telefonie ---------- */
+  /* ---------- historia (0.20.1, prośba użytkownika): oglądane produkty, wyszukiwania i stylizacje, tylko na tym telefonie ---------- */
   const HIST = () => (st.hist = Object.assign({ produkty: [], szukania: [], styl: [] }, st.hist || {}));
   const idsHistorii = () => new Set(HIST().produkty.map((x) => x.id).concat(...HIST().styl.map((e) => ((e.m || {}).el || []).map((x) => x.id))));
   function kiedyTemu(t) {
@@ -327,7 +327,7 @@
     };
   };
 
-  /* ---------- stylizacje z prawdziwych produktów (0.20.0, wariant B wybrany przez użytkownika) ----------
+  /* ---------- stylizacje z prawdziwych produktów (0.20.1, wariant B wybrany przez użytkownika) ----------
      Serwer zwraca dla każdego miejsca w zestawie uszeregowanych kandydatów; suwak ceny przy rzeczy podmienia ją na bieżąco
      (najlepiej pasująca rzecz do tej kwoty), suwak całości obniża zestaw tam, gdzie tańszy zamiennik traci najmniej. */
   const STYL_ID = {};
@@ -1623,6 +1623,10 @@
   document.addEventListener('focusout', (e) => { if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) poKlawiaturze(); });
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', dopasujDol); window.visualViewport.addEventListener('scroll', dopasujDol); }
   window.addEventListener('pageshow', poKlawiaturze);
+
+  // Bez powiększania gestem (decyzja użytkownika 15.11): iOS ignoruje user-scalable=no, więc blokujemy szczypanie; podwójne dotknięcie wyłącza touch-action w styles.css (bez gubienia szybkich kliknięć).
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((g) => document.addEventListener(g, (e) => e.preventDefault(), { passive: false }));
+  document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
 
   window.addEventListener('hashchange', () => { ARK.hidden = true; render(); });
   render();
