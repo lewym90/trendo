@@ -232,3 +232,6 @@ Najlepsza droga dla każdego sklepu:
 - serwer/trendo/lacznik_ccc.py: api/Search/Search?searchText=…&filterAttributes={"filterAttributeOptions":[]}&page=1&pageSize=60&language=pl_PL&listingName=allproducts, nagłówki x-api-version 4.0, x-frontend-id 44, x-source-name WWW, ciasteczko „anon” (token gościa, ważny długo) pobrane raz przeglądarką do DANE/ccc-ciasteczka.json; przy 407 nowe. Do hasła dopisujemy „damskie”/„męskie”, płeć z categoryTree.itemCategory (Kobiety/Mężczyźni). Link ccc.eu/pl/pl/p/{slug}.
 - serwer/trendo/lacznik_wittchen.py: Synerise smcr.wittchen.com/ai/search/v2/indices/{indeks}/query?query=…&limit=48; token Bearer ważny 1 h przechwytywany przeglądarką (ok. 5 s) do DANE/wittchen-token.json, odnawiany po wygaśnięciu. gender female/male, effectivePrice, price, attributes.omnibus.
 - Zostają przez Google: 4F (strona nie odpowiada z mojego środowiska), About You.
+
+## 0.16.1 (15.11.2026): test instalatora
+- Instalacja 0.16.0 OK: 30 sklepów, Wittchen 48/30. CCC w tabeli „ok” = 0 na sukienkę/koszulę (sklep obuwniczy); test sprawdza teraz buty dla każdego sklepu bez wyników, także w łącznikach wielu sklepów (eobuwie męskie: sneakersy). Dodane próbne wyszukiwanie damskie (sukienka) przez serwer — od razu zasila damskie okazje dnia.

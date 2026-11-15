@@ -75,9 +75,20 @@ for dz, q in (("damskie", "sukienka"), ("meskie", "koszula")):
             lista, stan = l.szukaj(q, dz)
         except Exception as e:
             lista, stan = [], "błąd " + str(e)[:40]
-        for sk, n in Counter(p["sklep"] for p in lista).items():
+        ile = Counter(p["sklep"] for p in lista)
+        for sk, n in ile.items():
             wyn.setdefault(sk, {})[dz] = n
-        if not lista:
+        brak = [sk for sk in getattr(l, "SKLEPY", [l.NAZWA]) if sk not in ile and not (dz == "meskie" and sk == "Mohito")]
+        if brak and stan == "ok":  # sklep bez tej rzeczy (np. obuwniczy): próba na butach
+            buty = "botki" if dz == "damskie" else "sneakersy"
+            try:
+                lista2, _ = l.szukaj(buty, dz)
+            except Exception:
+                lista2 = []
+            ile2 = Counter(p["sklep"] for p in lista2)
+            for sk in brak:
+                wyn.setdefault(sk, {})[dz] = f"{ile2[sk]} ({buty})" if ile2.get(sk) else 0
+        elif not lista:
             wyn.setdefault(l.NAZWA, {})[dz] = stan
     for k in L.SKLEPY_KONF:
         sk, lista, stan = L._sklep((k, q, dz))
@@ -101,6 +112,11 @@ import json; d=json.load(open('/tmp/trendo-szukaj.json'))
 P=d['produkty']; w=[p for p in P if 'wieczor' in (p.get('okazje') or [])]
 print('  Ocena:', d.get('klasyfikacja'), '| wszystkie:', len(P), '| pasuje na wieczór:', len(w), '| bez oceny:', sum(p.get('okazje') is None for p in P), '| czas:', d.get('czas'), 's')
 " || echo "Próbne wyszukiwanie: brak odpowiedzi."
+  echo; echo "Próbne wyszukiwanie damskie (sukienka; zasila też damskie okazje dnia):"
+  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=sukienka&dzial=damskie" | "$PY" -c "
+import json,sys; d=json.load(sys.stdin); P=d['produkty']
+print('  Sklepów z wynikami:', sum(1 for s in d['sklepy'] if s['ile']), '| produktów:', len(P), '| czas:', d.get('czas'), 's')
+" || echo "Próbne wyszukiwanie damskie: brak odpowiedzi."
   echo; echo "Okazje dnia (tylko obniżki sprawdzone, rosną z każdym wyszukiwaniem i nocnym przeglądem sklepów):"
   for dz in damskie meskie; do curl -fsS --max-time 30 "https://$HOST/trendo-api/okazje?dzial=$dz" | "$PY" -c "
 import json,sys; d=json.load(sys.stdin); o=d['okazje']
