@@ -6,6 +6,7 @@ Endpointy (za Caddy pod /trendo-api/):
   GET /zglos?id=&okazja=&...      zgłoszenie „Nie pasuje” (od razu ukrywa produkt na tę okazję)
   GET /zgloszenia                 ostatnie zgłoszenia (do poprawiania zasad)
   GET /logo?sklep=...             logo sklepu pobrane z jego strony (pamięć 14 dni)
+  GET /trendy?dzial=...           trendy potwierdzone przez co najmniej 2 niezależne źródła + nasze dane ze sklepów
 """
 import json, os, re, time, traceback
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -13,10 +14,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote_plus, urlparse
 
 import threading
-from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor
+from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.9.1"
+WERSJA = "0.10.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -172,6 +173,14 @@ ROZGRZEWKA = {
 def rozgrzewka():
     time.sleep(120)
     while True:
+        if klasyfikator.dostepny() and not licznik(time.strftime("trendy-%Y-%m-%d")):
+            licznik(time.strftime("trendy-%Y-%m-%d"), 1)
+            try:
+                trendy.zbierz()  # nowe artykuły i raporty o trendach (weryfikowane cytatami)
+                for dz in ("damskie", "meskie"):
+                    pamiec_zapisz(f"trendy|{dz}", trendy.zestawienie(dz))
+            except Exception:
+                traceback.print_exc()
         if klasyfikator.dostepny():
             dzien = time.strftime("rozgrzewka-%Y-%m-%d")
             if not licznik(dzien):
@@ -243,6 +252,13 @@ class Obsluga(BaseHTTPRequestHandler):
                     DB.execute("DELETE FROM pamiec WHERE klucz LIKE 'szukaj|%'")  # wyniki od razu bez tej rzeczy
                     DB.commit()
                 return self._wyslij(200, {"ok": True})
+            if u.path == "/trendy":
+                dz = "meskie" if a.get("dzial") == "meskie" else "damskie"
+                zap = pamiec_czytaj(f"trendy|{dz}", 3 * 3600)
+                if not zap:
+                    zap = trendy.zestawienie(dz)
+                    pamiec_zapisz(f"trendy|{dz}", zap)
+                return self._wyslij(200, zap)
             if u.path == "/kontrola":
                 return self._wyslij(200, {"wynik": json.loads(klasyfikator.ustawienie("kontrola_wynik") or "null"),
                                           "szczegoly": json.loads(klasyfikator.ustawienie("kontrola_szczegoly") or "[]"),

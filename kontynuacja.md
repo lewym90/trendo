@@ -124,3 +124,11 @@ Najlepsza droga dla każdego sklepu:
 - Wzorzec wg kodeksu: #107 (kurtka biker z ekoskóry) sylwester → sporne (kodeks 17 dopuszcza skórę); #255 (t-shirt HUGO z tonalnym emblematem) smart casual → sporne.
 - Wynik na przebiegu 0.9.0: 0 krytycznych, 42 ukryte, 96,6%.
 - Kontrola robi teraz dwa niezależne przebiegi tego samego modelu i raportuje gorszy; każdy zapisywany do historii (kalibracja na wielu przebiegach).
+
+## 0.10.0 (15.11.2026): moduł trendów z darmowych źródeł
+- Kontrola 0.9.1: dwa przebiegi, 0 błędów krytycznych w obu, 96%, test haseł 28/28.
+- serwer/trendo/trendy.py: ZRODLA (17): dane — Lyst Index (najnowszy kwartał z lyst.co.uk), Tagwalk (najszybciej rosnące tagi tygodnia), Pinterest Predicts (przeglądarka), Heuritech (/articles/), WGSN (/blog/); redakcje INT — Vogue (RSS), Harper's Bazaar (RSS), Who What Wear (RSS), FashionUnited (RSS /news/fashion/); PL — Vogue Polska i Harper's Bazaar Polska (przeglądarka, blokują curl), Elle (/moda/), Glamour (/moda/), Twój Styl, fashionbiznes.pl (RSS), Breuninger Magazyn.
+- Zbieranie raz na dobę (wątek rozgrzewki, licznik trendy-RRRR-MM-DD; instalator uruchamia python -m trendo.trendy): tytuły filtrowane przez tani model (moda, nie uroda/wnętrza), tekst artykułu (articleBody lub akapity; strony danych: cały tekst), AI (tani model) wypisuje trendy w ujednoliconych cechach (kategoria, kolor, materiał, wzór, rodzaj, dział, kierunek, kiedy, hasło) + DOSŁOWNY cytat; zweryfikowany() odrzuca wzmianki, których cytat nie występuje w tekście. Tabele tr_art, tr_wzm.
+- Zestawienie: trend tylko przy ≥2 różnych wydawcach (150 dni); dane ze sklepów: udział cechy wśród produktów pierwszy raz widzianych w kolejnych tygodniach (klasy2 + ceny, próba ≥150 w 4 tyg.); status: wygasa / nadchodzi (następny sezon) / rośnie (+15% lub źródła) / na szczycie. /trendy?dzial= (pamięć 3 h). W aplikacji: nazwa, opis (kto pisze + nasze liczby), status, wykres, arkusz ze źródłami (linki), „Znajdź w sklepach” (hasło). Bez przepisywania tekstów artykułów.
+- Test lokalny: zmyślone cytaty odrzucone 8/8; do zestawienia trafiają tylko trendy z ≥2 wydawców.
+- Na później: Google Trends PL (SerpApi google_trends), szerszy zestaw źródeł PL, fason jako cecha produktu.

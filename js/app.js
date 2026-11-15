@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.9.1';
+  const WERSJA = '0.10.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -372,31 +372,57 @@
   };
 
   let dzialTrendow = null, filtrTrendow = 'wszystkie';
+  const trendyDane = {}, trendyLaduje = {};
+  const KOLOR_PROBKI = { czarny: '#1D1A1B', bialy_ecru: '#EFE8DC', szary: '#8E8E8E', granatowy: '#23304F', niebieski: '#5B86C5', bezowy_brazowy: '#8A6648', zielony: '#4F6B4A', czerwony_bordo: '#7A1F2B', rozowy: '#E4A7B5', fioletowy: '#6B3D8F', zolty_pomaranczowy: '#E0A53A', zloty_srebrny: '#C9B37A' };
+  function pobierzTrendy(d) {
+    if (trendyDane[d] || trendyLaduje[d]) return;
+    trendyLaduje[d] = true;
+    fetch(`${API}/trendy?dzial=${d}`).then((r) => r.json()).then((x) => { trendyDane[d] = x; })
+      .catch(() => { trendyDane[d] = { blad: true, trendy: [] }; })
+      .finally(() => { trendyLaduje[d] = false; if (location.hash.startsWith('#/trendy')) render(); });
+  }
+  function arkuszZrodel(i) {
+    const d = dzialTrendow || st.dzial;
+    const t = ((trendyDane[d] || {}).trendy || [])[i]; if (!t) return;
+    ARK.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-labelledby="ark-t"><div class="uchwyt"></div>
+      <h2 id="ark-t">${esc(t.nazwa)}</h2><p class="szary" style="margin:6px 0 14px">${esc(t.opis)}</p>
+      <div style="display:flex;flex-direction:column;gap:10px">${t.linki.map((l) => `<a class="karta" style="display:block;text-decoration:none;color:var(--tekst)" href="${esc(l.url)}" target="_blank" rel="noopener"><b style="font-weight:500">${esc(l.wydawca)}</b><span class="maly szary" style="display:block;margin-top:4px">${esc(l.tytul || 'Raport')} · ${new Date(l.data * 1000).toLocaleDateString('pl-PL')}</span></a>`).join('')}</div>
+      ${t.udzial != null ? `<p class="maly szary" style="margin:14px 0 0">Udział w nowościach liczymy sami: ${t.proba} produktów z naszych sklepów z ostatnich 4 tygodni.</p>` : ''}
+      <button class="btn" style="margin-top:16px" data-akcja="szukajTrendu" data-q="${esc(t.haslo)}">Znajdź w sklepach</button>
+      <button class="link" style="margin:10px auto 0;display:flex" data-akcja="zamknijArkusz">Zamknij</button></div>`;
+    ARK.hidden = false;
+  }
   EKRANY.trendy = () => {
     const d = dzialTrendow || st.dzial;
     const s = sezon();
-    let lista = DEMO.TR[d];
+    pobierzTrendy(d);
+    const dane = trendyDane[d];
+    const prawdziwe = dane && dane.trendy && dane.trendy.length;
+    let lista = prawdziwe ? dane.trendy.map((t, i) => Object.assign({ i }, t)) : [];
     if (filtrTrendow !== 'wszystkie') lista = lista.filter((t) => t.status === filtrTrendow);
-    const stat = { rosnie: ['gora', 'Rośnie', '#9ED9B4'], szczyt: ['poziom', 'Na szczycie', '#FBE3D8'], wygasa: ['dol', 'Wygasa', '#F3BE7E'] };
+    const stat = { rosnie: ['gora', 'Rośnie', '#9ED9B4'], szczyt: ['poziom', 'Na szczycie', '#FBE3D8'], wygasa: ['dol', 'Wygasa', '#F3BE7E'], nadchodzi: ['gora', 'Nadchodzi', '#C9B8F0'] };
     return {
       akt: 'trendy',
       html: `<div class="naglowek"><span class="puste"></span><h1>Trendy teraz</h1><span class="puste"></span></div>
-      ${demoZnak()}
       <div class="przelacznik" role="radiogroup" aria-label="Dział">
         <button role="radio" aria-checked="${d === 'damskie'}" data-akcja="dzialTrendow" data-v="damskie">Damskie</button>
         <button role="radio" aria-checked="${d === 'meskie'}" data-akcja="dzialTrendow" data-v="meskie">Męskie</button></div>
       <div class="okladka wejscie" style="--foto:url('img/${s.plik}.jpg');margin-top:14px"><div><p class="maly" style="color:#E7CFC6;margin:0 0 6px">Kluczowe trendy</p><h2>${s.nazwa}<br>${s.rok}</h2></div></div>
       <div class="chipy" style="margin-top:16px">
-        ${[['wszystkie', 'Wszystkie'], ['rosnie', 'Rosnące'], ['szczyt', 'Na szczycie'], ['wygasa', 'Wygasające']].map(([v, n]) => `<button class="chip" aria-pressed="${filtrTrendow === v}" data-akcja="filtrTrendow" data-v="${v}">${n}</button>`).join('')}</div>
-      <div style="margin-top:4px">${lista.map((t) => {
-        const [ik, nazwa, kol] = stat[t.status];
-        return `<a class="trend" href="#/szukaj" data-akcja="szukajTrendu" data-q="${esc(t.nazwa)}">
-          <div class="probka">${t.img ? `<img src="img/wzorce/${t.img}.webp" alt="" loading="lazy">` : G.probka(t.probka[0], t.probka[1], t.probka[2])}</div>
+        ${[['wszystkie', 'Wszystkie'], ['rosnie', 'Rosnące'], ['nadchodzi', 'Nadchodzące'], ['szczyt', 'Na szczycie'], ['wygasa', 'Wygasające']].map(([v, n]) => `<button class="chip" aria-pressed="${filtrTrendow === v}" data-akcja="filtrTrendow" data-v="${v}">${n}</button>`).join('')}</div>
+      <div style="margin-top:4px">${!dane ? '<div class="pusty"><p>Sprawdzam aktualne trendy w źródłach…</p></div>'
+        : !prawdziwe ? `<div class="pusty"><p>${dane.blad ? 'Serwer trendów chwilowo nie odpowiada.' : 'Zbieramy pierwsze potwierdzone trendy. Pokażemy je, gdy napiszą o nich co najmniej dwa niezależne źródła.'}</p></div>`
+        : !lista.length ? '<div class="pusty"><p>W tej grupie nie ma teraz trendów.</p></div>'
+        : lista.map((t) => {
+          const [ik, nazwa, kol] = stat[t.status] || stat.szczyt;
+          const seria = t.seria || t.wzmianek_w_tygodniach;
+          return `<div class="trend" style="cursor:pointer" data-akcja="zrodlaTrendu" data-i="${t.i}" role="button" tabindex="0">
+          <div class="probka">${t.img ? `<img src="img/wzorce/${t.img}.webp" alt="" loading="lazy">` : G.probka('gladka', KOLOR_PROBKI[t.kolor] || '#8A6F6A', '')}</div>
           <div class="opis"><h3>${esc(t.nazwa)}</h3><p>${esc(t.opis)}</p>
-            <div style="display:flex;gap:12px;align-items:center"><span class="status ${t.status}">${IK[ik]}${nazwa}</span><span class="zrodla">${t.zrodla} źródeł</span></div></div>
-          ${G.wykresLinii(t.seria, kol, 64, 30)}</a>`;
-      }).join('')}</div>
-      <div class="info neutral" style="margin-top:20px">${IK.info}<p>Ocena trendu opiera się na wyszukiwaniach w Polsce, nowościach w sklepach, pokazach i magazynach modowych. „Rośnie” i „wygasa” to prognoza, nie pewnik.</p></div>`
+            <div style="display:flex;gap:12px;align-items:center"><span class="status ${t.status}">${IK[ik]}${nazwa}</span><span class="zrodla">${t.zrodla} ${t.zrodla < 5 ? 'źródła' : 'źródeł'}${t.polskie ? `, w tym ${t.polskie} polskie` : ''}</span></div></div>
+          ${G.wykresLinii(seria, kol, 64, 30)}</div>`;
+        }).join('')}</div>
+      <div class="info neutral" style="margin-top:20px">${IK.info}<p>Trend pokazujemy dopiero, gdy piszą o nim co najmniej dwa niezależne źródła${dane && dane.zrodla ? ` (sprawdzamy: ${dane.zrodla.length} magazynów i raportów, m.in. Lyst Index, Tagwalk, WGSN, Vogue, Elle)` : ''}. Każdą wzmiankę porównujemy z tekstem artykułu. Udział w nowościach liczymy sami z produktów naszych sklepów. Dotknij trendu, żeby zobaczyć źródła.</p></div>`
     };
   };
 
@@ -602,7 +628,7 @@
     },
     kategoria(el) { st.zapytanie = el.dataset.q; st.tryb = 'rzecz'; zapisz(); location.hash = '#/szukaj'; },
     szukajOstatnie(el) { st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
-    szukajTrendu(el, e) { e.preventDefault(); st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
+    szukajTrendu(el, e) { e.preventDefault(); ARK.hidden = true; st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
     zakladka(el) { zakladka = el.dataset.v; render(); },
     strefa(el) { strefa = el.dataset.v; render(); },
     tylkoPrawdziwe() { tylkoPrawdziwe = !tylkoPrawdziwe; render(); },
@@ -657,6 +683,7 @@
     usunAlert(el) { st.alerty = st.alerty.filter((a) => a.id !== el.dataset.id); zapisz(); ARK.hidden = true; render(true); },
     zamknijArkusz() { ARK.hidden = true; },
     niePasuje(el) { arkuszZgloszenia(el.dataset.id); },
+    zrodlaTrendu(el) { arkuszZrodel(+el.dataset.i); },
     wyslijZgloszenie(el) {
       const p = prod(el.dataset.id); if (!p) return;
       const okazja = el.dataset.v === 'okazja' && wynik ? (wynik.kodOkazji || '') : '';

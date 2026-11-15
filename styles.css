@@ -336,3 +336,4 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .produkt-foto:has(img.zdj-duze){height:520px}
 .produkt .foto:not(:has(img.zdj)){background:linear-gradient(160deg,#2C1A22,#1A1015)}
 .produkt-foto .gora .ikonka{background:rgba(14,9,12,.62);border-color:rgba(255,236,230,.18);color:#F6ECE7;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.status.nadchodzi{color:#C9B8F0}

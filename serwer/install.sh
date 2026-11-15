@@ -59,6 +59,8 @@ if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; the
   echo; echo "Status: OK"; cat /tmp/trendo-zdrowie.json; echo
   echo; echo "Kontrola jakości oceny na produktach wzorcowych (dwa przebiegi, 1–3 minuty)..."
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && "$PY" -m trendo.kontrola ) || echo "Kontrola: błąd uruchomienia."
+  echo; echo "Trendy: czytam źródła (Lyst, Tagwalk, WGSN, Heuritech, Vogue, Elle, Glamour i inne; pierwszy raz kilka minut)..."
+  ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 1500 "$PY" -m trendo.trendy ) || echo "Trendy: błąd uruchomienia."
   systemctl restart trendo; sleep 6
   echo; echo "Próbne wyszukiwanie (koszula męska na wieczór, pierwsze może potrwać do 2 minut):"
   curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie&okazja=wieczor" | "$PY" -c "
