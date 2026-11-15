@@ -175,3 +175,9 @@ Najlepsza droga dla każdego sklepu:
 - Droga 2 „Stylizacja” (#/komponuj → #/stylizacje): okazja (kafelki), Całą stylizację / Tylko dodatki, rzecz startowa (z karty produktu albo wpisana), budżet na całość (b2). Wynik: na razie przykładowe stylizacje z uczciwą informacją (silnik stylizacji to następny etap).
 - Start: cztery kafelki to wejścia (Jedna rzecz → droga 1, Cały outfit / Dodatki → droga 2, Ze zdjęcia → wybór zdjęcia).
 - Instalator: próbne wyszukiwanie pokazuje wszystkie wyniki i liczbę pasujących na wieczór. Zgłoszenie „Nie pasuje na okazję” działa z filtra okazji i usuwa okazję z produktu.
+
+## 0.12.1 (15.11.2026): kontrola bez kosztów, dwie poprawki zasad
+- Instalacja 0.12.0 OK. Ostatnia płatna kontrola (z 0.11.6) miała 2 błędy krytyczne w 1 z 6 przebiegów: buty do koszykówki Reebok na smart casual (model raz dał styl casual zamiast sportowy) i czarna mini spódnica z cyrkoniami na wesele (wnioskowanie „wieczór f≥4 → wesele” przy cekinach/brokacie).
+- nadzor: sneakersy na smart casual z wnioskowania tylko w stonowanym kolorze (STONOWANE; kodeks 6 „minimalistyczne”); wesele z wnioskowania „wieczór f≥4” nie dla błyszczących pojedynczych części (cekiny_brokat_metaliczny i r ≠ sukienka; kodeks 14). Kalibracja na 6 przebiegach: 0 krytycznych we wszystkich, ukryte dobre bez zmian (42–52). Kodeks uzupełniony o te interpretacje.
+- kontrola: zamiast odcisku — gdy są ≥2 zapisane przebiegi tego modelu z aktualną OCENA_WERSJA i kompletem produktów wzorca, instalator odtwarza je z aktualnymi zasadami i wzorcem (0 USD, test haseł z pamięci). Płatna kontrola tylko po zmianie polecenia AI (OCENA_WERSJA), modelu albo z --wymus.
+- Koszt AI do 15.11: 7,49 z 12 USD miesięcznie (głównie kontrole przy instalacjach); od teraz instalacje nie kosztują.

@@ -22,6 +22,7 @@ LICENCJE = re.compile(r"\b(coca[ -]?cola|pepsi|disney|marvel|star wars|harry pot
 NADRUK_ZAKAZANY = {"duze_logo_przod", "nadruk_na_plecach", "napis_haslo", "grafika_postac", "naszywki_aplikacje"}
 WZOR_ZAKAZANY = {"duze_logo_lub_nadruk", "motyw_tematyczny"}
 SKORA = {"skora", "skora_ekologiczna", "zamsz", "powlekany_woskowany"}
+STONOWANE = {"czarny", "bialy_ecru", "szary", "granatowy", "bezowy_brazowy"}  # kodeks 6: minimalistyczne sneakersy
 LUZNE_MATERIALY = {"len", "dzins", "flanela", "sztruks"}  # kodeks 10 i 16: nie na wieczór ani na wesele (len: wyjątek garnitur)
 
 MIN_ELEGANCJA = {"wesele": 4, "wieczor": 3, "sylwester": 2, "praca": 3, "randka": 2, "smartcasual": 2}  # sylwester 2: gdy AI go wypisało
@@ -76,7 +77,10 @@ def okazje(p, k):
     elegancki = styl in ("smart_casual", "elegancki", "wieczorowy")
     if "wieczor" in o0 and f >= 4 and r not in ("sweter", "kardigan"):
         o.add("sylwester")  # elegancko na wieczór = także na sylwestra
-    if "wieczor" in o0 and f >= 4 and not sk:
+    # kodeks 14: na weselu bez przesadnego błysku. Błyszcząca sukienka to klasyczny strój gościa, ale błyszczące
+    # pojedyncze części (spódnica, top, spodnie z cekinami) to strój imprezowy: wesela z wnioskowania nie dostają.
+    blysk = mat == "cekiny_brokat_metaliczny" and r != "sukienka"
+    if "wieczor" in o0 and f >= 4 and not sk and not blysk:
         o.add("wesele")  # bardzo elegancko na wieczór = także na wesele (ale nie skóra)
     if r == "sukienka" and f >= 3 and "wieczor" in o0 and not sk and wz != "wzor_wyrazisty":
         o.add("wesele")
@@ -97,7 +101,9 @@ def okazje(p, k):
             and mat not in LUZNE_MATERIALY and wr != "krata"):
         o |= {"wieczor", "randka"}
     # kodeks 6: smart casual obejmuje skórzane sneakersy i kurtki, swetry, koszule, sukienki dzienne
-    if r == "sneakersy" and sk and wz in ("gladki", "male_logo") and styl != "sportowy" and "sport" not in o0:
+    # „czyste, minimalistyczne skórzane sneakersy”: stonowany kolor, bez wzoru, nie sportowe
+    if (r == "sneakersy" and sk and wz in ("gladki", "male_logo") and styl != "sportowy" and "sport" not in o0
+            and k.get("kolor") in STONOWANE):
         o.add("smartcasual")
     if r == "kurtka" and sk:
         o.add("smartcasual")

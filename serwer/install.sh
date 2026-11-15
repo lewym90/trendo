@@ -57,7 +57,7 @@ fi
 sleep 6
 if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; then
   echo; echo "Status: OK"; cat /tmp/trendo-zdrowie.json; echo
-  echo; echo "Kontrola jakości oceny (tylko gdy zmieniły się zasady oceny; wtedy dwa przebiegi, 1–3 minuty)..."
+  echo; echo "Kontrola jakości oceny (zwykle bez kosztów na zapisanych odpowiedziach modelu; płatna tylko po zmianie polecenia AI albo modelu)..."
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && "$PY" -m trendo.kontrola ) || echo "Kontrola: błąd uruchomienia."
   echo; echo "Trendy: czytam źródła (Lyst, Tagwalk, WGSN, Heuritech, Vogue, Elle, Glamour i inne; pierwszy raz kilka minut)..."
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 1500 "$PY" -m trendo.trendy ) || echo "Trendy: błąd uruchomienia."

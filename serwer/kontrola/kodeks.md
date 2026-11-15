@@ -33,7 +33,7 @@ Na tym kodeksie opierają się trzy rzeczy: polecenie dla AI (klasyfikator.py), 
 
 ### Smart casual
 5. Połączenie eleganckich i swobodnych elementów, luźniejsze niż business casual, dopuszcza akcenty kolorystyczne i ciekawsze wzory. Źródło: C&A PL, Breuninger PL. W Polsce strój nieformalny to często chinosy z koszulą i swetrem (Forbes Polska). Dżinsy dopuszczalne (Breuninger PL).
-6. **Tak:** koszule (także casualowe, overshirt), polówki, swetry, golfy, marynarki, chinosy, spodnie materiałowe, ciemne dżinsy, bluzki, spódnice, sukienki dzienne, skórzane kurtki, mokasyny, sztyblety, botki, czyste minimalistyczne skórzane sneakersy.
+6. **Tak:** koszule (także casualowe, overshirt), polówki, swetry, golfy, marynarki, chinosy, spodnie materiałowe, ciemne dżinsy, bluzki, spódnice, sukienki dzienne, skórzane kurtki, mokasyny, sztyblety, botki, czyste minimalistyczne skórzane sneakersy. „Minimalistyczne” w Trendo: stonowany kolor (czerń, biel/ecru, szarość, granat, beż/brąz), gładkie albo z małym logo, nie sportowe.
 7. **Nie:** dresy, bluzy z kapturem, legginsy, koszulki z nadrukiem, buty sportowe (biegowe, do koszykówki, na siłownię), klapki, kurtki puchowe sportowe, rzeczy podarte.
 
 ### Praca (business casual)
@@ -47,7 +47,7 @@ Na tym kodeksie opierają się trzy rzeczy: polecenie dla AI (klasyfikator.py), 
 ### Wesele (gość)
 12. **Biel i jej odcienie (ecru, kremowy) są zarezerwowane dla panny młodej.** Zgodne: se.pl, C&A PL, Breuninger PL. Wyjątek: wesele „all white”, gdy para młoda o to poprosi.
 13. **Czerń jest sporna.** C&A PL i część tradycji odradzają czerń, a Breuninger PL i RMF24 uznają ją za klasyczną i elegancką. Przyjmujemy: czerń dozwolona (wesela w Polsce są głównie wieczorne). Rzeczy nie odrzucamy z powodu czerni.
-14. Panna młoda gra pierwsze skrzypce: bez przesadnego błysku, bez balowej sukni, bez odważnych, zbyt seksownych kreacji. Źródła: C&A PL, se.pl, Kamińska-Radomska.
+14. Panna młoda gra pierwsze skrzypce: bez przesadnego błysku, bez balowej sukni, bez odważnych, zbyt seksownych kreacji. Źródła: C&A PL, se.pl, Kamińska-Radomska. W Trendo: sukienka z połyskiem może być strojem gościa, ale błyszczące pojedyncze części (spódnica, top, spodnie z cekinami lub brokatem) traktujemy jako strój imprezowy (sylwester, wieczór), nie weselny.
 15. Mężczyźni: garnitur, koszula z długim rękawem, krawat lub mucha, skórzane buty wizytowe. Kobiety: elegancka sukienka (najczęściej do kolana lub midi), kombinezon, elegancka spódnica z bluzką, szpilki lub czółenka, mała torebka.
 16. Nie na wesele: dżins, t-shirty, polówki, swetry codzienne, sneakersy, skóra (kurtki, spódnice skórzane), duże torby. Lniany garnitur jest dopuszczalny latem (Suitsupply, poradnik dla gości), ale lniana koszula bez marynarki już nie.
 
