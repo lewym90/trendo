@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.11.6';
+  const WERSJA = '0.12.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -10,8 +10,8 @@
 
   /* ---------- stan zapisany na telefonie ---------- */
   const DOMYSLNE = {
-    witaj: false, dzial: 'damskie', zapytanie: 'Skórzane spodnie', b1: 300, b2: 500,
-    okazja: 'codzien', tryb: 'outfit', koszyk: [], ulubione: [], zapisane: [], alerty: [],
+    witaj: false, dzial: 'damskie', zapytanie: 'Skórzane spodnie', b1: 3000, b2: 800,
+    okazja: 'codzien', stylTryb: 'outfit', stylStart: null, stylQ: '', koszyk: [], ulubione: [], zapisane: [], alerty: [],
     ostatnie: [], rozmiar: {}, ust: { gora: '', dol: '', buty: '' }, znane: {}
   };
   let st;
@@ -107,6 +107,13 @@
           <a class="ikonka" href="#/profil" aria-label="Profil i ustawienia">${IK.profil}</a>
         </div></div>
       <a href="#/szukaj" class="pole-szukaj" style="text-decoration:none">${IK.szukaj}<span style="flex:1;color:var(--szary2);font-size:17px">Np. skórzane spodnie, płaszcz…</span><span class="ikonka" aria-hidden="true">${IK.aparat}</span></a>
+      <div class="tryby wejscia">
+        <a class="tryb" href="#/szukaj"><img class="tryb-ikona" src="img/ikony/tryb-rzecz.webp" alt="">Jedna rzecz</a>
+        <a class="tryb" href="#/komponuj" data-akcja="wejscieStyl" data-v="outfit"><img class="tryb-ikona" src="img/ikony/tryb-outfit.webp" alt="">Cały outfit</a>
+        <a class="tryb" href="#/komponuj" data-akcja="wejscieStyl" data-v="dodatki"><img class="tryb-ikona" src="img/ikony/tryb-dodatki.webp" alt="">Dodatki</a>
+        <button class="tryb" data-akcja="zdjecie"><img class="tryb-ikona" src="img/ikony/tryb-zdjecie.webp" alt="">Ze zdjęcia</button>
+      </div>
+      <input type="file" id="plik" accept="image/*" hidden>
       <div class="sekcja" style="margin-top:22px"><div class="sekcja-tytul"><h2>Kategorie</h2>
         <div class="przelacznik" role="radiogroup" aria-label="Dział" style="width:190px;padding:3px"><button role="radio" style="height:32px;font-size:13.5px" aria-checked="${st.dzial === 'damskie'}" data-akcja="dzial" data-v="damskie">Damskie</button><button role="radio" style="height:32px;font-size:13.5px" aria-checked="${st.dzial === 'meskie'}" data-akcja="dzial" data-v="meskie">Męskie</button></div></div>
         <div class="karuzela kategorie">${kategorie(st.dzial).map((k) => `<button class="kategoria" data-akcja="kategoria" data-q="${esc(k.zapytanie)}"><span class="kat-foto"><img src="img/wzorce/${k.id}.webp" alt="" loading="lazy"></span><span>${esc(k.katNazwa)}</span></button>`).join('')}</div></div>
@@ -128,17 +135,19 @@
     };
   };
 
+  /* Droga 1: szukam konkretnej rzeczy. Wyniki zawsze pełne; cena to jedyny filtr ustawiany tutaj (można go zdjąć w wynikach). */
+  const OKAZJE_LISTA = [['codzien', 'Na co dzień'], ['smartcasual', 'Smart casual'], ['praca', 'Do pracy'], ['randka', 'Randka'], ['wesele', 'Wesele'], ['wieczor', 'Wieczór'], ['sylwester', 'Sylwester'], ['wyjazd', 'Wyjazd']];
+  const NAZWA_OKAZJI = Object.fromEntries(OKAZJE_LISTA);
+  const BEZ_LIMITU = 3000;
+  const opisCeny = (v) => (v >= BEZ_LIMITU ? 'bez limitu' : 'do ' + zl(v));
   EKRANY.szukaj = () => {
-    const tryby = [['outfit', 'outfit', 'Cały outfit'], ['rzecz', 'wieszak', 'Jedna rzecz'], ['dodatki', 'dodatki', 'Dodatki'], ['zdjecie', 'zdjecie', 'Ze zdjęcia']];
-    const okazje = [['codzien', 'Na co dzień'], ['smartcasual', 'Smart casual'], ['praca', 'Do pracy'], ['randka', 'Randka'], ['wesele', 'Wesele'], ['wieczor', 'Wieczór'], ['sylwester', 'Sylwester'], ['wyjazd', 'Wyjazd']];
-    const p1 = (st.b1 - 30) / (3000 - 30) * 100, p2 = st.b2 / 5000 * 100;
+    const p1 = (Math.min(st.b1, BEZ_LIMITU) - 30) / (BEZ_LIMITU - 30) * 100;
     return {
       akt: 'szukaj',
-      po: () => { const z = document.querySelector('.okazja-kafel[aria-pressed="true"]'); if (z) z.parentElement.scrollLeft = Math.max(0, z.offsetLeft - 20); },
-      html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Nowe wyszukiwanie</h1><span class="puste"></span></div>
-      <h2 class="wejscie" style="font-size:34px;margin:4px 0 16px">Czego dziś szukasz?</h2>
+      html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Szukaj rzeczy</h1><span class="puste"></span></div>
+      <h2 class="wejscie" style="font-size:34px;margin:4px 0 16px">Czego szukasz?</h2>
       <label class="ukryj" for="q">Czego szukasz</label>
-      <div class="pole-szukaj">${IK.szukaj}<input id="q" value="${esc(st.zapytanie)}" placeholder="Np. skórzane spodnie i koszula w kratę" autocomplete="off" enterkeyhint="search">
+      <div class="pole-szukaj">${IK.szukaj}<input id="q" value="${esc(st.zapytanie)}" placeholder="Np. czarne skórzane spodnie" autocomplete="off" enterkeyhint="search">
         <button class="ikonka" data-akcja="zdjecie" aria-label="Szukaj ze zdjęcia">${IK.aparat}</button></div>
 
       <div class="przelacznik" role="radiogroup" aria-label="Dział" style="margin-top:14px">
@@ -147,30 +156,65 @@
       </div>
 
       <div class="sekcja" style="margin-top:22px">
-        <p style="text-align:center;margin-bottom:12px;font-size:15px">Ustal swój cel budżetowy</p>
         <div class="budzet">
-          <div class="budzet-wiersz"><div class="budzet-gora"><label for="b1">Na szukaną rzecz<span class="opis">np. spodnie, koszula</span></label><span class="budzet-kwota" id="b1v">~ ${zl(st.b1)}</span></div>
-            <input id="b1" type="range" min="30" max="3000" step="10" value="${st.b1}" style="--p:${p1}%"></div>
-          <div class="budzet-wiersz"><div class="budzet-gora"><label for="b2">Na resztę stylizacji<span class="opis">razem z dodatkami</span></label><span class="budzet-kwota" id="b2v">~ ${zl(st.b2)}</span></div>
-            <input id="b2" type="range" min="0" max="5000" step="10" value="${st.b2}" style="--p:${p2}%"></div>
+          <div class="budzet-wiersz"><div class="budzet-gora"><label for="b1">Maksymalna cena<span class="opis">pokażemy rzeczy do tej kwoty</span></label><span class="budzet-kwota" id="b1v">${opisCeny(st.b1)}</span></div>
+            <input id="b1" type="range" min="30" max="${BEZ_LIMITU}" step="10" value="${Math.min(st.b1, BEZ_LIMITU)}" style="--p:${p1}%"></div>
         </div>
-        <p class="maly szary" style="margin-top:10px;text-align:center">To kwota, w którą celujesz. Gdy warto dołożyć, pokażemy też rzeczy trochę droższe.</p>
+        <p class="maly szary" style="margin-top:10px;text-align:center">Przesuń do końca, żeby szukać bez limitu. W wynikach limit możesz zdjąć jednym dotknięciem.</p>
       </div>
 
-      <button class="btn" style="margin-top:20px" data-akcja="szukaj">${st.tryb === 'rzecz' ? 'Znajdź w sklepach' : 'Znajdź stylizacje'} ${IK.iskra}</button>
+      <button class="btn" style="margin-top:20px" data-akcja="szukaj">Szukaj w sklepach ${IK.szukaj}</button>
 
-      <div class="sekcja">
-        <p style="text-align:center;margin-bottom:12px;font-size:15px">Lub wybierz, czego potrzebujesz</p>
-        <div class="tryby">${tryby.map(([v, , n]) => `<button class="tryb" aria-pressed="${st.tryb === v}" data-akcja="tryb" data-v="${v}"><img class="tryb-ikona" src="img/ikony/tryb-${v}.webp" alt="">${n}</button>`).join('')}</div>
-      </div>
-
-      <div class="sekcja">
-        <p style="margin-bottom:10px;font-size:15px">Okazja</p>
-        <div class="karuzela okazje-kafle">${okazje.map(([v, n]) => `<button class="okazja-kafel" aria-pressed="${st.okazja === v}" data-akcja="okazja" data-v="${v}"><span class="okazja-foto"><img src="img/okazje/okazja-${st.dzial === 'meskie' ? 'm' : 'd'}-${v}.webp" alt="" loading="lazy"></span><span>${n}</span></button>`).join('')}</div>
-      </div>
+      <a class="karta-wejscie" href="#/komponuj" data-akcja="wejscieStyl" data-v="outfit">
+        <img src="img/ikony/tryb-outfit.webp" alt=""><span><b>Potrzebujesz całej stylizacji?</b><span>Wybierz okazję i budżet na całość, dobierzemy zestaw.</span></span>${IK.dalej}</a>
       <input type="file" id="plik" accept="image/*" hidden>`
     };
   };
+
+  /* Droga 2: stylizacja na okazję. Okazja i budżet na całość mają sens tylko tutaj. */
+  EKRANY.komponuj = () => {
+    const start = st.stylStart ? prod(st.stylStart) : null;
+    const p2 = st.b2 / 5000 * 100;
+    return {
+      akt: 'szukaj',
+      po: () => { const z = document.querySelector('.okazja-kafel[aria-pressed="true"]'); if (z) z.parentElement.scrollLeft = Math.max(0, z.offsetLeft - 20); },
+      html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Stylizacja</h1><span class="puste"></span></div>
+      <h2 class="wejscie" style="font-size:34px;margin:4px 0 16px">Na jaką okazję?</h2>
+      <div class="przelacznik" role="radiogroup" aria-label="Dział">
+        <button role="radio" aria-checked="${st.dzial === 'damskie'}" data-akcja="dzial" data-v="damskie">Damskie</button>
+        <button role="radio" aria-checked="${st.dzial === 'meskie'}" data-akcja="dzial" data-v="meskie">Męskie</button>
+      </div>
+      <div class="sekcja" style="margin-top:18px">
+        <div class="karuzela okazje-kafle">${OKAZJE_LISTA.map(([v, n]) => `<button class="okazja-kafel" aria-pressed="${st.okazja === v}" data-akcja="okazja" data-v="${v}"><span class="okazja-foto"><img src="img/okazje/okazja-${st.dzial === 'meskie' ? 'm' : 'd'}-${v}.webp" alt="" loading="lazy"></span><span>${n}</span></button>`).join('')}</div>
+      </div>
+      <div class="sekcja">
+        <p style="margin-bottom:10px;font-size:15px">Co dobieramy</p>
+        <div class="przelacznik" role="radiogroup" aria-label="Co dobieramy">
+          <button role="radio" aria-checked="${st.stylTryb !== 'dodatki'}" data-akcja="stylTryb" data-v="outfit">Całą stylizację</button>
+          <button role="radio" aria-checked="${st.stylTryb === 'dodatki'}" data-akcja="stylTryb" data-v="dodatki">Tylko dodatki</button>
+        </div>
+      </div>
+      <div class="sekcja">
+        <p style="margin-bottom:10px;font-size:15px">Od czego zaczynamy <span class="szary maly">(opcjonalnie)</span></p>
+        ${start ? `<div class="element start-rzecz"><span class="miniatura">${foto(start)}</span><span class="opis"><span class="maly szary" style="display:block">Zaczynamy od</span><span class="nazwa" style="display:block">${esc(start.nazwa)}</span><span class="sklep">${marka(start.sklep)}</span></span><button class="ikonka bez" data-akcja="bezStartu" aria-label="Usuń">${IK.zamknij}</button></div>`
+          : `<div class="pole-szukaj">${IK.wieszak}<input id="qs" value="${esc(st.stylQ || '')}" placeholder="Np. mam czarne skórzane spodnie" autocomplete="off"></div>`}
+      </div>
+      <div class="sekcja">
+        <div class="budzet">
+          <div class="budzet-wiersz"><div class="budzet-gora"><label for="b2">Budżet na całość<span class="opis">razem z dodatkami</span></label><span class="budzet-kwota" id="b2v">~ ${zl(st.b2)}</span></div>
+            <input id="b2" type="range" min="100" max="5000" step="10" value="${st.b2}" style="--p:${p2}%"></div>
+        </div>
+      </div>
+      <button class="btn" style="margin-top:20px" data-akcja="komponuj">Skomponuj stylizacje ${IK.iskra}</button>`
+    };
+  };
+
+  EKRANY.stylizacje = () => ({
+    akt: 'szukaj',
+    html: `<div class="naglowek"><a class="ikonka bez" href="#/komponuj" aria-label="Wróć">${IK.wstecz}</a><h1>${esc(NAZWA_OKAZJI[st.okazja] || 'Stylizacje')}</h1><span class="puste"></span></div>
+      <div class="info uwaga" style="margin:4px 0 16px">${IK.info}<p>Składanie stylizacji z prawdziwych produktów to następny etap budowy. Poniżej przykład, jak będą wyglądać.</p></div>
+      <div class="karuzela">${DEMO.S.map(kartaStylizacji).join('')}</div>`
+  });
 
   EKRANY.analiza = () => {
     const s = sezon();
@@ -192,9 +236,9 @@
         let i = 0, gotowe = false;
         const ctrl = new AbortController();
         const czas = setTimeout(() => ctrl.abort(), 150000);
-        fetch(`${API}/szukaj?q=${encodeURIComponent(st.zapytanie)}&dzial=${st.dzial}&okazja=${st.okazja || ''}`, { signal: ctrl.signal })
+        fetch(`${API}/szukaj?q=${encodeURIComponent(st.zapytanie)}&dzial=${st.dzial}`, { signal: ctrl.signal })
           .then((r) => r.json())
-          .then((d) => { wynik = d && d.produkty ? d : null; if (wynik) wynik.kodOkazji = st.okazja || ''; })
+          .then((d) => { wynik = d && d.produkty ? d : null; })
           .catch(() => { wynik = null; komunikat('Serwer nie odpowiada. Pokazuję przykład.'); })
           .finally(() => {
             clearTimeout(czas); gotowe = true;
@@ -216,48 +260,16 @@
     };
   };
 
-  let zakladka = 'stylizacje', strefa = 'budzet', tylkoPrawdziwe = false;
+  // Filtry wyników (na czas jednego wyszukiwania). Domyślnie widać wszystko, poza limitem ceny ustawionym przy szukaniu.
+  let filtrOkazji = 'wszystkie', budzetWl = true, tylkoPromocje = false, tylkoSecond = false, kolejnosc = 'polecane';
+  const norm = (x) => (x || '').trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 80);
   EKRANY.wyniki = () => {
     const q = st.zapytanie || 'Skórzane spodnie';
-    if (wynik && wynik.zapytanie.toLowerCase() === q.trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 80) && wynik.dzial === st.dzial && (wynik.kodOkazji || '') === (st.okazja || '')) return wynikiPrawdziwe(q);
-    const baza = DEMO.P.filter((p) => p.id.startsWith('p'));
-    let lista;
-    if (strefa === 'tanio') lista = baza.filter((p) => p.strefa !== 'second').slice().sort((a, b) => a.cena - b.cena);
-    else lista = baza.filter((p) => p.strefa === strefa);
-    if (tylkoPrawdziwe) lista = lista.filter((p) => p.weryf === 'ok');
-    const ile = (z) => baza.filter((p) => p.strefa === z).length;
-    const inne = q.trim().toLowerCase() !== 'skórzane spodnie';
-    return {
-      akt: 'szukaj',
-      html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
-      ${demoZnak()}
-      ${inne ? `<div class="info uwaga" style="margin-bottom:14px">${IK.uwaga}<p>W wersji próbnej zawsze pokazujemy przykład dla skórzanych spodni. Prawdziwe wyszukiwanie zadziała po podłączeniu serwera.</p></div>` : ''}
-      <div class="przelacznik" role="tablist" aria-label="Wyniki">
-        <button role="tab" aria-selected="${zakladka === 'stylizacje'}" data-akcja="zakladka" data-v="stylizacje">Stylizacje (${DEMO.S.length})</button>
-        <button role="tab" aria-selected="${zakladka === 'sklepy'}" data-akcja="zakladka" data-v="sklepy">W sklepach (${baza.length})</button>
-      </div>
-      ${zakladka === 'stylizacje' ? `
-        <p class="szary maly" style="margin:14px 0 12px">Trzy gotowe zestawy z rzeczy dostępnych dziś w sklepach. Dotknij, żeby zobaczyć szczegóły i ceny.</p>
-        <div class="karuzela">${DEMO.S.map(kartaStylizacji).join('')}</div>` : `
-        <div class="chipy" style="margin-top:14px">
-          <button class="chip" aria-pressed="${strefa === 'budzet'}" data-akcja="strefa" data-v="budzet">W budżecie <span class="ile">${ile('budzet')}</span></button>
-          <button class="chip" aria-pressed="${strefa === 'wiecej'}" data-akcja="strefa" data-v="wiecej">Warto dołożyć <span class="ile">${ile('wiecej')}</span></button>
-          <button class="chip" aria-pressed="${strefa === 'tanio'}" data-akcja="strefa" data-v="tanio">Najtaniej</button>
-          <button class="chip" aria-pressed="${strefa === 'second'}" data-akcja="strefa" data-v="second">${ikonaW('second', 15)} Z drugiej ręki <span class="ile">${ile('second')}</span></button>
-        </div>
-        <div class="chipy" style="margin-top:8px"><button class="chip" aria-pressed="${tylkoPrawdziwe}" data-akcja="tylkoPrawdziwe">${ikonaW('ok', 14)} Tylko potwierdzone promocje</button></div>
-        <p class="szary maly" style="margin:12px 0">${strefa === 'wiecej' ? 'Trochę ponad Twój cel, ale z wyraźnie lepszym materiałem albo dobrą obniżką.' : strefa === 'second' ? 'Ogłoszenia z serwisów z używaną odzieżą. Stan opisuje sprzedający.' : strefa === 'tanio' ? 'Wszystkie nowe produkty od najtańszego.' : 'Produkty w okolicy Twojej kwoty.'}</p>
-        ${lista.length ? `<div class="siatka">${lista.map(kartaProduktu).join('')}</div>` : `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-okazje.webp" alt=""><p>Brak potwierdzonych promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystkie produkty.</p></div>`}`}`
-    };
+    if (wynik && norm(wynik.zapytanie) === norm(q) && wynik.dzial === st.dzial) return wynikiPrawdziwe(q, wynik);
+    return wynikiPrawdziwe(q, { zapytanie: q, dzial: st.dzial, sprawdzono: Date.now() / 1000, sklepy: [], produkty: DEMO.P.filter((p) => p.id.startsWith('p')), demo: true });
   };
-
   const SECOND = /vinted|olx|allegro lokalnie|sprzedajemy|depop|remixshop/i;
-  function strefaProduktu(p) {
-    if (SECOND.test(p.sklep)) return 'second';
-    if (p.cena <= st.b1 * 1.15) return 'budzet';
-    if (p.cena <= st.b1 * 1.8) return 'wiecej';
-    return 'drozej';
-  }
+  const uzywany = (p) => SECOND.test(p.sklep) || p.weryf === 'second';
   function siatkaWynikow(lista, q) {
     const dokladne = lista.filter((p) => p.trafnosc !== 1);
     const podobne = lista.filter((p) => p.trafnosc === 1);
@@ -270,56 +282,72 @@
     return h;
   }
 
-  function wynikiPrawdziwe(q) {
-    const P = wynik.produkty;
-    const ile = (z) => P.filter((p) => strefaProduktu(p) === z).length;
-    const nowe = P.filter((p) => strefaProduktu(p) !== 'second');
-    let lista = strefa === 'tanio' ? nowe.slice().sort((a, b) => a.cena - b.cena) : P.filter((p) => strefaProduktu(p) === strefa).sort((a, b) => (b.punkty || 0) - (a.punkty || 0) || (b.stara ? 1 : 0) - (a.stara ? 1 : 0) || a.cena - b.cena);
-    if (tylkoPrawdziwe) lista = lista.filter((p) => p.stara);
-    let zamiast = '';
-    if (!lista.length && strefa === 'budzet' && !tylkoPrawdziwe && nowe.length) {
-      const min = Math.min(...nowe.map((p) => p.cena));
-      zamiast = `<div class="info neutral" style="margin-bottom:14px">${IK.info}<p>W okolicy ${zl(st.b1)} nic nie znaleźliśmy. Najtańsza sensowna opcja kosztuje ${zl(min)}, poniżej pokazujemy wszystko od najtańszego.</p></div>`;
-      lista = nowe.slice().sort((a, b) => a.cena - b.cena);
-    }
+  function wynikiPrawdziwe(q, W) {
+    const P = W.produkty;
+    const nowe = P.filter((p) => !uzywany(p)), uzyw = P.filter(uzywany);
+    const baza = tylkoSecond ? uzyw : nowe;
+    const limit = budzetWl && st.b1 < BEZ_LIMITU ? st.b1 : null;
+    const wCenie = limit ? baza.filter((p) => p.cena <= limit) : baza;
+    const drozsze = baza.length - wCenie.length;
+    let lista = tylkoPromocje ? wCenie.filter((p) => p.stara) : wCenie;
+    const przedFiltrem = lista;
+    const ocenione = przedFiltrem.filter((p) => Array.isArray(p.okazje));
+    const ileNa = (o) => przedFiltrem.filter((p) => (p.okazje || []).includes(o)).length;
+    const przedOkazja = przedFiltrem.length;
+    if (filtrOkazji !== 'wszystkie') lista = lista.filter((p) => (p.okazje || []).includes(filtrOkazji));
+    const promo = (p) => (p.weryf === 'ok' ? 2 : p.stara ? 1 : 0);
+    lista = lista.slice().sort(kolejnosc === 'najtaniej' ? (a, b) => a.cena - b.cena : kolejnosc === 'najdrozej' ? (a, b) => b.cena - a.cena
+      : (a, b) => promo(b) - promo(a) || a.cena - b.cena);
     const ileSklepow = new Set(P.map((p) => p.sklep)).size;
-    const kiedy = new Date(wynik.sprawdzono * 1000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-    const uwagi = (wynik.sklepy || []).filter((x) => x.stan !== 'ok').map((x) => `${x.nazwa}: ${x.stan}`).join(', ');
+    const kiedy = new Date(W.sprawdzono * 1000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    const uwagi = (W.sklepy || []).filter((x) => x.stan !== 'ok').map((x) => `${x.nazwa}: ${x.stan}`).join(', ');
+    const inneDemo = W.demo && norm(q) !== 'skórzane spodnie';
+    let komunikaty = '';
+    if (limit && !wCenie.length && baza.length) {
+      const min = Math.min(...baza.map((p) => p.cena));
+      komunikaty += `<div class="info neutral" style="margin-bottom:14px">${IK.info}<p>Do ${zl(limit)} nic nie znaleźliśmy. Najtańsza rzecz kosztuje ${zl(min)}.</p></div>`;
+    } else if (filtrOkazji !== 'wszystkie' && !lista.length && przedOkazja) {
+      komunikaty += `<div class="info neutral" style="margin-bottom:14px">${IK.info}<p>Żadna z ${przedOkazja} rzeczy nie pasuje na okazję „${NAZWA_OKAZJI[filtrOkazji]}” według naszego kodeksu ubioru (np. skóra i dżins nie na wesele, sportowe rzeczy nie do pracy).</p></div>`;
+    }
+    if (filtrOkazji !== 'wszystkie' && ocenione.length < przedOkazja) {
+      komunikaty += `<p class="maly szary" style="margin:-4px 0 12px">${przedOkazja - ocenione.length} rzeczy czeka jeszcze na ocenę stylisty, więc nie ma ich w tym filtrze.</p>`;
+    }
+    const pusto = !lista.length && !komunikaty;
     return {
       akt: 'szukaj',
       html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
-      <p class="szary maly" style="text-align:center;margin:-6px 0 14px">${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
-      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> ${wynik.klasyfikacja === 'ai' ? 'Każdą rzecz sprawdził stylista AI na zdjęciu, a potem nasze stałe zasady (np. bez dużych nadruków, bluz i dresów). Małe logo marki na piersi nie jest przeszkodą.' : 'Stylista AI jest chwilowo niedostępny, więc pokazujemy tylko rzeczy, które według opisu sklepu są jednoznacznie eleganckie.'}${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} na tę okazję się nie nadają.` : ''} Coś nie pasuje? Otwórz produkt i dotknij „Nie pasuje”.</p></div>` : ''}
-      <div class="przelacznik" role="tablist" aria-label="Wyniki">
-        <button role="tab" aria-selected="${zakladka === 'sklepy'}" data-akcja="zakladka" data-v="sklepy">W sklepach (${P.length})</button>
-        <button role="tab" aria-selected="${zakladka === 'stylizacje'}" data-akcja="zakladka" data-v="stylizacje">Stylizacje</button>
+      ${W.demo ? demoZnak() : ''}
+      ${inneDemo ? `<div class="info uwaga" style="margin-bottom:14px">${IK.uwaga}<p>Serwer nie odpowiedział, więc pokazujemy przykład dla skórzanych spodni.</p></div>` : ''}
+      <div class="wyniki-meta"><p class="szary maly">${W.demo ? `${P.length} przykładowych produktów` : `${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}`}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
+        <label class="ukryj" for="kolejnosc">Kolejność</label><select id="kolejnosc" class="kolejnosc">${[['polecane', 'Polecane'], ['najtaniej', 'Najtaniej'], ['najdrozej', 'Najdrożej']].map(([v, n]) => `<option value="${v}" ${kolejnosc === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div class="chipy">
+        ${st.b1 < BEZ_LIMITU ? `<button class="chip" aria-pressed="${budzetWl}" data-akcja="budzetWl">${budzetWl ? `Do ${zl(st.b1)} ${IK.zamknij.replace('<svg', '<svg width="13" height="13"')}` : `Bez limitu ceny`}</button>` : `<a class="chip" href="#/szukaj">Bez limitu ceny</a>`}
+        <button class="chip" aria-pressed="${tylkoPromocje}" data-akcja="tylkoPromocje">${ikonaW('okazje', 14)} Tylko promocje</button>
+        ${uzyw.length ? `<button class="chip" aria-pressed="${tylkoSecond}" data-akcja="tylkoSecond">${ikonaW('second', 15)} Z drugiej ręki <span class="ile">${uzyw.length}</span></button>` : ''}
       </div>
-      ${zakladka === 'stylizacje' ? `
-        <div class="info uwaga" style="margin:14px 0">${IK.info}<p>Stylizacje z prawdziwych produktów to następny etap budowy. Poniżej przykład, jak będą wyglądać.</p></div>
-        <div class="karuzela">${DEMO.S.map(kartaStylizacji).join('')}</div>` : `
-        <div class="chipy" style="margin-top:14px">
-          <button class="chip" aria-pressed="${strefa === 'budzet'}" data-akcja="strefa" data-v="budzet">W budżecie <span class="ile">${ile('budzet')}</span></button>
-          <button class="chip" aria-pressed="${strefa === 'wiecej'}" data-akcja="strefa" data-v="wiecej">Warto dołożyć <span class="ile">${ile('wiecej')}</span></button>
-          <button class="chip" aria-pressed="${strefa === 'tanio'}" data-akcja="strefa" data-v="tanio">Najtaniej</button>
-          <button class="chip" aria-pressed="${strefa === 'second'}" data-akcja="strefa" data-v="second">${ikonaW('second', 15)} Z drugiej ręki <span class="ile">${ile('second')}</span></button>
-        </div>
-        <div class="chipy" style="margin-top:8px"><button class="chip" aria-pressed="${tylkoPrawdziwe}" data-akcja="tylkoPrawdziwe">${ikonaW('okazje', 14)} Tylko promocje</button></div>
-        <p class="szary maly" style="margin:12px 0">${strefa === 'wiecej' ? `Od ${zl(Math.round(st.b1 * 1.15))} do ${zl(Math.round(st.b1 * 1.8))}: trochę ponad Twój cel.` : strefa === 'second' ? 'Ogłoszenia z serwisów z używaną odzieżą. Stan opisuje sprzedający.' : strefa === 'tanio' ? 'Wszystkie nowe produkty od najtańszego.' : `Do ${zl(Math.round(st.b1 * 1.15))}, czyli w okolicy Twojej kwoty.`}</p>
-        ${zamiast}
-        ${lista.length ? siatkaWynikow(lista, q) : `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/${tylkoPrawdziwe ? 'pusty-okazje' : 'pusty-wyniki'}.webp" alt=""><p>${strefa === 'second' ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPrawdziwe ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Brak produktów w tej grupie. Zajrzyj do „Najtaniej”.'}</p></div>`}`}`
+      ${ocenione.length ? `<p class="maly szary" style="margin:12px 0 6px">Pasuje na okazję</p>
+      <div class="chipy">
+        <button class="chip" aria-pressed="${filtrOkazji === 'wszystkie'}" data-akcja="filtrOkazji" data-v="wszystkie">Wszystkie <span class="ile">${przedOkazja}</span></button>
+        ${OKAZJE_LISTA.map(([v, n]) => `<button class="chip${ileNa(v) ? '' : ' wyblakly'}" aria-pressed="${filtrOkazji === v}" data-akcja="filtrOkazji" data-v="${v}">${n} <span class="ile">${ileNa(v)}</span></button>`).join('')}
+      </div>` : ''}
+      <div style="height:14px"></div>
+      ${komunikaty}
+      ${lista.length ? siatkaWynikow(lista, q) : pusto ? `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/${tylkoPromocje ? 'pusty-okazje' : 'pusty-wyniki'}.webp" alt=""><p>${tylkoSecond ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPromocje ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Nic nie znaleźliśmy. Spróbuj innego hasła.'}</p></div>` : ''}
+      ${limit && drozsze ? `<button class="btn drugi" style="margin-top:22px" data-akcja="budzetWl">Pokaż też droższe: ${drozsze} ${drozsze === 1 ? 'rzecz' : 'rzeczy'} powyżej ${zl(limit)}</button>` : ''}`
     };
   }
+
 
   EKRANY.stylizacja = (id) => {
     const s = DEMO.S.find((x) => x.id === id) || DEMO.S[0];
     const el = s.el.map(prod);
     const suma = el.reduce((a, p) => a + p.cena, 0);
-    const plan = st.b1 + st.b2;
+    const plan = st.b2;
     const roznica = suma - plan;
     const zapisana = st.zapisane.includes(s.id);
     return {
       akt: 'szukaj', po: () => document.body.classList.add('z-paskiem'),
-      html: `<div class="naglowek"><a class="ikonka bez" href="#/wyniki" aria-label="Wróć do wyników">${IK.wstecz}</a><h1>Stylizacja ${esc(s.nazwa.toLowerCase())}</h1>
+      html: `<div class="naglowek"><a class="ikonka bez" href="#/stylizacje" aria-label="Wróć do stylizacji">${IK.wstecz}</a><h1>Stylizacja ${esc(s.nazwa.toLowerCase())}</h1>
         <button class="ikonka bez" data-akcja="zapiszStyl" data-id="${s.id}" aria-label="${zapisana ? 'Usuń z zapisanych' : 'Zapisz stylizację'}" aria-pressed="${zapisana}">${zapisana ? IK.sercePelne : IK.serce}</button></div>
       ${demoZnak()}
       <div class="kolaz wejscie" style="height:380px;border-radius:26px;border:1px solid var(--linia2)">${kolaz(s)}</div>
@@ -388,6 +416,7 @@
         <h1 style="font-size:30px;margin-top:-8px">${esc(p.nazwa)}</h1>
         <div class="ceny"><span class="cena" style="font-size:38px">${zl(p.cena)}</span>${p.stara ? `<span class="stara" style="font-size:16px">${zl(p.stara)}</span><span class="rabat">−${r}%</span>` : ''}</div>
         ${werInfo}
+        ${Array.isArray(p.okazje) ? `<div class="pasuje-na"><b>Pasuje na</b>${p.okazje.length ? `<div class="pasuje-lista">${OKAZJE_LISTA.filter(([v]) => p.okazje.includes(v)).map(([v, n]) => `<span class="pasuje-kafel"><img src="img/okazje/okazja-${st.dzial === 'meskie' ? 'm' : 'd'}-${v}.webp" alt="">${n}</span>`).join('')}</div>` : '<p class="maly szary">Według naszego kodeksu ubioru to rzecz poza okazjami z listy (np. sportowa albo domowa).</p>'}</div>` : ''}
         <div class="karta"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font-weight:500">Cena przez 30 dni</b><span class="maly szary" id="hist-opis">${p.historia ? (p.historia.every((v) => v === p.historia[0]) ? 'bez zmian' : 'zmieniała się') : ''}</span></div>
           <div id="hist">${p.historia ? G.wykresCeny(p.historia.map((v, i) => [v, Date.now() / 1000 - (p.historia.length - 1 - i) * 86400]), zl) : '<p class="maly szary">Sprawdzam historię ceny…</p>'}</div></div>
         ${rozm.length ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
@@ -397,7 +426,7 @@
           ${viaGoogle(p) ? '<p class="maly szary" style="margin:-4px 2px 0">Ten produkt znaleźliśmy przez Google Shopping. Po dotknięciu wyszukamy jego stronę w sklepie.</p>' : ''}
           <button class="btn drugi" data-akcja="alert" data-id="${p.id}">${IK.dzwonek} ${alert ? `Alert ustawiony: ${zl(alert.cel)}` : 'Powiadom, gdy stanieje'}</button>
           <button class="btn drugi" data-akcja="dodajProdukt" data-id="${p.id}">${IK.torba} ${st.koszyk.includes(p.id) ? 'Jest w zakupach' : 'Dodaj do zakupów'}</button>
-          ${prawdziwy(p) ? '' : `<a class="btn drugi" href="#/wyniki" data-akcja="dobierz">${IK.iskra} Dobierz do tego stylizację</a>`}
+          <a class="btn drugi" href="#/komponuj" data-akcja="dobierzDo" data-id="${p.id}">${IK.iskra} Dobierz stylizację</a>
           ${prawdziwy(p) ? `<button class="link zglos" data-akcja="niePasuje" data-id="${p.id}">${IK.uwaga.replace('<svg', '<svg width="16" height="16"')}<span>Nie pasuje? Zgłoś</span></button>` : ''}
         </div>
       </div>`
@@ -662,13 +691,13 @@
   }
   function arkuszZgloszenia(id) {
     const p = prod(id); if (!p) return;
-    const ok = wynik && wynik.okazja ? wynik.okazja : '';
+    const ok = filtrOkazji !== 'wszystkie' ? NAZWA_OKAZJI[filtrOkazji] : '';
     const pow = [ok ? ['okazja', `Nie pasuje na okazję: ${ok}`] : null, ['rzecz', 'To inna rzecz, niż szukałam / szukałem'],
       ['plec', 'Nie ten dział (damskie / męskie)'], ['zdjecie', 'Zdjęcie nie zgadza się z opisem'], ['inne', 'Inny powód']].filter(Boolean);
     ARK.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-labelledby="ark-t"><div class="uchwyt"></div>
       <h2 id="ark-t">Co jest nie tak?</h2><p class="szary" style="margin:6px 0 18px">${esc(p.sklep)}, ${esc(p.nazwa)}.</p>
       <div style="display:flex;flex-direction:column;gap:10px">${pow.map(([v, t]) => `<button class="btn drugi" data-akcja="wyslijZgloszenie" data-id="${p.id}" data-v="${v}">${esc(t)}</button>`).join('')}</div>
-      <p class="maly szary" style="margin:14px 0 4px">${ok ? 'Po zgłoszeniu ta rzecz od razu zniknie z wyników na tę okazję. ' : ''}Zgłoszenie pomaga nam poprawić zasady dla wszystkich.</p>
+      <p class="maly szary" style="margin:14px 0 4px">${ok ? 'Po zgłoszeniu ta rzecz od razu zniknie z filtra tej okazji. ' : ''}Zgłoszenie pomaga nam poprawić zasady dla wszystkich.</p>
       <button class="link" style="margin:10px auto 0;display:flex" data-akcja="zamknijArkusz">Anuluj</button></div>`;
     ARK.hidden = false;
   }
@@ -680,9 +709,14 @@
     witajDalej() { const sl = document.getElementById('slajdy'); sl.scrollTo({ left: (Math.round(sl.scrollLeft / sl.clientWidth) + 1) * sl.clientWidth, behavior: 'smooth' }); },
     witajSlajd(el) { const sl = document.getElementById('slajdy'); sl.scrollTo({ left: Number(el.dataset.i) * sl.clientWidth, behavior: 'smooth' }); },
     dzial(el) { st.dzial = el.dataset.v; zapisz(); render(); },
-    tryb(el) {
-      if (el.dataset.v === 'zdjecie') return A.zdjecie();
-      st.tryb = el.dataset.v; zapisz(); render();
+    wejscieStyl(el) { st.stylTryb = el.dataset.v === 'dodatki' ? 'dodatki' : 'outfit'; zapisz(); },
+    stylTryb(el) { st.stylTryb = el.dataset.v; zapisz(); render(true); },
+    bezStartu() { st.stylStart = null; zapisz(); render(true); },
+    dobierzDo(el) { st.stylStart = el.dataset.id; st.stylTryb = 'outfit'; zapisz(); },
+    komponuj() {
+      const qs = document.getElementById('qs');
+      if (qs) st.stylQ = qs.value.trim();
+      zapisz(); location.hash = '#/stylizacje';
     },
     okazja(el) {
       st.okazja = el.dataset.v; zapisz();
@@ -692,18 +726,19 @@
     zdjecie() { const f = document.getElementById('plik'); if (f) f.click(); },
     szukaj() {
       const q = (document.getElementById('q').value || '').trim();
-      if (!q && st.tryb !== 'outfit') { komunikat('Wpisz, czego szukasz.'); document.getElementById('q').focus(); return; }
-      st.zapytanie = q || 'Cały outfit';
+      if (!q) { komunikat('Wpisz, czego szukasz.'); document.getElementById('q').focus(); return; }
+      st.zapytanie = q;
       st.ostatnie = [st.zapytanie].concat(st.ostatnie.filter((x) => x.toLowerCase() !== st.zapytanie.toLowerCase())).slice(0, 8);
-      zakladka = 'sklepy'; strefa = 'budzet'; tylkoPrawdziwe = false;
+      filtrOkazji = 'wszystkie'; budzetWl = true; tylkoPromocje = false; tylkoSecond = false; kolejnosc = 'polecane';
       zapisz(); location.hash = '#/analiza';
     },
-    kategoria(el) { st.zapytanie = el.dataset.q; st.tryb = 'rzecz'; zapisz(); location.hash = '#/szukaj'; },
+    kategoria(el) { st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
     szukajOstatnie(el) { st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
     szukajTrendu(el, e) { e.preventDefault(); ARK.hidden = true; st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
-    zakladka(el) { zakladka = el.dataset.v; render(); },
-    strefa(el) { strefa = el.dataset.v; render(); },
-    tylkoPrawdziwe() { tylkoPrawdziwe = !tylkoPrawdziwe; render(); },
+    budzetWl() { budzetWl = !budzetWl; render(true); },
+    tylkoPromocje() { tylkoPromocje = !tylkoPromocje; render(true); },
+    tylkoSecond() { tylkoSecond = !tylkoSecond; render(true); },
+    filtrOkazji(el) { filtrOkazji = el.dataset.v; render(true); },
     doSklepu(el, e) {
       e.preventDefault();
       const p = prod(el.dataset.id); if (!p) return;
@@ -758,17 +793,16 @@
     zrodlaTrendu(el) { arkuszZrodel(+el.dataset.i); },
     wyslijZgloszenie(el) {
       const p = prod(el.dataset.id); if (!p) return;
-      const okazja = el.dataset.v === 'okazja' && wynik ? (wynik.kodOkazji || '') : '';
+      const okazja = el.dataset.v === 'okazja' && filtrOkazji !== 'wszystkie' ? filtrOkazji : '';
       const par = new URLSearchParams({ id: p.id, okazja, q: (wynik && wynik.zapytanie) || st.zapytanie || '', dzial: st.dzial, powod: el.dataset.v, nazwa: p.nazwa, sklep: p.sklep, zdjecie: p.zdjecie || '' });
       ARK.hidden = true;
       fetch(`${API}/zglos?${par}`).then((r) => {
         if (!r.ok) throw new Error();
-        if (okazja && wynik) { wynik.produkty = wynik.produkty.filter((x) => x.id !== p.id); try { sessionStorage.setItem('trendo-wynik', JSON.stringify(wynik)); } catch (e) {} }
-        komunikat(okazja ? 'Dziękujemy. Ta rzecz zniknęła z wyników na tę okazję.' : 'Dziękujemy, zgłoszenie zapisane.');
+        if (okazja && Array.isArray(p.okazje)) { p.okazje = p.okazje.filter((o) => o !== okazja); try { sessionStorage.setItem('trendo-wynik', JSON.stringify(wynik)); } catch (e) {} }
+        komunikat(okazja ? 'Dziękujemy. Ta rzecz nie będzie już pokazywana na tę okazję.' : 'Dziękujemy, zgłoszenie zapisane.');
       }).catch(() => komunikat('Nie udało się wysłać zgłoszenia. Spróbuj za chwilę.'));
     },
     wstecz() { if (history.length > 1) history.back(); else location.hash = '#/wyniki'; },
-    dobierz() { zakladka = 'stylizacje'; },
     dzialTrendow(el) { dzialTrendow = el.dataset.v; render(); },
     filtrTrendow(el) { filtrTrendow = el.dataset.v; render(); },
     zakladkaOkazji(el) { zakladkaOkazji = el.dataset.v; render(); },
@@ -788,14 +822,15 @@
     const t = e.target;
     if (t.id === 'b1' || t.id === 'b2') {
       st[t.id] = +t.value; zapisz();
-      const p = t.id === 'b1' ? (t.value - 30) / (3000 - 30) * 100 : t.value / 5000 * 100;
+      const p = t.id === 'b1' ? (t.value - 30) / (BEZ_LIMITU - 30) * 100 : t.value / 5000 * 100;
       t.style.setProperty('--p', p + '%');
-      document.getElementById(t.id + 'v').textContent = '~ ' + zl(+t.value);
+      document.getElementById(t.id + 'v').textContent = t.id === 'b1' ? opisCeny(+t.value) : '~ ' + zl(+t.value);
     }
     if (t.id === 'q') { st.zapytanie = t.value; zapisz(); }
   });
   document.addEventListener('change', (e) => {
     const t = e.target;
+    if (t.id === 'kolejnosc') { kolejnosc = t.value; render(true); return; }
     if (t.dataset.ust) {
       if (t.dataset.ust === 'dzial') { st.dzial = t.value; dzialTrendow = null; } else st.ust[t.dataset.ust] = t.value;
       zapisz(); komunikat('Zapisano');

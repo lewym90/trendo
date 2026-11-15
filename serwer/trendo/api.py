@@ -17,7 +17,7 @@ import threading
 from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.11.6"
+WERSJA = "0.12.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -57,6 +57,8 @@ def trafnosc(p, tok):
 
 
 OKAZJE = {"wieczor": "Wieczór", "wesele": "Wesele", "sylwester": "Sylwester", "randka": "Randka", "praca": "Praca", "smartcasual": "Smart casual"}
+OKAZJE_NAZWY = {"codzien": "Na co dzień", "smartcasual": "Smart casual", "praca": "Do pracy", "randka": "Randka", "wieczor": "Wieczór",
+                "wesele": "Wesele", "sylwester": "Sylwester", "wyjazd": "Wyjazd"}
 
 with _baza_blokada:
     DB.execute("CREATE TABLE IF NOT EXISTS zgloszenia (czas INTEGER, pid TEXT, okazja TEXT, q TEXT, dzial TEXT, powod TEXT, nazwa TEXT, sklep TEXT, zdjecie TEXT)")
@@ -102,10 +104,31 @@ def pobierz_produkty(q, dzial, laczniki):
     return sklepy, produkty
 
 
+# Wszystkie okazje w kolejności z aplikacji. Szukanie rzeczy niczego nie ukrywa: każdy produkt dostaje listę okazji,
+# na które pasuje według kodeksu (nadzor), a aplikacja pozwala zawęzić wyniki filtrem i pokazuje okazje na karcie produktu.
+OKAZJE_WSZYSTKIE = ["codzien", "smartcasual", "praca", "randka", "wieczor", "wesele", "sylwester", "wyjazd"]
+
+
+def okazje_produktu(p, wyk):
+    """Okazje, na które rzecz pasuje, albo None, gdy stylista AI jej jeszcze nie ocenił (nie zgadujemy)."""
+    k = p.get("klasa")
+    if not k:
+        return None
+    wyn = []
+    for o in OKAZJE_WSZYSTKIE:
+        if o in nadzor.FORMALNE:
+            ok = nadzor.decyzja(p, o, wyk)[0] == "tak"
+        else:
+            ok = o in nadzor.okazje(p, k) and (p.get("id"), o) not in wyk
+        if ok:
+            wyn.append(o)
+    return wyn
+
+
 def szukaj(q, dzial, okazja=""):
+    """okazja: przyjmowana dla zgodności ze starszą aplikacją, ale nie filtruje (filtr jest w aplikacji)."""
     q = " ".join(q.split())[:80]
-    okazja = okazja if okazja in OKAZJE else ""
-    klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}|{okazja}"
+    klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}"
     zap = pamiec_czytaj(klucz, WIEK_PAMIECI)
     if zap:
         zap["z_pamieci"] = True
@@ -135,24 +158,12 @@ def szukaj(q, dzial, okazja=""):
             produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial) and not p.get("tylko_ai")]
     else:
         produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)]
-    pominiete = 0
-    if okazja:
-        wyk = wykluczone()
-        zostaja = []
-        for p in produkty:
-            if klasyfikacja == "ai" and not p.get("klasa"):
-                continue  # jeszcze nieoceniona: nie pokazujemy (wynik nie trafi do pamięci, następne wyszukiwanie oceni resztę)
-            werdykt, powod = nadzor.decyzja(p, okazja, wyk)
-            if werdykt == "nie":
-                pominiete += 1
-                continue
-            p["punkty"] = nadzor.punkty(p, okazja)
-            zostaja.append(p)
-        produkty = zostaja
+    wyk = wykluczone()
+    for p in produkty:
+        p["okazje"] = okazje_produktu(p, wyk)
     wynik = {"zapytanie": q, "dzial": dzial, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
-             "sklepy": sklepy, "produkty": sorted(produkty, key=lambda p: -p.get("punkty", 0)),
-             "okazja": OKAZJE.get(okazja, ""), "pominiete": pominiete, "nieocenione": nieocenione,
-             "klasyfikacja": klasyfikacja}
+             "sklepy": sklepy, "produkty": produkty, "nieocenione": nieocenione, "klasyfikacja": klasyfikacja,
+             "okazje_nazwy": {o: OKAZJE_NAZWY[o] for o in OKAZJE_WSZYSTKIE}}
     # Bez pełnej oceny nie zapamiętujemy wyniku na 12 godzin, żeby następne wyszukiwanie spróbowało ocenić resztę.
     if produkty and (nieocenione == 0 or not klasyfikator.dostepny()):
         pamiec_zapisz(klucz, wynik)
@@ -244,7 +255,7 @@ class Obsluga(BaseHTTPRequestHandler):
             if u.path == "/zglos":
                 if licznik(time.strftime("zgloszenia-%Y-%m-%d"), 1) > 500:
                     return self._wyslij(429, {"blad": "Za dużo zgłoszeń dzisiaj."})
-                ok = a.get("okazja", "") if a.get("okazja", "") in OKAZJE else ""
+                ok = a.get("okazja", "") if a.get("okazja", "") in OKAZJE_NAZWY else ""
                 with _baza_blokada:
                     DB.execute("INSERT INTO zgloszenia VALUES (?,?,?,?,?,?,?,?,?)", (int(time.time()), a.get("id", "")[:40], ok,
                                a.get("q", "")[:80], a.get("dzial", "")[:10], a.get("powod", "")[:80], a.get("nazwa", "")[:200],

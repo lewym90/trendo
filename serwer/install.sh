@@ -64,12 +64,13 @@ if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; the
   echo; echo "Znaki sklepów: prawdziwe logo z nagłówka strony sklepu (próba na 5 sklepach, reszta pobierze się sama w tle)..."
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 400 "$PY" -m trendo.logo Reserved Zara "H&M" Zalando Sinsay ) || echo "Znaki sklepów: błąd uruchomienia."
   systemctl restart trendo; sleep 6
-  echo; echo "Próbne wyszukiwanie (koszula męska na wieczór, pierwsze może potrwać do 2 minut):"
-  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie&okazja=wieczor" | "$PY" -c "
+  echo; echo "Próbne wyszukiwanie (koszula męska: wszystkie wyniki i te pasujące na wieczór; pierwsze może potrwać do 2 minut):"
+  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie" | "$PY" -c "
 import json,sys; d=json.load(sys.stdin)
 [print(' ', s['nazwa'], '-', s['stan'], '-', s['ile'], 'produktów') for s in d['sklepy']]
-print('  Ocena:', d.get('klasyfikacja'), '| pokazane:', len(d['produkty']), '| pominięte:', d.get('pominiete'), '| czas:', d.get('czas'), 's')
-for p in d['produkty'][:8]: print('   +', p['sklep'], '-', p['nazwa'][:70])
+P=d['produkty']; w=[p for p in P if 'wieczor' in (p.get('okazje') or [])]
+print('  Ocena:', d.get('klasyfikacja'), '| wszystkie:', len(P), '| pasuje na wieczór:', len(w), '| bez oceny:', sum(p.get('okazje') is None for p in P), '| czas:', d.get('czas'), 's')
+for p in w[:8]: print('   +', p['sklep'], '-', p['nazwa'][:70])
 " || echo "Próbne wyszukiwanie: brak odpowiedzi."
 else
   echo "Status: BŁĄD, https://$HOST/trendo-api/zdrowie nie odpowiada."

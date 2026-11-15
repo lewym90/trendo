@@ -385,3 +385,25 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 
 .tryb-ikona{width:46px;height:40px;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(0,0,0,.45))}
 .ilustracja-ustawien{display:block;width:110px;height:auto;margin:0 auto 10px;filter:drop-shadow(0 12px 18px rgba(0,0,0,.5))}
+
+/* dwie drogi: szukanie rzeczy i stylizacja */
+.wejscia{margin-top:16px}
+.wejscia .tryb{cursor:pointer}
+.karta-wejscie{display:flex;align-items:center;gap:14px;margin-top:22px;padding:14px 16px;border-radius:20px;border:1px solid var(--linia);background:var(--karta);color:var(--tekst);text-decoration:none}
+.karta-wejscie img{flex:none;width:48px;height:56px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+.karta-wejscie>span{flex:1;display:flex;flex-direction:column;gap:3px}
+.karta-wejscie b{font-weight:500;font-size:15.5px}
+.karta-wejscie>span>span{font-size:13px;color:var(--szary)}
+.karta-wejscie>svg{flex:none;width:18px;height:18px;color:var(--roz)}
+.wyniki-meta{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:-6px 0 14px}
+.wyniki-meta p{margin:0}
+.kolejnosc{flex:none;background:var(--karta);color:var(--tekst);border:1px solid var(--linia);border-radius:12px;padding:6px 10px;font:400 13px var(--sans)}
+.chip.wyblakly{opacity:.5}
+.pasuje-na{display:flex;flex-direction:column;gap:10px}
+.pasuje-na b{font-weight:500}
+.pasuje-lista{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -20px;padding:2px 20px}
+.pasuje-lista::-webkit-scrollbar{display:none}
+.pasuje-kafel{flex:none;width:84px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--szary);text-align:center}
+.pasuje-kafel img{width:84px;height:92px;object-fit:contain;padding:6px;border-radius:16px;border:1px solid var(--linia);background:linear-gradient(160deg,#2C1A22,#1A1015)}
+.start-rzecz{border:1px solid var(--linia);border-radius:18px;padding:10px}
+.start-rzecz .ikonka{flex:none}
