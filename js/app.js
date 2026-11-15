@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.18.4';
+  const WERSJA = '0.19.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -13,7 +13,7 @@
   const DOMYSLNE = {
     witaj: false, dzial: 'damskie', zapytanie: 'Skórzane spodnie', b1: 3000, b2: 800,
     okazja: 'codzien', stylTryb: 'outfit', stylStart: null, stylQ: '', koszyk: [], ulubione: [], zapisane: [], alerty: [],
-    ostatnie: [], rozmiar: {}, ust: { gora: '', dol: '', buty: '' }, znane: {}
+    ostatnie: [], rozmiar: {}, ust: { gora: '', dol: '', buty: '' }, rozm: { d: {}, m: {} }, znane: {}
   };
   let st;
   try { st = Object.assign({}, DOMYSLNE, JSON.parse(localStorage.getItem('trendo') || '{}')); } catch (e) { st = Object.assign({}, DOMYSLNE); }
@@ -28,7 +28,7 @@
   const OKZ = { damskie: null, meskie: null }; // okazje dnia z serwera: { czas, lista, trwa, blad }
   const OKZ_ID = {};
   // Ten sam produkt może być w ostatnim wyniku, w zapamiętanych i w okazjach: bierzemy najświeżej sprawdzony.
-  const prod = (id) => DEMO.P.find((p) => p.id === id) || [wynik && wynik.produkty.find((p) => p.id === id), (st.znane || {})[id], OKZ_ID[id]]
+  const prod = (id) => DEMO.P.find((p) => p.id === id) || [wynik && wynik.produkty.find((p) => p.id === id), (st.znane || {})[id], OKZ_ID[id], STYL_ID[id]]
     .filter(Boolean).sort((a, b) => (b.sprawdzono || 0) - (a.sprawdzono || 0))[0];
   function zapamietaj(p) {
     if (!p || !p.zrodlo) return;
@@ -258,22 +258,221 @@
         ${start ? `<div class="element start-rzecz"><span class="miniatura">${foto(start)}</span><span class="opis"><span class="maly szary" style="display:block">Zaczynamy od</span><span class="nazwa" style="display:block">${esc(start.nazwa)}</span><span class="sklep">${marka(start.sklep)}</span></span><button class="ikonka bez" data-akcja="bezStartu" aria-label="Usuń">${IK.zamknij}</button></div>`
           : `<div class="pole-szukaj">${IK.wieszak}<input id="qs" value="${esc(st.stylQ || '')}" placeholder="Np. mam czarne skórzane spodnie" autocomplete="off"></div>`}
       </div>
-      <div class="sekcja">
-        <div class="budzet">
-          <div class="budzet-wiersz"><div class="budzet-gora"><label for="b2">Budżet na całość<span class="opis">razem z dodatkami</span></label><span class="budzet-kwota" id="b2v">~ ${zl(st.b2)}</span></div>
-            <input id="b2" type="range" min="100" max="5000" step="10" value="${st.b2}" style="--p:${p2}%"></div>
-        </div>
-      </div>
       <button class="btn" style="margin-top:20px" data-akcja="komponuj">Skomponuj stylizacje ${IK.iskra}</button>`
     };
   };
 
-  EKRANY.stylizacje = () => ({
-    akt: 'szukaj',
-    html: `<div class="naglowek"><a class="ikonka bez" href="#/komponuj" aria-label="Wróć">${IK.wstecz}</a><h1>${esc(NAZWA_OKAZJI[st.okazja] || 'Stylizacje')}</h1><span class="puste"></span></div>
-      <div class="info uwaga" style="margin:4px 0 16px">${IK.info}<p>Składanie stylizacji z prawdziwych produktów to następny etap budowy. Poniżej przykład, jak będą wyglądać.</p></div>
-      <div class="karuzela">${DEMO.S.map(kartaStylizacji).join('')}</div>`
-  });
+  /* ---------- stylizacje z prawdziwych produktów (0.19.0, wariant B wybrany przez użytkownika) ----------
+     Serwer zwraca dla każdego miejsca w zestawie uszeregowanych kandydatów; suwak ceny przy rzeczy podmienia ją na bieżąco
+     (najlepiej pasująca rzecz do tej kwoty), suwak całości obniża zestaw tam, gdzie tańszy zamiennik traci najmniej. */
+  const STYL_ID = {};
+  let STYL = null; // { klucz, dane } albo { klucz, laduje } albo { klucz, blad }
+  let stylWidok = { tryb: 'wszystkie', z: 0 };
+  const stylWyb = {};
+  const STATUS_TRENDU = { szczyt: 'szczyt', rosnie: 'rośnie', nadchodzi: 'nadchodzi', wygasa: 'wygasa' };
+  const swiatLit = () => (st.dzial === 'meskie' ? 'm' : 'd');
+  const rozmSwiata = () => ((st.rozm || {})[swiatLit()] || {});
+  function kluczStylizacji() {
+    return JSON.stringify([st.dzial, st.okazja, st.stylTryb, st.stylStart || '', st.stylStart ? '' : (st.stylQ || ''), rozmSwiata()]);
+  }
+  function wczytajStylizacje() {
+    const k = kluczStylizacji();
+    if (STYL && STYL.klucz === k && !STYL.blad) return;
+    STYL = { klucz: k, laduje: true };
+    const u = `${API}/stylizacja?dzial=${st.dzial}&okazja=${st.okazja}&tryb=${st.stylTryb}`
+      + (st.stylStart ? `&id=${encodeURIComponent(st.stylStart)}` : st.stylQ ? `&q=${encodeURIComponent(st.stylQ)}` : '')
+      + `&rozm=${encodeURIComponent(JSON.stringify(rozmSwiata()))}`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 180000);
+    fetch(u, { signal: ctrl.signal })
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok || !d || !d.tryby) throw new Error((d && d.blad) || 'blad');
+        Object.values(d.produkty).forEach((p) => { p.sprawdzono = p.sprawdzono || d.sprawdzono; STYL_ID[p.id] = p; });
+        Object.keys(stylWyb).forEach((x) => delete stylWyb[x]);
+        stylWidok = { tryb: d.tryby.sklep ? 'sklep' : 'wszystkie', z: 0 };
+        STYL = { klucz: k, dane: d };
+      })
+      .catch((e) => {
+        STYL = { klucz: k, blad: e.name === 'AbortError' ? 'Składanie trwało za długo. Spróbuj jeszcze raz.'
+          : (e.message && !/^blad$|fetch|NetworkError|JSON/i.test(e.message) ? e.message : 'Serwer nie odpowiada. Spróbuj za chwilę.') };
+      })
+      .finally(() => { clearTimeout(t); if (location.hash === '#/stylizacje') render(); });
+  }
+  function stylStan(tr, z) { const k = tr + '|' + z; return stylWyb[k] || (stylWyb[k] = { sloty: {}, suma: null }); }
+  function stylWybor(d, tr, z) {
+    const Z = d.tryby[tr].zestawy[z], S = stylStan(tr, z), P = d.produkty, wyn = {};
+    d.miejsca.forEach(({ k }) => {
+      const ids = (Z.sloty[k] || []).filter((id) => P[id]);
+      if (!ids.length) return;
+      const s = S.sloty[k] || (S.sloty[k] = { limit: null, skok: 0, wyl: false });
+      const dost = ids.filter((id) => s.limit == null || P[id].cena <= s.limit + 0.001);
+      wyn[k] = { ids, dost, id: dost.length ? dost[s.skok % dost.length] : null, s };
+    });
+    const suma = () => Object.values(wyn).reduce((a, w) => a + (w.id && !w.s.wyl ? P[w.id].cena : 0), 0);
+    let ponad = false;
+    if (S.suma != null) {
+      for (let g = 0; g < 80 && suma() > S.suma + 0.001; g++) {
+        let naj = null;
+        Object.entries(wyn).forEach(([k, w]) => {
+          if (!w.id || w.s.wyl) return;
+          const c = P[w.id].cena, i = w.dost.indexOf(w.id), j = w.dost.findIndex((id) => P[id].cena < c - 0.001);
+          if (j >= 0 && (!naj || j - i < naj.strata)) naj = { k, j, strata: j - i };
+        });
+        if (!naj) { ponad = true; break; }
+        wyn[naj.k].id = wyn[naj.k].dost[naj.j];
+      }
+    }
+    return { wyn, suma: suma(), ponad };
+  }
+  const stylCeny = (ids, P) => [...new Set(ids.map((id) => P[id].cena))].sort((a, b) => a - b);
+  function stylPlansza(d, tr, z) {
+    const { wyn, suma } = stylWybor(d, tr, z), P = d.produkty, Z = d.tryby[tr].zestawy[z];
+    const kafle = [];
+    if (d.baza && d.baza.zdjecie) kafle.push({ p: d.baza, et: 'Twoja rzecz', baza: true });
+    d.miejsca.forEach(({ k, nazwa }) => { const w = wyn[k]; if (w && w.id) kafle.push({ p: P[w.id], et: nazwa, wyl: w.s.wyl }); });
+    const sklepy = new Set(kafle.filter((x) => !x.baza && !x.wyl).map((x) => x.p.sklep));
+    const zBaza = d.baza && d.baza.cena && d.baza.zdjecie ? d.baza.cena : 0;
+    // pierwsza rzecz (Twoja albo pierwsza dobrana) na dwa rzędy; gdy zostałoby puste pole, ostatnia na całą szerokość
+    const n = kafle.length, duza = n >= 3, szeroka = duza ? (n + 1) % 2 === 1 : n === 1;
+    return `<div class="plansza${duza ? ' duza' : ''}${szeroka ? ' szeroka' : ''}" data-z="${z}">
+      <img class="plansza-tlo" src="img/stylizacja/plansza-${swiatLit()}.webp" alt="">
+      <div class="plansza-siatka">${kafle.map((x) => `<a class="kafel${x.baza ? ' baza' : ''}${x.wyl ? ' wyl' : ''}" href="#/produkt/${x.p.id || ''}" ${x.baza && !x.p.id ? 'onclick="return false"' : ''}>${foto(x.p)}<span class="metka">${esc(x.et)}</span></a>`).join('')}</div>
+      <div class="plansza-podpis"><div><small>Zestaw ${z + 1} z ${d.tryby[tr].zestawy.length}</small><h2>${esc(Z.nazwa)}</h2></div>
+        <div style="text-align:right"><small>${sklepy.size === 1 ? '1 sklep' : sklepy.size + ' sklepy'}</small><b>${zl(Math.round((suma + zBaza) * 100) / 100)}</b></div></div></div>`;
+  }
+  function stylWiersz(d, k, nazwa, w, tr) {
+    const p = d.produkty[w.id], ceny = stylCeny(w.ids, d.produkty), n = ceny.length;
+    const v = w.s.limit == null ? n : Math.max(0, ceny.indexOf(w.s.limit));
+    return `<div class="styl-el${w.s.wyl ? ' wyl' : ''}" id="se-${k}">
+      <div class="styl-tresc">${stylTresc(p, nazwa, w)}</div>
+      <div class="styl-suwak"><span id="sl-${k}">${w.s.limit == null ? 'Bez limitu' : 'Do <b>' + zl(w.s.limit) + '</b>'}</span>
+        <input type="range" class="suwak-rzeczy" data-k="${k}" min="0" max="${n}" step="1" value="${v}" style="--p:${n ? v / n * 100 : 100}%" aria-label="Cena: ${esc(nazwa)}"></div>
+      <div class="styl-akcje"><button class="link" data-akcja="stylInna" data-k="${k}">${IK.iskra.replace('<svg', '<svg width="14" height="14"')} Inna propozycja</button>
+        <button class="mam" data-akcja="stylWl" data-k="${k}" aria-pressed="${!w.s.wyl}"><span>${w.s.wyl ? 'Mam już' : 'Uwzględnij'}</span><i class="przel"></i></button></div>
+    </div>`;
+  }
+  function stylTresc(p, nazwa, w) {
+    if (!p) return `<div class="tx"><span class="slot">${esc(nazwa)}</span><p class="szary" style="margin:6px 0 0;font-size:14px">Nic w tej cenie. Przesuń suwak w prawo.</p></div>`;
+    const r = rabat(p);
+    return `<a class="fot" href="#/produkt/${p.id}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
+      <div class="tx"><span class="slot">${esc(nazwa)}</span>
+        <a class="nazwa" href="#/produkt/${p.id}">${esc(p.nazwa)}</a>
+        <span class="sklep">${marka(p.sklep)}</span>
+        <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</span>
+        ${p.trend ? `<a class="znacz-trend" href="#/trendy">W trendzie: ${esc(p.trend.nazwa)} · ${STATUS_TRENDU[p.trend.status] || esc(p.trend.status)}</a>` : `<span class="powod">${esc(p.powod || '')}</span>`}
+        ${p.rozmiar_ok == null ? '<span class="maly szary" style="display:block;margin-top:4px">Rozmiar sprawdź w sklepie</span>' : ''}</div>`;
+  }
+  function stylBraki(d, tr) {
+    const T = d.tryby[tr], br = T.braki || {}, sk = T.sklep;
+    return d.miejsca.filter(({ k }) => br[k]).map(({ k, nazwa }) => {
+      const msg = tr === 'sklep'
+        ? (br[k] === 'rozmiar' ? `W ${esc(sk)} nie ma tego w Twoim rozmiarze.` : `${esc(sk)} nie ma rzeczy, która pasuje do tego zestawu.`)
+        : (br[k] === 'rozmiar' ? 'Nie znaleźliśmy pasującej rzeczy w Twoim rozmiarze.' : 'Nie znaleźliśmy pasującej rzeczy na tę okazję.');
+      return `<div class="styl-brak"><img src="img/stylizacja/brak-${swiatLit()}.webp" alt=""><div><b>${esc(nazwa)}</b><p>${msg}</p>
+        ${tr === 'sklep' ? '<button class="link" data-akcja="stylTrybW" data-v="wszystkie">Pokaż ze wszystkich sklepów</button>' : ''}</div></div>`;
+    }).join('');
+  }
+  function stylLista(d) {
+    const tr = stylWidok.tryb, z = stylWidok.z, { wyn, ponad } = stylWybor(d, tr, z);
+    const S = stylStan(tr, z), P = d.produkty;
+    const wiersze = d.miejsca.filter(({ k }) => wyn[k]).map(({ k, nazwa }) => stylWiersz(d, k, nazwa, wyn[k], tr)).join('');
+    const wl = Object.values(wyn).filter((w) => !w.s.wyl);
+    const min = Math.floor(wl.reduce((a, w) => a + Math.min(...w.ids.map((id) => P[id].cena)), 0) / 10) * 10;
+    const max = Math.ceil(wl.reduce((a, w) => a + Math.max(...(w.s.limit == null ? w.ids : w.dost).map((id) => P[id].cena)), 0) / 10) * 10 || 10;
+    const v = S.suma == null ? max : Math.min(max, Math.max(min, S.suma));
+    return wiersze + stylBraki(d, tr) + (wl.length ? `<div class="karta budzet" style="margin-top:14px">
+      <div class="budzet-gora"><label for="styl-suma">Budżet na całość<span class="opis">dobierane rzeczy${d.baza && d.baza.cena ? ', bez Twojej' : ''}</span></label>
+        <span class="budzet-kwota" id="stv">${S.suma == null ? 'Bez limitu' : '~ ' + zl(S.suma)}</span></div>
+      <input id="styl-suma" type="range" min="${min}" max="${max}" step="10" value="${v}" style="--p:${max > min ? (v - min) / (max - min) * 100 : 100}%">
+      <p class="maly" id="styl-ponad" style="margin:6px 0 0;color:var(--uwaga)">${ponad ? 'Taniej się nie da w Twoich rozmiarach. Odznacz którąś rzecz albo podnieś budżet.' : ''}</p></div>` : '');
+  }
+  function stylPasek(d) {
+    const { wyn, suma } = stylWybor(d, stylWidok.tryb, stylWidok.z);
+    const n = Object.values(wyn).filter((w) => w.id && !w.s.wyl).length + (d.baza && d.baza.id ? 1 : 0);
+    const razem = suma + (d.baza && d.baza.cena ? d.baza.cena : 0);
+    return `<div class="wnetrze"><div class="razem"><span>Zestaw: ${n} ${n === 1 ? 'rzecz' : n < 5 ? 'rzeczy' : 'rzeczy'}${d.baza && d.baza.cena ? ' z Twoją' : ''}</span><b>${zl(Math.round(razem * 100) / 100)}</b></div>
+      <button class="btn maly" data-akcja="stylDoKoszyka">${IK.torba} Do zakupów</button></div>`;
+  }
+  function stylOdswiez(cale) {
+    const d = STYL && STYL.dane; if (!d) return;
+    const tr = stylWidok.tryb;
+    const pl = document.querySelector(`.plansza[data-z="${stylWidok.z}"]`);
+    if (pl) pl.outerHTML = stylPlansza(d, tr, stylWidok.z);
+    document.querySelectorAll('.kropki i').forEach((x, i) => x.classList.toggle('on', i === stylWidok.z));
+    if (cale) document.getElementById('styl-lista').innerHTML = stylLista(d);
+    const ps = document.getElementById('styl-pasek'); if (ps) ps.innerHTML = stylPasek(d);
+    podmienGrafikiSwiata(E);
+  }
+  const KROKI_STYL = [['Analizuję Twoją rzecz', 'kolor, materiał, styl', 'krok-stylizacje'], ['Szukam w sklepach', 'w rozmiarach z Ustawień', 'krok-sklepy'],
+    ['Sprawdzam trendy', 'tylko potwierdzone źródłami', 'krok-trendy'], ['Składam 3 zestawy', 'klasycznie, modnie, odważnie', 'krok-promocje']];
+
+  EKRANY.stylizacje = () => {
+    wczytajStylizacje();
+    if (STYL.laduje) {
+      return {
+        menu: false, klasa: 'bez-menu',
+        html: `<section class="analiza"><div class="pierscien"><img id="pierscien-img" class="pierscien-przedmiot" src="img/ikony/krok-stylizacje.webp" alt=""></div>
+          <h1 style="font-size:34px;font-weight:400">Składam stylizacje…</h1>
+          <ol class="kroki" id="kroki">${KROKI_STYL.map(([a, b, ik], i) => `<li data-i="${i}" data-ik="${ik}"><img class="krok-ikona" src="img/ikony/${ik}.webp" alt=""><div><b>${a}</b><span>${b}</span></div><span class="znak"></span></li>`).join('')}</ol>
+          <p class="maly szary">Pierwsze złożenie trwa do minuty, następne są od razu.</p></section>`,
+        po: () => {
+          const li = [...document.querySelectorAll('#kroki li')];
+          let i = 0;
+          const krok = () => {
+            if (location.hash !== '#/stylizacje' || !STYL || !STYL.laduje) return;
+            if (i > 0) { li[i - 1].classList.remove('aktywny'); li[i - 1].classList.add('gotowy'); li[i - 1].querySelector('.znak').innerHTML = IK.ok; }
+            if (i >= li.length) return;
+            li[i].classList.add('aktywny');
+            const pi = document.getElementById('pierscien-img');
+            if (pi && i) { pi.classList.add('znika'); const nowy = obrazSwiata(`ikony/${li[i].dataset.ik}.webp`); setTimeout(() => { pi.src = nowy; pi.classList.remove('znika'); }, 220); }
+            i++;
+            if (i < li.length) EKRANY.stylizacje.timer = setTimeout(krok, i === 1 ? 2500 : 9000);
+          };
+          krok();
+        }
+      };
+    }
+    if (STYL.blad) {
+      return { akt: 'szukaj', html: `<div class="naglowek"><a class="ikonka bez" href="#/komponuj" aria-label="Wróć">${IK.wstecz}</a><h1>Stylizacja</h1><span class="puste"></span></div>
+        <div class="info uwaga">${IK.uwaga}<p>${esc(STYL.blad)}</p></div><button class="btn" style="margin-top:16px" data-akcja="stylPonow">Spróbuj jeszcze raz</button>` };
+    }
+    const d = STYL.dane, tr = d.tryby[stylWidok.tryb] ? stylWidok.tryb : 'wszystkie';
+    stylWidok.tryb = tr;
+    const R = rozmSwiata(), opisR = Object.keys(R).filter((k) => R[k]).length
+      ? ROZM_POLA[swiatLit()].filter(([k]) => R[k]).slice(0, 3).map(([k, n]) => `${n.split(' (')[0].split(':')[0].toLowerCase()} <b>${esc(R[k])}</b>`).join(' · ')
+      : 'nie podano, pokazujemy wszystkie';
+    const zestawy = d.tryby[tr].zestawy;
+    return {
+      akt: 'szukaj',
+      po: () => {
+        document.body.classList.add('z-paskiem');
+        const pl = document.getElementById('plansze');
+        if (pl) {
+          pl.scrollLeft = stylWidok.z * pl.clientWidth;
+          let t;
+          pl.addEventListener('scroll', () => {
+            clearTimeout(t);
+            t = setTimeout(() => { const z = Math.round(pl.scrollLeft / pl.clientWidth); if (z !== stylWidok.z) { stylWidok.z = z; stylOdswiez(true); } }, 120);
+          });
+        }
+      },
+      html: `<div class="naglowek"><a class="ikonka bez" href="#/komponuj" aria-label="Wróć">${IK.wstecz}</a><h1>Stylizacja</h1><span class="puste"></span></div>
+      <p class="szary styl-pod">${esc(NAZWA_OKAZJI[d.okazja] || '')}${d.baza ? ' · do: ' + esc(d.baza.nazwa) : ''}</p>
+      ${d.opis ? `<div class="styl-hero">${d.baza && d.baza.zdjecie ? `<span class="fot">${foto(d.baza)}</span>` : ''}<p>${esc(d.opis)}</p></div>` : ''}
+      ${d.trendy && d.trendy.length ? `<div class="styl-trendy">${d.trendy.map((t) => `<a href="#/trendy">${esc(t.nazwa)} · ${STATUS_TRENDU[t.status] || esc(t.status)}</a>`).join('')}</div>` : ''}
+      <div class="styl-roz"><span>Szukam w rozmiarach: ${opisR}</span><a class="link" href="#/profil">Zmień</a></div>
+      ${d.tryby.sklep ? `<div class="styl-filtr"><div class="przelacznik" role="tablist">
+        <button role="tab" aria-selected="${tr === 'sklep'}" data-akcja="stylTrybW" data-v="sklep">Tylko ${esc(d.tryby.sklep.sklep)}</button>
+        <button role="tab" aria-selected="${tr === 'wszystkie'}" data-akcja="stylTrybW" data-v="wszystkie">Wszystkie sklepy</button></div></div>` : ''}
+      <div class="plansze" id="plansze">${zestawy.map((_, z) => stylPlansza(d, tr, z)).join('')}</div>
+      <div class="kropki">${zestawy.map((_, z) => `<i class="${z === stylWidok.z ? 'on' : ''}"></i>`).join('')}</div>
+      <p class="szary maly" style="margin:10px 2px 0">Przesuń planszę, żeby zobaczyć inne zestawy. Suwak przy rzeczy pokazuje najlepszą propozycję do wybranej kwoty.</p>
+      <div id="styl-lista">${stylLista(d)}</div>
+      <div style="height:110px"></div>
+      <div class="pasek-suma" id="styl-pasek">${stylPasek(d)}</div>`
+    };
+  };
 
   EKRANY.analiza = () => {
     const s = sezon();
@@ -805,6 +1004,28 @@
     };
   };
 
+  /* Rozmiary tylko do stylizacji (decyzja użytkownika 15.11): same oznaczenia, bez wymiarów ciała. Strona produktu działa bez zmian. */
+  const NUM = (a, b, k) => Array.from({ length: Math.floor((b - a) / k) + 1 }, (_, i) => String(a + i * k));
+  const ROZM_POLA = {
+    d: [['gora', 'Góra (bluzki, koszule, swetry)', ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']], ['sukienka', 'Sukienki i spódnice', NUM(32, 48, 2)],
+      ['spodnie', 'Spodnie', NUM(32, 48, 2)], ['jeansyW', 'Jeansy: obwód (W)', NUM(24, 34, 1).map((x) => 'W' + x)], ['jeansyL', 'Jeansy: długość (L)', ['L30', 'L32', 'L34']],
+      ['okrycie', 'Marynarki i okrycia', NUM(32, 48, 2)], ['buty', 'Buty', NUM(35, 42, 1)]],
+    m: [['gora', 'Góra (t-shirty, swetry, kurtki)', ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']], ['kolnierzyk', 'Koszula wizytowa: kołnierzyk', NUM(37, 46, 1)],
+      ['wzrost', 'Wzrost (koszule i garnitury)', ['164-170', '170-176', '176-182', '182-188', '188-194']], ['spodnie', 'Spodnie', NUM(44, 58, 2)],
+      ['jeansyW', 'Jeansy: obwód (W)', NUM(28, 40, 1).map((x) => 'W' + x)], ['jeansyL', 'Jeansy: długość (L)', ['L30', 'L32', 'L34', 'L36']],
+      ['marynarka', 'Marynarki i garnitury', NUM(44, 60, 2)], ['buty', 'Buty', NUM(39, 47, 1)]]
+  };
+  let swiatRozm = null;
+  function kartaRozmiarow() {
+    const w = swiatRozm || swiatLit(), R = (st.rozm || {})[w] || {};
+    return `<div class="karta" style="padding:4px 16px;margin-top:14px">
+      <div style="padding:14px 0 12px;border-bottom:1px solid var(--linia)"><b style="font-weight:500">Twoje rozmiary</b>
+        <p class="maly szary" style="margin:4px 0 10px">Tylko do stylizacji: dobieramy rzeczy dostępne w tych rozmiarach. Na stronie produktu dalej widzisz całą rozmiarówkę.</p>
+        <div class="przelacznik" role="radiogroup" aria-label="Rozmiary"><button role="radio" aria-checked="${w === 'd'}" data-akcja="rozmSwiat" data-v="d">Damskie</button><button role="radio" aria-checked="${w === 'm'}" data-akcja="rozmSwiat" data-v="m">Męskie</button></div></div>
+      ${ROZM_POLA[w].map(([k, n, opcje]) => `<div class="ustawienie"><label for="r-${k}">${n}</label><select id="r-${k}" data-rozm="${k}">${[''].concat(opcje).map((r) => `<option value="${r}" ${(R[k] || '') === r ? 'selected' : ''}>${r ? r.replace('-', '–') : 'nie podano'}</option>`).join('')}</select></div>`).join('')}
+    </div>`;
+  }
+
   EKRANY.profil = () => ({
     akt: 'start',
     html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Ustawienia</h1><span class="puste"></span></div>
@@ -813,11 +1034,12 @@
     <div class="karta" style="padding:4px 16px">
       <div class="ustawienie"><label for="u-dzial">Dział na start</label><select id="u-dzial" data-ust="dzial"><option value="damskie" ${st.dzial === 'damskie' ? 'selected' : ''}>Damskie</option><option value="meskie" ${st.dzial === 'meskie' ? 'selected' : ''}>Męskie</option></select></div>
     </div>
+    ${kartaRozmiarow()}
     <div class="karta" style="padding:4px 16px;margin-top:14px">
       <div class="ustawienie"><span>Pokaż ekran powitalny</span><button class="link" data-akcja="pokazPowitanie">Pokaż</button></div>
       <div class="ustawienie"><span>Usuń wszystkie dane z telefonu</span><button class="link" data-akcja="wyczyscWszystko">Usuń</button></div>
     </div>
-    <p class="maly szary" style="text-align:center;margin-top:20px">Trendo ${WERSJA}. Gotowe stylizacje są na razie przykładowe.</p>`
+    <p class="maly szary" style="text-align:center;margin-top:20px">Trendo ${WERSJA}</p>`
   });
 
   /* ---------- elementy wielokrotne ---------- */
@@ -932,7 +1154,21 @@
     wejscieStyl(el) { st.stylTryb = el.dataset.v === 'dodatki' ? 'dodatki' : 'outfit'; zapisz(); },
     stylTryb(el) { st.stylTryb = el.dataset.v; zapisz(); render(true); },
     bezStartu() { st.stylStart = null; zapisz(); render(true); },
-    dobierzDo(el) { st.stylStart = el.dataset.id; st.stylTryb = 'outfit'; zapisz(); },
+    dobierzDo(el) { st.stylStart = el.dataset.id; st.stylTryb = 'outfit'; if (filtrOkazji && filtrOkazji !== 'wszystkie') st.okazja = filtrOkazji; zapisz(); },
+    stylTrybW(el) { stylWidok = { tryb: el.dataset.v, z: 0 }; render(true); },
+    stylWl(el) { const S = stylStan(stylWidok.tryb, stylWidok.z), s = S.sloty[el.dataset.k]; if (!s) return; s.wyl = !s.wyl; stylOdswiez(true); },
+    stylInna(el) { const S = stylStan(stylWidok.tryb, stylWidok.z), s = S.sloty[el.dataset.k]; if (!s) return; s.skok++; S.suma = null; stylOdswiez(true); },
+    stylPonow() { STYL = null; render(); },
+    rozmSwiat(el) { swiatRozm = el.dataset.v; render(true); },
+    stylDoKoszyka() {
+      const d = STYL && STYL.dane; if (!d) return;
+      const { wyn } = stylWybor(d, stylWidok.tryb, stylWidok.z);
+      const ids = Object.values(wyn).filter((w) => w.id && !w.s.wyl).map((w) => w.id).concat(d.baza && d.baza.id ? [d.baza.id] : []);
+      let dod = 0;
+      ids.forEach((id) => { const p = STYL_ID[id] || prod(id); if (!p) return; zapamietaj(p); if (!st.koszyk.includes(id)) { st.koszyk.push(id); dod++; } });
+      zapisz(); rysujMenu('szukaj');
+      komunikat(dod ? `Dodano ${dod} ${dod === 1 ? 'rzecz' : 'rzeczy'} do zakupów` : 'Ten zestaw jest już w zakupach');
+    },
     komponuj() {
       const qs = document.getElementById('qs');
       if (qs) st.stylQ = qs.value.trim();
@@ -1050,10 +1286,34 @@
       document.getElementById(t.id + 'v').textContent = t.id === 'b1' ? opisCeny(+t.value) : '~ ' + zl(+t.value);
     }
     if (t.id === 'q') { st.zapytanie = t.value; zapisz(); }
+    const d = STYL && STYL.dane;
+    if (d && (t.classList.contains('suwak-rzeczy') || t.id === 'styl-suma')) {
+      const S = stylStan(stylWidok.tryb, stylWidok.z), Z = d.tryby[stylWidok.tryb].zestawy[stylWidok.z];
+      if (t.id === 'styl-suma') {
+        const v = +t.value, max = +t.max, min = +t.min;
+        S.suma = v >= max ? null : v;
+        t.style.setProperty('--p', (max > min ? (v - min) / (max - min) * 100 : 100) + '%');
+        document.getElementById('stv').textContent = S.suma == null ? 'Bez limitu' : '~ ' + zl(S.suma);
+      } else {
+        const k = t.dataset.k, s = S.sloty[k], ceny = stylCeny((Z.sloty[k] || []).filter((id) => d.produkty[id]), d.produkty), n = ceny.length, v = +t.value;
+        s.limit = v >= n ? null : ceny[v]; s.skok = 0;
+        t.style.setProperty('--p', (n ? v / n * 100 : 100) + '%');
+        document.getElementById('sl-' + k).innerHTML = s.limit == null ? 'Bez limitu' : 'Do <b>' + zl(s.limit) + '</b>';
+      }
+      const { wyn, ponad } = stylWybor(d, stylWidok.tryb, stylWidok.z);
+      d.miejsca.forEach(({ k, nazwa }) => { const el = document.querySelector('#se-' + k + ' .styl-tresc'); if (el && wyn[k]) el.innerHTML = stylTresc(d.produkty[wyn[k].id], nazwa, wyn[k]); });
+      const pn = document.getElementById('styl-ponad'); if (pn) pn.textContent = ponad ? 'Taniej się nie da w Twoich rozmiarach. Odznacz którąś rzecz albo podnieś budżet.' : '';
+      stylOdswiez(false);
+    }
   });
   document.addEventListener('change', (e) => {
     const t = e.target;
     if (t.id === 'kolejnosc') { kolejnosc = t.value; render(true); return; }
+    if (t.dataset.rozm) {
+      const w = swiatRozm || swiatLit();
+      st.rozm = st.rozm || {}; st.rozm[w] = Object.assign({}, st.rozm[w] || {}, { [t.dataset.rozm]: t.value });
+      zapisz(); komunikat('Zapisano');
+    }
     if (t.dataset.ust) {
       if (t.dataset.ust === 'dzial') { st.dzial = t.value; dzialTrendow = null; } else st.ust[t.dataset.ust] = t.value;
       zapisz(); komunikat('Zapisano');
@@ -1156,7 +1416,7 @@
 
   /* ---------- router ---------- */
   function render(zachowajPozycje) {
-    clearTimeout(EKRANY.analiza.timer);
+    clearTimeout(EKRANY.analiza.timer); clearTimeout(EKRANY.stylizacje.timer);
     document.body.classList.remove('z-paskiem');
     let [nazwa, arg] = location.hash.replace(/^#\/?/, '').split('/');
     if (!nazwa) nazwa = st.witaj ? 'start' : 'witaj';

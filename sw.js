@@ -1,6 +1,6 @@
 /* Trendo: pamięć podręczna, żeby aplikacja startowała szybko i bez sieci */
-const WERSJA = 'trendo-0.18.4';
-const PLIKI = ['./', 'index.html', 'styles.css?v=0.18.4', 'js/wzorce.js?v=0.18.4', 'js/demo.js?v=0.18.4', 'js/grafika.js?v=0.18.4', 'js/app.js?v=0.18.4', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+const WERSJA = 'trendo-0.19.0';
+const PLIKI = ['./', 'index.html', 'styles.css?v=0.19.0', 'js/wzorce.js?v=0.19.0', 'js/demo.js?v=0.19.0', 'js/grafika.js?v=0.19.0', 'js/app.js?v=0.19.0', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(WERSJA).then((c) => c.addAll(PLIKI)).then(() => self.skipWaiting()));

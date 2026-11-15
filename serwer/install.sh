@@ -175,6 +175,8 @@ print('  Odpowiedź Google:', b.get('kod'), b.get('status') or '', '-', b.get('o
 import json,sys; d=json.load(sys.stdin); o=d.get('ocena') or {}; n=d.get('noc')
 print(f\"  Dziś: {o.get('koszt_dzis_usd')} USD | w tym miesiącu: {o.get('koszt_miesiac_usd')} USD\")
 print(f\"  Ostatnia noc ({n['data']}): {n['koszt_usd']} USD, okazje dnia: {n.get('okazje', '-')}, nowe artykuły o trendach: {n.get('artykuly', '-')}\" if n else '  Ostatnia noc: brak danych (pierwszy pomiar po najbliższej nocy).')
+s=d.get('stylizacje') or {}
+print(f\"  Stylizacje w tym miesiącu: {s.get('w_miesiacu', 0)}, koszt oceny nowych rzeczy: {s.get('koszt_usd', 0)} USD\")
 " || echo "  Brak odpowiedzi serwera."
 else
   echo "Status: BŁĄD, https://$HOST/trendo-api/zdrowie nie odpowiada."

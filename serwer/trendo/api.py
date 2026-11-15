@@ -19,10 +19,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote_plus, urlparse
 
 import threading
-from . import klasyfikator, lacznik_ccc, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_strony, lacznik_wittchen, lacznik_zara, logo, nadzor, obserwowane, rozmiary, trendy
+from . import klasyfikator, lacznik_ccc, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_strony, lacznik_wittchen, lacznik_zara, logo, nadzor, obserwowane, rozmiary, stylizacje, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.18.4"
+WERSJA = "0.19.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_ccc, lacznik_wittchen, lacznik_strony, lacznik_przegladarka, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -241,6 +241,30 @@ def rozgrzewka():
         time.sleep(1800)
 
 
+# Stylizacje: wyszukiwania pod miejsca w zestawie, bez Google Shopping i przeglądarki (Vinted, C&A: wolne, a Vinted bez rozmiarów).
+LACZNIKI_STYL = [l for l in LACZNIKI if l not in (lacznik_google, lacznik_przegladarka)]
+
+
+def szukaj_do_stylizacji(q, dzial):
+    klucz = f"styl-q|{dzial}|{q.lower()}"
+    zap = pamiec_czytaj(klucz, WIEK_PAMIECI)
+    if zap is not None:
+        return zap
+    try:
+        _, produkty = pobierz_produkty(q, dzial, LACZNIKI_STYL)
+    except Exception:
+        traceback.print_exc()
+        return []
+    produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)]
+    try:
+        obserwowane.zapamietaj(produkty)  # strona produktu i rozmiarówka po id
+    except Exception:
+        traceback.print_exc()
+    if produkty:
+        pamiec_zapisz(klucz, produkty)
+    return produkty
+
+
 def odswiezanie():
     """Ceny obserwowanych produktów (alerty, ulubione) sprawdzane w ich sklepach co 12 godzin."""
     time.sleep(600)
@@ -304,7 +328,8 @@ class Obsluga(BaseHTTPRequestHandler):
                 return self._wyslij(200, {"ok": True, "wersja": WERSJA, "laczniki": [l.NAZWA for l in LACZNIKI], "ai": klasyfikator.dostepny(),
                                       "sklepy_bezposrednio": sorted({s for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}),
                                           "google": lacznik_google.stan(), "ocena": klasyfikator.stan(),
-                                          "noc": json.loads(klasyfikator.ustawienie("noc_koszt") or "null")})
+                                          "noc": json.loads(klasyfikator.ustawienie("noc_koszt") or "null"),
+                                          "stylizacje": stylizacje.stan()})
             if u.path == "/szukaj":
                 q = a.get("q", "").strip()
                 if len(q) < 2:
@@ -387,6 +412,21 @@ class Obsluga(BaseHTTPRequestHandler):
                 return self._wyslij(200, {"produkty": obserwowane.dane(a.get("ids", "").split(","))})
             if u.path == "/obserwuj":
                 return self._wyslij(200, {"ok": True, "ile": obserwowane.obserwuj(a.get("ids", "").split(","))})
+            if u.path == "/stylizacja":
+                dz = "meskie" if a.get("dzial") == "meskie" else "damskie"
+                okazja = a.get("okazja") if a.get("okazja") in stylizacje.NAZWY_OKAZJI else "codzien"
+                tryb = "dodatki" if a.get("tryb") == "dodatki" else "outfit"
+                try:
+                    rozm = {k: str(v)[:20] for k, v in json.loads(a.get("rozm") or "{}").items() if v}
+                except Exception:
+                    rozm = {}
+                baza_p = None
+                if a.get("id"):
+                    baza_p = obserwowane.dane([a["id"]]).get(a["id"])
+                    if not baza_p:
+                        return self._wyslij(404, {"blad": "Nie znam tej rzeczy. Wyszukaj ją jeszcze raz."})
+                q = " ".join(a.get("q", "").split())[:80]
+                return self._wyslij(200, stylizacje.zloz(baza_p, q, dz, okazja, tryb, rozm, szukaj_do_stylizacji, okazje_produktu, wykluczone))
             if u.path == "/rozmiary":
                 p = obserwowane.dane([a.get("id", "")]).get(a.get("id", ""))
                 if not p:
