@@ -105,8 +105,7 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false,
-   "smartcasual": true
+   "sylwester": false
   },
   "kodeks": "2026-11-15"
  },
@@ -216,8 +215,7 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false,
-   "smartcasual": true
+   "sylwester": false
   },
   "kodeks": "2026-11-15"
  },
@@ -2562,7 +2560,6 @@
   "oczekiwane": {
    "wieczor": false,
    "wesele": false,
-   "praca": false,
    "sylwester": false,
    "smartcasual": true
   },
@@ -2635,7 +2632,6 @@
   "oczekiwane": {
    "wieczor": false,
    "wesele": false,
-   "praca": false,
    "sylwester": false,
    "smartcasual": true
   },
@@ -2740,7 +2736,6 @@
   "oczekiwane": {
    "wieczor": false,
    "wesele": false,
-   "praca": false,
    "sylwester": false,
    "smartcasual": true
   },

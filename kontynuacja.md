@@ -104,3 +104,8 @@ Najlepsza droga dla każdego sklepu:
 - Okazja smartcasual: w aplikacji (kafelek „Smart casual”), serwerze i nadzorze (min. elegancja 2, zakazy: dres, bluza, kaptur, legginsy, szorty, klapki, puchowe; wyprowadzenie: praca albo randka+codzien, f 2–4).
 - Wzorzec: kolumna smartcasual (141 tak / 70 nie), poprawki wg kodeksu (kremowe/ecru bluzki i zamszowa marynarka nie na wesele). Kalibracja na starych przebiegach: zostały 2 błędy (kremowe bluzki), które wyłapie dopiero nowe pole „bialy” — do sprawdzenia po instalacji.
 - Lniany garnitur/marynarka dozwolone na wesele (kodeks 16).
+
+## 0.8.1 (15.11.2026): kalibracja po kodeksie
+- Kontrola 0.8.0 (nowe polecenie): 4 błędy krytyczne, 61 ukrytych, zgodność 95%. 3 „błędy” = moje stare etykiety sprzeczne z kodeksem (polo w paski do pracy: Emily Post dopuszcza polo w business casual) → etykiety „?”. Ochnik bluzy z kołnierzykiem na smart casual → „?” (sporne). Prawdziwy błąd: t-shirt HUGO z emblematem na smart casual → t-shirt na smart casual wymaga elegancji ≥3.
+- Nowe polecenie: AI ostrożniejsze z „wieczorem” dla gładkich koszul/golfów/spódnic. Reguły (nadzor.okazje): praca+randka, f≥3, gładkie, rodzaj z WIECZOR_RODZAJE, bez lnu/kraty/flaneli/chambray/dżinsu/sztruksu ⇒ wieczor; smart casual dla skórzanych sneakersów i kurtek, swetrów, koszul (nie flanela), sukienek dziennych; skórzane kozaki/botki (nie emu/zimowe) ⇒ smart casual, randka, wieczor; marynarki f≥3 (nie len, nie skóra) ⇒ sylwester. Zakaz „na plecach” (np. Off-White z logo na plecach).
+- Kalibracja na 3 przebiegach: przebieg 3 (nowe polecenie): 0 krytycznych, 32 ukryte z 1227; przebiegi 1–2 (stare, bez pola „bialy”): 2 krytyczne = kremowe bluzki na wesele, które w nowym przebiegu łapie pole „bialy”.

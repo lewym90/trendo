@@ -18,7 +18,7 @@ TWARDE = [
     "dres", "jogger", "piżam", "pizam", "klapk", "japonk", "crocs", "trekking", "biegow", "treningow", "do biegania",
     "na siłownię", "na silownie", "do koszykówki", "do koszykowki", "do golfa", "z kapturem", "hoodie", "bojówk", "bojowk", "cargo",
     "z dziurami", "dziury", "przetarci", "ripped", "duże logo", "dużym logo", "duzym logo", "logo na całym", "allover", "all-over",
-    "moro", "kamuflaż", "kamuflaz",
+    "moro", "kamuflaż", "kamuflaz", "na plecach",  # nadruk/logo na plecach: na zdjęciu z przodu niewidoczne
 ]
 # Dla wesela i pracy dodatkowo (nazwa):
 TWARDE_WESELE = ["jeans", "denim", "lnian", "lnu", "flanel", "sneaker", "trampk", "sportow", "t-shirt", "tshirt", "krótki rękaw",
@@ -45,6 +45,8 @@ MIEKKIE = ["nadruk", "napis", "graficzn", "grafik", "aplikacj", "naszyw", "print
 
 WZOR_ZAKAZANY = {"duze_logo_lub_nadruk", "motyw_tematyczny"}
 MIN_ELEGANCJA = {"wesele": 4, "wieczor": 3, "sylwester": 2, "praca": 3, "randka": 2, "smartcasual": 2}  # sylwester 2: tylko gdy AI sam go wypisał
+WIECZOR_RODZAJE = {"koszula", "bluzka", "spódnica", "spodnie", "sweter", "top", "sukienka"}
+NIE_WIECZOR = ["lnian", "lnu", " len", "krat", "flanel", "chambray", "jeans", "denim", "dżins", "sztruks", "bojówk", "cargo"]
 RANDKA_RODZAJE = {"sweter", "kardigan", "polo", "sukienka", "bluzka", "spódnica", "spodnie", "top", "kombinezon"}
 # Rzeczy, które nigdy nie pasują do danej okazji (rodzaj z klasyfikacji).
 RODZAJ_ZAKAZANY = {
@@ -112,6 +114,29 @@ def okazje(p, k):
         o |= {"wieczor", "randka", "praca", "smartcasual"}  # marynarka to zawsze strój na wyjście
     if ("praca" in o0 or {"randka", "codzien"} <= o0) and f >= 2 and f <= 4 and wz not in WZOR_ZAKAZANY:
         o.add("smartcasual")  # kodeks 5–6: smart casual = elegancja ze swobodą (bez rzeczy typowo imprezowych)
+    t = _tekst(p)
+    sk = skorzane(p)
+    # 0.8.1 (kalibracja na 3 przebiegach): gładka koszula, golf, spódnica, spodnie do pracy i na randkę = także na kolację,
+    # ale nie len, krata, flanela, chambray, dżins, sztruks, bojówki (kodeks 10)
+    if {"praca", "randka"} <= o0 and f >= 3 and wz in ("gladki", "male_logo") and r in WIECZOR_RODZAJE and not _ma(t, NIE_WIECZOR):
+        o |= {"wieczor", "randka"}
+    # kodeks 6: smart casual obejmuje skórzane sneakersy i kurtki, swetry, koszule, sukienki dzienne
+    if r == "sneakersy" and sk and wz in ("gladki", "male_logo"):
+        o.add("smartcasual")
+    if r == "kurtka" and sk:
+        o.add("smartcasual")
+    if r in ("sweter", "kardigan") and f >= 2 and wz in ("gladki", "male_logo", "wzor_stonowany"):
+        o.add("smartcasual")
+    if r == "koszula" and f >= 2 and wz in ("gladki", "male_logo", "wzor_stonowany") and not _ma(t, ["flanel"]):
+        o.add("smartcasual")
+    if r == "sukienka" and f >= 2 and wz in ("gladki", "male_logo", "wzor_stonowany") and "codzien" in o0:
+        o.add("smartcasual")
+    # kodeks 10: skórzane kozaki i botki pasują do sukienki na wieczór (ale nie buty zimowe typu emu)
+    if r in ("kozaki", "botki") and sk and wz in ("gladki", "male_logo") and not _ma(t, ["emu", "ugg", "śniegow", "sniegow", "zimow", "trapery", "trekking"]):
+        o |= {"smartcasual", "randka", "wieczor"}
+    # kodeks 17: eleganckie marynarki na sylwestra (nie lniane, nie skórzane)
+    if r in ("marynarka", "garnitur") and f >= 3 and wz != "wzor_wyrazisty" and not sk and not _ma(t, ["lnian", "lnu", " len", "lnem"]):
+        o.add("sylwester")
     return o
 
 
@@ -135,6 +160,8 @@ def decyzja(p, okazja, wykluczone=()):
     if wz in WZOR_ZAKAZANY:
         return "nie", f"zdjęcie: {wz}"
     minimum = 3 if (okazja == "wesele" and k.get("r") == "sukienka") else MIN_ELEGANCJA[okazja]
+    if okazja == "smartcasual" and k.get("r") == "t-shirt":
+        minimum = 3  # zwykły t-shirt to casual, nie smart casual (kodeks 7)
     if (k.get("f") or 0) < minimum:
         return "nie", f"elegancja {k.get('f')}"
     # kolor z oceny zdjęcia albo z początku nazwy („Biała sukienka…”, „Kremowy sweter…”), nie z dodatków („…z białym kołnierzykiem”)
