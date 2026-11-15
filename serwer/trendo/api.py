@@ -22,7 +22,7 @@ import threading
 from . import klasyfikator, lacznik_ccc, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_strony, lacznik_wittchen, lacznik_zara, logo, nadzor, obserwowane, rozmiary, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.18.2"
+WERSJA = "0.18.3"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_ccc, lacznik_wittchen, lacznik_strony, lacznik_przegladarka, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -195,12 +195,18 @@ ROZGRZEWKA = {
 
 
 def rozgrzewka():
+    """Raz na dobę: nowe artykuły o trendach, darmowy przegląd cen w sklepach (historia cen, sprawdzone obniżki, okazje dnia)
+    i ocena AI tylko produktów z okazji dnia (DECYZJA użytkownika 15.11: reszta oceniana dopiero przy wyszukiwaniu).
+    Koszt AI całej nocy zapisywany w ustawieniu noc_koszt (tylko do wglądu w /zdrowie, aplikacja go nie pokazuje)."""
     time.sleep(120)
     while True:
+        noc = {}
+        k0 = klasyfikator.koszt_miesiac()
         if klasyfikator.dostepny() and not licznik(time.strftime("trendy-%Y-%m-%d")):
             licznik(time.strftime("trendy-%Y-%m-%d"), 1)
             try:
-                trendy.zbierz()  # nowe artykuły i raporty o trendach (weryfikowane cytatami)
+                st = trendy.zbierz()  # nowe artykuły i raporty o trendach (weryfikowane cytatami)
+                noc["artykuly"] = (st or {}).get("artykuly", 0)
                 for dz in ("damskie", "meskie"):
                     pamiec_zapisz(f"trendy|{WERSJA}|{dz}", trendy.zestawienie(dz))
             except Exception:
@@ -208,19 +214,30 @@ def rozgrzewka():
         dzien = time.strftime("rozgrzewka-%Y-%m-%d")
         if not licznik(dzien):
             licznik(dzien, 1)
-            # Nocny przegląd sklepów: ceny do historii, okazje dnia i ocena AI nowych produktów (bez limitu kosztów).
+            # Przegląd sklepów bez AI: ceny do historii i do sprawdzania obniżek.
             bez_google = [l for l in LACZNIKI if l is not lacznik_google]
             for dzial, hasla in ROZGRZEWKA.items():
                 for q in hasla:
                     try:
                         _, produkty = pobierz_produkty(q, dzial, bez_google)
-                        if klasyfikator.dostepny():
-                            klasyfikator.klasyfikuj(produkty, maks=None)
                         obserwowane.zapamietaj([p for p in produkty if nadzor.zgodna_plec(p, dzial)])
                     except Exception:
                         traceback.print_exc()
                     time.sleep(5)
+            # Ocena AI tylko okazji dnia (każdy produkt raz na zawsze; zwykle kilkanaście nowych na noc).
+            noc["okazje"] = 0
+            for dz in ("damskie", "meskie"):
+                try:
+                    lista = obserwowane.okazje(dz)
+                    noc["okazje"] += len(lista)
+                    if lista and klasyfikator.dostepny():
+                        klasyfikator.klasyfikuj(lista, maks=None)
+                except Exception:
+                    traceback.print_exc()
             obserwowane.sprzataj()
+        if noc:
+            noc.update({"data": time.strftime("%Y-%m-%d %H:%M"), "koszt_usd": round(klasyfikator.koszt_miesiac() - k0, 4)})
+            klasyfikator.ustawienie("noc_koszt", json.dumps(noc))
         time.sleep(1800)
 
 
@@ -286,7 +303,8 @@ class Obsluga(BaseHTTPRequestHandler):
             if u.path in ("/", "/zdrowie"):
                 return self._wyslij(200, {"ok": True, "wersja": WERSJA, "laczniki": [l.NAZWA for l in LACZNIKI], "ai": klasyfikator.dostepny(),
                                       "sklepy_bezposrednio": sorted({s for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}),
-                                          "google": lacznik_google.stan(), "ocena": klasyfikator.stan()})
+                                          "google": lacznik_google.stan(), "ocena": klasyfikator.stan(),
+                                          "noc": json.loads(klasyfikator.ustawienie("noc_koszt") or "null")})
             if u.path == "/szukaj":
                 q = a.get("q", "").strip()
                 if len(q) < 2:
@@ -354,7 +372,15 @@ class Obsluga(BaseHTTPRequestHandler):
                 dz = "meskie" if a.get("dzial") == "meskie" else "damskie"
                 zap = pamiec_czytaj(f"okazje|{WERSJA}|{dz}", 1800)
                 if not zap:
-                    zap = {"dzial": dz, "sprawdzono": int(time.time()), "okazje": obserwowane.okazje(dz)}
+                    lista = obserwowane.okazje(dz)
+                    try:
+                        klasyfikator.klasyfikuj(lista, maks=0)  # tylko oceny już zapisane, bez kosztów
+                        wyk = wykluczone()
+                        for p in lista:
+                            p["okazje"] = okazje_produktu(p, wyk)
+                    except Exception:
+                        traceback.print_exc()
+                    zap = {"dzial": dz, "sprawdzono": int(time.time()), "okazje": lista}
                     pamiec_zapisz(f"okazje|{WERSJA}|{dz}", zap)
                 return self._wyslij(200, zap)
             if u.path == "/produkty":

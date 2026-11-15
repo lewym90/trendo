@@ -170,6 +170,12 @@ import json,sys; b=(json.load(sys.stdin).get('ocena') or {}).get('ostatni_blad')
 print('  Odpowiedź Google:', b.get('kod'), b.get('status') or '', '-', b.get('opis') or '(brak treści)')" || true; fi
   else echo "  Nie udało się pobrać zdjęcia próbnego (to nie błąd aplikacji)."; fi
   rm -f /tmp/trendo-szukaj.json /tmp/trendo-foto.jpg
+  echo; echo "Koszt AI (tylko dla Ciebie, aplikacja tego nie pokazuje):"
+  curl -fsS --max-time 20 "https://$HOST/trendo-api/zdrowie" | "$PY" -c "
+import json,sys; d=json.load(sys.stdin); o=d.get('ocena') or {}; n=d.get('noc')
+print(f\"  Dziś: {o.get('koszt_dzis_usd')} USD | w tym miesiącu: {o.get('koszt_miesiac_usd')} USD\")
+print(f\"  Ostatnia noc ({n['data']}): {n['koszt_usd']} USD, okazje dnia: {n.get('okazje', '-')}, nowe artykuły o trendach: {n.get('artykuly', '-')}\" if n else '  Ostatnia noc: brak danych (pierwszy pomiar po najbliższej nocy).')
+" || echo "  Brak odpowiedzi serwera."
 else
   echo "Status: BŁĄD, https://$HOST/trendo-api/zdrowie nie odpowiada."
   journalctl -u trendo -n 15 --no-pager

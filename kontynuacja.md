@@ -262,3 +262,9 @@ Najlepsza droga dla każdego sklepu:
 - Użytkownik: „wydałem sporo na same testy”. Instalacja 0.18.1 kosztowała ok. 1,7 USD (próbne wyszukiwania oceniały ~1600 nowych produktów; listopad 13,27 USD).
 - /szukaj?test=1: wyszukiwanie bez oceny AI (bez cechy hasła), bez zapisu w pamięci wyszukiwań; produkty trafiają do bazy (rozmiarówka po id działa). Instalator używa test=1 we wszystkich próbnych wyszukiwaniach. Jakość oceny nadal sprawdza darmowa kontrola na zapisanych przebiegach. Pozostały koszt instalacji: zdjęcie próbne (~0,001 USD) i nowe artykuły trendów (zwykle 0).
 - Do decyzji użytkownika: nocny przegląd (ceny 42 haseł bez Google — darmowe; ocena AI nowych produktów — płatna).
+
+## 0.18.3 (15.11.2026): tańsza noc (DECYZJA użytkownika)
+- Użytkownik pytał o sens nocnego zbierania. Ustalone: sprawdzanie promocji zostaje (Omnibus ze sklepu i własna historia cen są darmowe; chroni przed napompowanymi rabatami w okazjach dnia). Nocny przegląd cen 42 haseł zostaje (bez AI, darmowy). Wyłączona nocna ocena AI wszystkich nowych produktów; AI ocenia w nocy tylko okazje dnia (do 60+60, każdy produkt raz). Szacunek: 0,02–0,10 USD/noc, 1–3 USD/mies.
+- Udziały trendów w sklepach (dane_sklepow) i tak pokazywane tylko przy próbie ≥150 (tydzień ≥30); bez nocnej oceny będą rzadsze. O trendzie decydują źródła (≥2 wydawców); udział wpływa tylko na status „rośnie” (zmiana ≥15%).
+- /okazje: „pasuje na” liczone z zapisanych ocen (klasyfikuj maks=0, bez kosztów).
+- Koszt nocy: ustawienie noc_koszt {data, koszt_usd, okazje, artykuly} → /zdrowie „noc” i wiersz w instalatorze. Użytkownik: licznik tylko dla niego, NIE w aplikacji.
