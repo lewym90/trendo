@@ -153,7 +153,9 @@ def _kappahl(sklep, url, dzial):
     t = b.decode("utf-8", "ignore")
     i = t.find('"products": [')
     if i < 0:
-        return [], "brak danych na stronie"
+        # Hasło takie jak „marynarka męska” sklep przekierowuje na stronę kategorii (lista dociągana skryptem): to nie awaria.
+        kan = re.search(r'rel="canonical" href="([^"]+)"', t)
+        return [], "ok" if kan and "/szukaj" not in kan.group(1) else "brak danych na stronie"
     try:
         lista, _ = json.JSONDecoder().raw_decode(t[i + len('"products": '):])
     except Exception:

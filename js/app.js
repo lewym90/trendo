@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.18.3';
+  const WERSJA = '0.18.4';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -809,12 +809,9 @@
     akt: 'start',
     html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Ustawienia</h1><span class="puste"></span></div>
     <img class="ilustracja-ustawien" src="img/ikony/rozmiary.webp" alt="">
-    <p class="szary" style="text-align:center;margin:0 0 16px">Twoje rozmiary pomagają dobrać rzeczy. Zapisują się tylko na tym telefonie.</p>
+    <p class="szary" style="text-align:center;margin:0 0 16px">Ustawienia, ulubione i alerty zapisują się tylko na tym telefonie.</p>
     <div class="karta" style="padding:4px 16px">
       <div class="ustawienie"><label for="u-dzial">Dział na start</label><select id="u-dzial" data-ust="dzial"><option value="damskie" ${st.dzial === 'damskie' ? 'selected' : ''}>Damskie</option><option value="meskie" ${st.dzial === 'meskie' ? 'selected' : ''}>Męskie</option></select></div>
-      <div class="ustawienie"><label for="u-gora">Rozmiar góry</label><select id="u-gora" data-ust="gora">${['', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map((r) => `<option value="${r}" ${st.ust.gora === r ? 'selected' : ''}>${r || 'nie podano'}</option>`).join('')}</select></div>
-      <div class="ustawienie"><label for="u-dol">Rozmiar spodni</label><select id="u-dol" data-ust="dol">${['', '32', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54'].map((r) => `<option value="${r}" ${st.ust.dol === r ? 'selected' : ''}>${r || 'nie podano'}</option>`).join('')}</select></div>
-      <div class="ustawienie"><label for="u-buty">Rozmiar butów</label><select id="u-buty" data-ust="buty">${['', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47'].map((r) => `<option value="${r}" ${st.ust.buty === r ? 'selected' : ''}>${r || 'nie podano'}</option>`).join('')}</select></div>
     </div>
     <div class="karta" style="padding:4px 16px;margin-top:14px">
       <div class="ustawienie"><span>Pokaż ekran powitalny</span><button class="link" data-akcja="pokazPowitanie">Pokaż</button></div>

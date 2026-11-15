@@ -268,3 +268,8 @@ Najlepsza droga dla każdego sklepu:
 - Udziały trendów w sklepach (dane_sklepow) i tak pokazywane tylko przy próbie ≥150 (tydzień ≥30); bez nocnej oceny będą rzadsze. O trendzie decydują źródła (≥2 wydawców); udział wpływa tylko na status „rośnie” (zmiana ≥15%).
 - /okazje: „pasuje na” liczone z zapisanych ocen (klasyfikuj maks=0, bez kosztów).
 - Koszt nocy: ustawienie noc_koszt {data, koszt_usd, okazje, artykuly} → /zdrowie „noc” i wiersz w instalatorze. Użytkownik: licznik tylko dla niego, NIE w aplikacji.
+
+## 0.18.4 (15.11.2026): audyt po 0.18.3
+- Sprawdzone na żywym serwerze (0.18.3): /zdrowie, okazje 60/25 z „pasuje na” i zgodną płcią, trendy, rozmiarówka dla produktów z okazji (14 sklepów), wyszukiwanie testowe (404 produkty, 6 s). Aplikacja: wszystkie ekrany w obu światach bez błędów JS i brakujących plików; produkt z okazji z kartą rozmiarówki. Noc zasymulowana lokalnie: AI tylko dla list okazji, noc_koszt zapisany.
+- Poprawki: Ustawienia bez pól „Rozmiar góry/spodni/butów” (nieużywane, sprzeczne z decyzją użytkownika). Kappahl: hasło przekierowane na stronę kategorii (np. „marynarka męska”) = 0 wyników „ok”, nie awaria widoczna w wynikach.
+- Znane i zamierzone: /logo 404 dla sklepów z Google Shopping bez znaku → aplikacja pokazuje nazwę tekstem. Top Secret bez M w tabeli niektórych produktów — tak jest w źródle.
