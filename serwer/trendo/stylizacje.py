@@ -18,7 +18,7 @@ from . import klasyfikator as K, nadzor, trendy
 from .wspolne import licznik, lista_rozmiarow, pamiec_czytaj, pamiec_zapisz
 
 WIEK = 12 * 3600
-WERSJA_DOBORU = 2  # zmiana zasad doboru = nowe stylizacje zamiast zapamiętanych
+WERSJA_DOBORU = 3  # zmiana zasad doboru = nowe stylizacje zamiast zapamiętanych
 NA_MIEJSCE = 24        # ilu kandydatów z wszystkich sklepów oceniamy na jedno miejsce w zestawie
 ZE_SKLEPU = 10         # i ilu dodatkowo ze sklepu rzeczy wyjściowej
 W_RANKINGU = 16        # ilu kandydatów na miejsce wraca do aplikacji (dla suwaków)
@@ -325,13 +325,14 @@ def _opis_z_regul(baza_nazwa, baza, okazja, uzyte):
 
 def opis_stylisty(baza_nazwa, baza, okazja, zestaw, uzyte):
     fakty = {"rzecz_wyjsciowa": {"nazwa": baza_nazwa, "rodzaj": baza.get("r"), "kolor": baza.get("kolor"), "material": baza.get("material"),
-                                 "wzor": baza.get("wzor_rodzaj"), "styl": baza.get("styl")},
+                                 "wzor": baza.get("wzor_rodzaj")},
              "okazja": NAZWY_OKAZJI.get(okazja), "dobrane": [{"miejsce": m, "nazwa": n, "kolor": c, "material": mt} for m, n, c, mt in zestaw],
              "trendy_wolno_wspomniec": [x["nazwa"] for x in uzyte]}
     tekst = ("Jesteś stylistką sklepu z modą. Napisz po polsku 2–3 krótkie zdania (najwyżej 60 słów) dla klientki albo klienta: "
              "czym i dlaczego zestawić rzecz wyjściową na tę okazję (rodzaje rzeczy, kolory, materiały, proporcje, poziom elegancji). "
              "Dobrane rzeczy są tylko przykładem kierunku: NIE opisuj konkretnych produktów, ich nazw ani pojedynczych kolorów, "
-             "bo klient może je zmieniać; pisz o zasadach zestawienia. "
+             "bo klient może je zmieniać; pisz o zasadach zestawienia. Nie nazywaj stylu rzeczy wyjściowej (np. „smart casual”), "
+             "mów tylko o okazji. "
              "Korzystaj WYŁĄCZNIE z faktów poniżej. Nie podawaj cen, marek ani sklepów. O modzie, trendach i sezonie wolno pisać "
              "tylko używając nazw z listy trendy_wolno_wspomniec; jeśli lista jest pusta, nie wspominaj o modzie, trendach ani sezonie. "
              "Zwracaj się bezosobowo albo w 2. osobie, ciepło i konkretnie.\nFakty: " + json.dumps(fakty, ensure_ascii=False))

@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.19.1';
+  const WERSJA = '0.19.2';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -262,7 +262,7 @@
     };
   };
 
-  /* ---------- stylizacje z prawdziwych produktów (0.19.1, wariant B wybrany przez użytkownika) ----------
+  /* ---------- stylizacje z prawdziwych produktów (0.19.2, wariant B wybrany przez użytkownika) ----------
      Serwer zwraca dla każdego miejsca w zestawie uszeregowanych kandydatów; suwak ceny przy rzeczy podmienia ją na bieżąco
      (najlepiej pasująca rzecz do tej kwoty), suwak całości obniża zestaw tam, gdzie tańszy zamiennik traci najmniej. */
   const STYL_ID = {};

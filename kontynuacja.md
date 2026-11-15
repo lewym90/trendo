@@ -285,3 +285,6 @@ Najlepsza droga dla każdego sklepu:
 - Instalacja 0.19.0 OK. Test na serwerze z prawdziwą AI: 3 stylizacje (damska smart casual do spodni Reserved, męska wesele od opisu „granatowy garnitur”, damska wieczór do sukienki Mohito), 27–41 s, razem 0,254 USD (ok. 8 centów; spada, bo produkty oceniane raz).
 - Poprawki: kara za cenę >1,5× mediany kandydatów w miejscu (Klasycznie wybrało marynarkę za 2922 zł); opis stylisty bez nazywania konkretnych rzeczy (opisywał zestaw z „Wszystkie sklepy”, a domyślnie widać „Tylko sklep”); krawat na wesele u mężczyzn (kodeks 15); znaczki trendów u góry liczone z oglądanego zestawu; WERSJA_DOBORU w kluczu pamięci.
 - Nowe trendy damskie bez grafiki: Zdobione swetry, Baleriny, Buty Mary Jane (prompt do arkusza).
+
+## 0.19.2 (15.11.2026)
+- Instalacja 0.19.1 OK; stylizacje przez aplikację na żywym serwerze (zrzuty wysłane użytkownikowi): damska smart casual (Reserved), męska wesele z krawatem, damska wieczór (Mohito, brak torebki w Mohito). Opis stylisty bez nazywania stylu rzeczy wyjściowej (pisał „sukienka w stylu smart casual” przy wieczorze). Grafiki trendów: zdobione swetry, buty Mary Jane (odbicie podłogi wycięte ręcznie).
