@@ -301,3 +301,4 @@ Najlepsza droga dla każdego sklepu:
 ## 0.20.1 (15.11.2026): bez powiększania (decyzja użytkownika)
 - viewport maximum-scale=1, user-scalable=no; touch-action: manipulation na html/body (podwójne dotknięcie); gesturestart/gesturechange i ruch dwoma palcami blokowane (iOS ignoruje user-scalable=no); pola formularzy min. 16 px (iOS nie powiększa przy wejściu w pole). Celowo bez blokady podwójnego dotknięcia w JS — gubiłaby szybkie kolejne kliknięcia.
 - Powiadomienia o cenie: użytkownik zostawia jak jest (sprawdzanie co 12 h, powiadomienie po otwarciu aplikacji). Prawdziwe Web Push omówione, na później.
+- 0.20.2: zgłoszenie — dalej dało się powiększyć (prawdopodobnie stara wersja w telefonie). Dodatkowo touch-action: pan-x pan-y (bez pinch-zoom) i blokada gestów na window/document w fazie przechwytywania oraz dotyku dwoma palcami.

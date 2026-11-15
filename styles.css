@@ -45,7 +45,7 @@ html[data-swiat="m"]{
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 /* bez powiększania dwukrotnym dotknięciem (decyzja użytkownika); przewijanie i suwaki działają normalnie */
-html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 input,select,textarea{font-size:max(16px,1em)}
 html{background:var(--tlo);color-scheme:dark}
 body{margin:0;min-height:100vh;background:var(--tlo);color:var(--tekst);font:400 16px/1.45 var(--sans);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
