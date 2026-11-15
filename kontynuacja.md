@@ -149,3 +149,7 @@ Najlepsza droga dla każdego sklepu:
 ## 0.11.2 (15.11.2026): kafelki trendów od użytkownika
 - 4 arkusze 3×3 wycięte narzędziem (skrypt serwer/kontrola/tnij_arkusz.py (uruchamiany lokalnie): tło = mediana ramki, maska odległości od tła, składowe spójne przypisane do komórek po środku ciężkości, miękka przezroczystość, przycięcie z marginesem 3 px jak img/wzorce, maks. 420 px). 36 plików w img/trendy/, wpisane do mapa.json według plan.json.
 - Pokrycie: 30/30 trendów damskich i 15/15 męskich ma własną, trafną grafikę; 7 próbek wzorów na trendy o wzorze.
+
+## 0.11.3 (15.11.2026): okazje z grafikami, ilustracje pustych ekranów
+- Arkusze 5 (damskie) i 6 (męskie) od użytkownika: 16 stylizacji okazji (img/okazje/okazja-<d|m>-<okazja>.webp) + pusty koszyk i dzwonek (img/puste/). tnij_arkusz.py obsługuje pole "katalog" w planie i większy rozmiar (560 px) dla zestawów.
+- Wyszukiwanie: okazje jako karuzela kafelków z grafiką stylizacji (zależną od działu), zaznaczenie w różowym złocie, wybór bez przerysowania ekranu, karuzela przewija się do wybranej okazji. Pusty koszyk i brak alertów z ilustracjami.

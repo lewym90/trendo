@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.11.2';
+  const WERSJA = '0.11.3';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -118,6 +118,7 @@
     const p1 = (st.b1 - 30) / (3000 - 30) * 100, p2 = st.b2 / 5000 * 100;
     return {
       akt: 'szukaj',
+      po: () => { const z = document.querySelector('.okazja-kafel[aria-pressed="true"]'); if (z) z.parentElement.scrollLeft = Math.max(0, z.offsetLeft - 20); },
       html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Nowe wyszukiwanie</h1><span class="puste"></span></div>
       <h2 class="wejscie" style="font-size:34px;margin:4px 0 16px">Czego dziś szukasz?</h2>
       <label class="ukryj" for="q">Czego szukasz</label>
@@ -149,7 +150,7 @@
 
       <div class="sekcja">
         <p style="margin-bottom:10px;font-size:15px">Okazja</p>
-        <div class="chipy">${okazje.map(([v, n]) => `<button class="chip" aria-pressed="${st.okazja === v}" data-akcja="okazja" data-v="${v}">${n}</button>`).join('')}</div>
+        <div class="karuzela okazje-kafle">${okazje.map(([v, n]) => `<button class="okazja-kafel" aria-pressed="${st.okazja === v}" data-akcja="okazja" data-v="${v}"><span class="okazja-foto"><img src="img/okazje/okazja-${st.dzial === 'meskie' ? 'm' : 'd'}-${v}.webp" alt="" loading="lazy"></span><span>${n}</span></button>`).join('')}</div>
       </div>
       <input type="file" id="plik" accept="image/*" hidden>`
     };
@@ -493,7 +494,7 @@
 
   EKRANY.koszyk = () => {
     const el = st.koszyk.map(prod).filter(Boolean);
-    if (!el.length) return { akt: 'koszyk', html: `<div class="naglowek"><span class="puste"></span><h1>Zakupy</h1><span class="puste"></span></div><div class="pusty">${ikonaW('torba', 40)}<p>Koszyk jest pusty. Dodaj cały zestaw ze stylizacji albo pojedyncze rzeczy.</p><a class="btn maly" href="#/szukaj">Znajdź stylizację</a></div>` };
+    if (!el.length) return { akt: 'koszyk', html: `<div class="naglowek"><span class="puste"></span><h1>Zakupy</h1><span class="puste"></span></div><div class="pusty"><img class="ilustracja-pusta" src="img/puste/pusty-koszyk.webp" alt=""><p>Koszyk jest pusty. Dodaj cały zestaw ze stylizacji albo pojedyncze rzeczy.</p><a class="btn maly" href="#/szukaj">Znajdź stylizację</a></div>` };
     const grupy = {};
     el.forEach((p) => { (grupy[p.sklep] = grupy[p.sklep] || []).push(p); });
     let sumaP = 0, sumaD = 0, nieznana = false;
@@ -538,7 +539,7 @@
         <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${esc(p.sklep)}, teraz ${zl(p.cena)}</div><div class="maly" style="color:var(--roz);margin-top:3px">Powiadom poniżej ${zl(a.cel)}</div></div>
         <button class="ikonka bez" data-akcja="usunAlert" data-id="${p.id}" aria-label="Usuń alert">${IK.kosz}</button></div>`).join('')}</div>
         <div class="info uwaga" style="margin-top:18px">${IK.uwaga}<p>Powiadomienia na telefon zaczną przychodzić po podłączeniu serwera, który codziennie sprawdza ceny.</p></div>`
-      : `<div class="pusty">${ikonaW('dzwonek', 38)}<p>Nie masz jeszcze alertów. Na stronie produktu dotknij „Powiadom, gdy stanieje”.</p></div>`}`
+      : `<div class="pusty"><img class="ilustracja-pusta" src="img/puste/pusty-alerty.webp" alt=""><p>Nie masz jeszcze alertów. Na stronie produktu dotknij „Powiadom, gdy stanieje”.</p></div>`}`
     };
   };
 
@@ -661,7 +662,11 @@
       if (el.dataset.v === 'zdjecie') return A.zdjecie();
       st.tryb = el.dataset.v; zapisz(); render();
     },
-    okazja(el) { st.okazja = el.dataset.v; zapisz(); render(); },
+    okazja(el) {
+      st.okazja = el.dataset.v; zapisz();
+      // bez przerysowania ekranu (zostajemy w tym samym miejscu przewinięcia)
+      document.querySelectorAll('[data-akcja="okazja"]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === st.okazja)));
+    },
     zdjecie() { const f = document.getElementById('plik'); if (f) f.click(); },
     szukaj() {
       const q = (document.getElementById('q').value || '').trim();

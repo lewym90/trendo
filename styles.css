@@ -361,3 +361,14 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 /* kafel trendu bez własnej grafiki: monogram, nie przypadkowa rzecz */
 .trend .probka.bez-grafiki{background:radial-gradient(120% 90% at 30% 15%,#3A2430 0%,#1E1218 55%,#140C11 100%)}
 .trend .probka.bez-grafiki span{font:500 40px/1 var(--szeryf);background:var(--zloto);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:.55}
+
+/* okazje z grafikami stylizacji */
+.okazje-kafle{gap:10px}
+.okazja-kafel{flex:none;width:118px;display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:none;padding:0;color:var(--szary);font:400 13px var(--sans);scroll-snap-align:start;cursor:pointer}
+.okazja-foto{width:118px;height:132px;border-radius:20px;border:1px solid var(--linia);background:radial-gradient(80% 70% at 50% 35%,rgba(150,60,92,.22),transparent 70%),linear-gradient(160deg,#2C1A22,#1A1015);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.okazja-foto img{width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(0,0,0,.45))}
+.okazja-kafel[aria-pressed="true"]{color:var(--tekst);font-weight:500}
+.okazja-kafel[aria-pressed="true"] .okazja-foto{border-color:#E7AE98;box-shadow:0 0 0 1px #E7AE98,0 8px 24px rgba(231,174,152,.22)}
+.okazja-kafel:focus-visible{outline:none}
+.okazja-kafel:focus-visible .okazja-foto{box-shadow:0 0 0 2px var(--roz)}
+.ilustracja-pusta{width:150px;height:auto;margin:0 auto 6px;display:block;filter:drop-shadow(0 14px 22px rgba(0,0,0,.5))}

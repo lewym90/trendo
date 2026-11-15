@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-def tnij(sciezka, pliki, katalog):
+def tnij(sciezka, pliki, katalog, maks=420):
     im = Image.open(sciezka).convert('RGB'); a = np.asarray(im).astype(np.float32)
     H, W = a.shape[:2]
     # tło: mediana pikseli z ramki 8 px
@@ -37,14 +37,17 @@ def tnij(sciezka, pliki, katalog):
         out = Image.new('RGBA', (x1 - x0 + 6, y1 - y0 + 6), (0, 0, 0, 0))
         out.paste(Image.fromarray(rgba, 'RGBA'), (3, 3))
         dl = max(out.size)
-        if dl > 420:
-            sk = 420 / dl; out = out.resize((round(out.size[0] * sk), round(out.size[1] * sk)), Image.LANCZOS)
-        out.save(f'{katalog}/{plik}.webp', 'WEBP', quality=88, method=6)
+        if dl > maks:
+            sk = maks / dl; out = out.resize((round(out.size[0] * sk), round(out.size[1] * sk)), Image.LANCZOS)
+        kat = katalog[i] if isinstance(katalog, list) else katalog
+        out.save(f'{kat}/{plik}.webp', 'WEBP', quality=88, method=6)
         wyn.append((plik, out.size))
     return wyn
 
 if __name__ == '__main__':
     plan = json.load(open(sys.argv[1]))
     for nr, sciezka in zip(sys.argv[3::2], sys.argv[4::2]):
-        for p in tnij(sciezka, [c['plik'] for c in plan['arkusze'][nr]], sys.argv[2]):
+        ark = plan['arkusze'][nr]
+        kat = [sys.argv[2].rstrip('/').rsplit('/', 1)[0] + '/' + c['katalog'] if c.get('katalog') else sys.argv[2] for c in ark]
+        for p in tnij(sciezka, [c['plik'] for c in ark], kat, maks=560 if any(c.get('katalog') for c in ark) else 420):
             print(nr, *p)
