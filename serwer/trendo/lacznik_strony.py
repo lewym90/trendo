@@ -25,6 +25,9 @@ SKLEPY_KONF = [
     ("Vistula", "https://vistula.pl/search?query={q}", "https://vistula.pl/search?query={q}", "vrg"),
     ("Wólczanka", "https://wolczanka.pl/search?query={q}", "https://wolczanka.pl/search?query={q}", "vrg"),
     ("Bytom", "https://bytom.com.pl/search?query={q}", "https://bytom.com.pl/search?query={q}", "vrg"),
+    # Deichmann: wyniki renderowane na serwerze sklepu, spakowane (base64 + gzip) w <script id="ng-state">
+    ("Deichmann", "https://www.deichmann.com/pl-pl/search/{q}?gendersFilter=1887164", "https://www.deichmann.com/pl-pl/search/{q}?gendersFilter=1887165", "deichmann"),
+    ("Big Star", "https://bigstar.pl/api/v2/products/?q={q}", "https://bigstar.pl/api/v2/products/?q={q}", "bigstar"),
     ("Kappahl", "https://www.kappahl.com/pl-pl/szukaj/?q={q}%20damska", "https://www.kappahl.com/pl-pl/szukaj/?q={q}%20m%C4%99ska", "kappahl"),
 ]
 SKLEPY = [s[0] for s in SKLEPY_KONF]
@@ -244,6 +247,95 @@ def _vrg(sklep, url, dzial):
     return wyn, "ok"
 
 
+def _grosze(c):
+    return round(c / 100, 2) if isinstance(c, (int, float)) and c > 0 else None
+
+
+def _deichmann_strona(url):
+    import base64, gzip
+    kod, b = pobierz(url)
+    if kod != 200:
+        return None, f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    m = re.search(r'<script id="ng-state" type="application/json">(.*?)</script>', t, re.S)
+    if not m:
+        return None, "brak danych na stronie"
+    try:
+        stan = json.loads(m.group(1))
+        sur = next(v for k, v in stan.items() if "search%2F" in k)
+        d = json.loads(gzip.decompress(base64.b64decode(sur))) if isinstance(sur, str) else sur
+        return (d.get("body") or d).get("products") or [], "ok"
+    except Exception:
+        return None, "nieczytelne dane"
+
+
+def _deichmann(sklep, url, dzial):
+    """Sklep podaje 24 produkty na stronę (płeć wybrana w adresie); bierzemy dwie strony."""
+    lista, stan = _deichmann_strona(url)
+    if lista is None:
+        return [], stan
+    if len(lista) >= 24:
+        dalej, _ = _deichmann_strona(url + "&page=2")
+        widziane = {x.get("id") for x in lista}
+        lista += [x for x in dalej or [] if x.get("id") not in widziane]
+    chce = "Mężczyźni" if dzial == "meskie" else "Kobiety"
+    wyn = []
+    for x in lista:
+        at = x.get("attributes") or {}
+        plcie = [v.get("label") for v in _wartosci(at.get("genders"))]
+        if plcie and chce not in plcie and "Unisex" not in plcie:
+            continue
+        wiek = [v.get("label") for v in _wartosci(at.get("phasesOfLife"))]
+        if wiek and "Dorośli" not in wiek:
+            continue
+        cena = _grosze((((x.get("priceRange") or {}).get("min") or {}).get("withTax")))
+        if not cena or not x.get("url"):
+            continue
+        stara = _grosze(((x.get("variants") or [{}])[0].get("price") or {}).get("beforeSaleWithTax")) or liczba(x.get("wasPrice"))
+        om = _grosze((x.get("lowestPriorPrice") or {}).get("withTax"))
+        marka = ((at.get("brand") or {}).get("values") or {}).get("label") or ""
+        kolor = ((at.get("color") or {}).get("values") or {}).get("label") or ""
+        nazwa = " ".join(w for w in (x.get("displayName") or "", marka, kolor) if w)
+        zdj = (x.get("images") or [{}])[0].get("public_id")
+        wyn.append(produkt(sklep, nazwa, cena, "https://www.deichmann.com/pl-pl" + x["url"],
+                           f"https://asset.deichmann.com/images/f_auto,q_auto/w_600/{zdj}/zdjecie" if zdj else None,
+                           stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
+                           extra={"omnibus": om, "kolor": kolor or None,
+                                  "plec_sklepu": None if (not plcie or "Unisex" in plcie) else dzial}))
+    return wyn, "ok"
+
+
+def _wartosci(a):
+    v = (a or {}).get("values")
+    return v if isinstance(v, list) else [v] if isinstance(v, dict) else []
+
+
+def _bigstar(sklep, url, dzial):
+    kod, d = pobierz_json(url)
+    if not d:
+        return [], f"brak odpowiedzi ({kod})"
+    wyn = []
+    for x in d.get("list") or []:
+        kat = " ".join(x.get("category_path") or []).lower()
+        if re.search(r"dzie[cć]|dziewcz|chłop", kat):
+            continue
+        if dzial == "meskie" and "damsk" in kat or dzial == "damskie" and "męsk" in kat:
+            continue
+        cena = liczba(x.get("price"))
+        nazwa = x.get("display_name") or ""
+        if not cena or not x.get("slug") or not pasuje_dzial(nazwa, dzial):
+            continue
+        stara, om = liczba(x.get("regular_price")), liczba(x.get("omnibus_price"))
+        im = (x.get("product_images") or [{}])[0]
+        plik = ((im.get("sizes") or {}).get("image_normal") or {}).get("filename")
+        rozm = [r.get("label") for r in x.get("size_variants") or [] if (r.get("stock_level") or 0) > 0]
+        wyn.append(produkt(sklep, nazwa, cena, "https://bigstar.pl/p-" + x["slug"], (im.get("base_path") or "") + plik if plik else None,
+                           stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
+                           extra={"omnibus": om if stara and stara > cena else None, "rozmiary": rozm or None,
+                                  "plec_sklepu": "meskie" if "męsk" in kat else "damskie" if "damsk" in kat else None}))
+    return wyn, "ok"
+
+
 def _magento(sklep, url, dzial):
     kod, b = pobierz(url)
     if kod != 200:
@@ -342,7 +434,7 @@ def _sklep(arg):
         else:
             url = wzor.format(q=quote(q))
             lista, stan = {"itemlist": _itemlist, "kafle": _kafle, "kafle2": _kafle2, "idosell": _idosell,
-                            "kappahl": _kappahl, "vrg": _vrg, "magento": _magento, "showroom": _showroom}[sposob](sklep, url, dzial)
+                            "kappahl": _kappahl, "vrg": _vrg, "deichmann": _deichmann, "bigstar": _bigstar, "magento": _magento, "showroom": _showroom}[sposob](sklep, url, dzial)
         return sklep, lista, stan
     except Exception as e:
         return sklep, [], "błąd: " + str(e)[:40]

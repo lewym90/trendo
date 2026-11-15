@@ -219,3 +219,9 @@ Najlepsza droga dla każdego sklepu:
 - Vistula, Wólczanka, Bytom (grupa VRG): wyszukiwarka działa pod /search?query= (nie ?q=), zwykłe pobranie; _vrg w lacznik_strony (płeć z data-filter-gender, Omnibus „Najniższa cena”, „Cena regularna”; nazwy Bytomia z wielkich liter → zdanie).
 - serwer/trendo/lacznik_przegladarka.py: Vinted (kategorie 1904 kobiety / 5 mężczyźni, dane z atrybutu title kafelka, cena z ochroną kupującego, uzywany=True → weryf „second”) i C&A (odpowiedź searchPageSearch przechwycona z nawigacji; kategoria 1-/2- = kobiety/mężczyźni; API wprost zwraca 403 nawet z ciasteczkami). Jedna przeglądarka na oba, wspólna blokada PRZEGLADARKA (czeka do 25 s), ciasteczka w DANE/przegladarka-ciasteczka.json, obrazki/czcionki blokowane. Ok. 6 s na wyszukiwanie.
 - Nadal tylko przez Google: Zalando, H&M, Mango, Bershka, Massimo Dutti, Answear, Allegro (zapory), Wittchen (Synerise z tokenem), CCC, Deichmann, 4F, Big Star, About You (wyszukiwarka tylko w skrypcie; do rozpracowania w przeglądarce).
+
+## 0.15.1 (15.11.2026): 28 sklepów
+- Instalacja 0.15.0 OK: 26 sklepów na serwerze, Vinted 96/96 i C&A 41/41 przez przeglądarkę, 19 okazji męskich.
+- Deichmann: /pl-pl/search/{q}?gendersFilter=1887164 (kobiety) / 1887165 (mężczyźni); wyniki w <script id="ng-state"> jako base64+gzip (klucz z „search%2F”), 24 na stronę → dwie strony (&page=2). Ceny w groszach (priceRange.min.withTax), beforeSaleWithTax, lowestPriorPrice (Omnibus). Zdjęcie: asset.deichmann.com/images/f_auto,q_auto/w_600/{public_id}/zdjecie (bez końcowego członu 404).
+- Big Star: API bigstar.pl/api/v2/products/?q= (parametr query={…} jest ignorowany), 63 na stronę; płeć i dzieci z category_path; link bigstar.pl/p-{slug}; regular_price, omnibus_price.
+- Zostają: CCC (wyszukiwanie przekierowuje na stronę główną — do rozpracowania w przeglądarce), 4F (strona nie odpowiada z mojego środowiska), About You (bez danych w odpowiedziach), Wittchen (Synerise z tokenem).
