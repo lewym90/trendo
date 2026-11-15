@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.18.1';
+  const WERSJA = '0.18.2';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');

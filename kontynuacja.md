@@ -257,3 +257,8 @@ Najlepsza droga dla każdego sklepu:
 - Zdjęcie po instalacji: Gemini 403/429 (zaraz po setkach ocen z próbnych wyszukiwań). klasyfikator._wywolaj zapisuje teraz w ai_ostatni_blad status i treść błędu Google (rozróżnienie limitu na minutę od limitu wydatków); instalator ponawia próbę zdjęcia po minucie i wypisuje odpowiedź Google. Uwaga: koszt listopada 11,54 USD, a w AI Studio użytkownik miał ustawiony limit miesięczny 50 zł — możliwe, że to on.
 - Test rozmiarówki w instalatorze tylko dla sklepów podłączonych bezpośrednio. Kazar: tabela ubrań nie istnieje (paski 80–125 pominięte, rozmiary trzycyfrowe).
 - Bytom 500 w próbie sklepów: chwilowa awaria po stronie sklepu.
+
+## 0.18.2 (15.11.2026): instalacja bez kosztów AI (prośba użytkownika)
+- Użytkownik: „wydałem sporo na same testy”. Instalacja 0.18.1 kosztowała ok. 1,7 USD (próbne wyszukiwania oceniały ~1600 nowych produktów; listopad 13,27 USD).
+- /szukaj?test=1: wyszukiwanie bez oceny AI (bez cechy hasła), bez zapisu w pamięci wyszukiwań; produkty trafiają do bazy (rozmiarówka po id działa). Instalator używa test=1 we wszystkich próbnych wyszukiwaniach. Jakość oceny nadal sprawdza darmowa kontrola na zapisanych przebiegach. Pozostały koszt instalacji: zdjęcie próbne (~0,001 USD) i nowe artykuły trendów (zwykle 0).
+- Do decyzji użytkownika: nocny przegląd (ceny 42 haseł bez Google — darmowe; ocena AI nowych produktów — płatna).

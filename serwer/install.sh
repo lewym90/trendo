@@ -105,15 +105,15 @@ for sk in sorted(wyn, key=str.lower):
     print(f"  {sk:12} damskie: {str(d.get('damskie', '-')):12}  męskie: {d.get('meskie', '-')}")
 PYEOF
   ) || echo "Sklepy: błąd uruchomienia."
-  echo; echo "Próbne wyszukiwanie przez serwer (koszula męska; pierwsze może potrwać do 2 minut):"
-  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie" -o /tmp/trendo-szukaj.json && "$PY" -c "
+  echo; echo "Próbne wyszukiwanie przez serwer (koszula męska; bez płatnej oceny AI, jakość oceny sprawdza kontrola wyżej):"
+  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie&test=1" -o /tmp/trendo-szukaj.json && "$PY" -c "
 import json; d=json.load(open('/tmp/trendo-szukaj.json'))
 [print(' ', s['nazwa'], '-', s['stan'], '-', s['ile'], 'produktów') for s in d['sklepy']]
 P=d['produkty']; w=[p for p in P if 'wieczor' in (p.get('okazje') or [])]
-print('  Ocena:', d.get('klasyfikacja'), '| wszystkie:', len(P), '| pasuje na wieczór:', len(w), '| bez oceny:', sum(p.get('okazje') is None for p in P), '| czas:', d.get('czas'), 's')
+print('  Ocena:', d.get('klasyfikacja'), '| produktów:', len(P), '| czas:', d.get('czas'), 's')
 " || echo "Próbne wyszukiwanie: brak odpowiedzi."
-  echo; echo "Próbne wyszukiwanie damskie (sukienka; zasila też damskie okazje dnia):"
-  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=sukienka&dzial=damskie" | "$PY" -c "
+  echo; echo "Próbne wyszukiwanie damskie (sukienka, bez oceny AI):"
+  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=sukienka&dzial=damskie&test=1" | "$PY" -c "
 import json,sys; d=json.load(sys.stdin); P=d['produkty']
 print('  Sklepów z wynikami:', sum(1 for s in d['sklepy'] if s['ile']), '| produktów:', len(P), '| czas:', d.get('czas'), 's')
 " || echo "Próbne wyszukiwanie damskie: brak odpowiedzi."
@@ -131,7 +131,7 @@ except Exception:
 wybrane = {}
 for q, dz in (("koszula", "meskie"), ("sukienka", "damskie"), ("jeansy", "damskie"), ("botki", "damskie")):
     try:
-        for p in daj(f"https://{H}/trendo-api/szukaj?q={urllib.parse.quote(q)}&dzial={dz}")["produkty"]:
+        for p in daj(f"https://{H}/trendo-api/szukaj?q={urllib.parse.quote(q)}&dzial={dz}&test=1")["produkty"]:
             if p["sklep"] in BEZP:  # sklepy z Google Shopping nie mają tabel, nie zaśmiecamy wyniku
                 wybrane.setdefault(p["sklep"], (q, p))
     except Exception as e:

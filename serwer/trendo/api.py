@@ -22,7 +22,7 @@ import threading
 from . import klasyfikator, lacznik_ccc, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_strony, lacznik_wittchen, lacznik_zara, logo, nadzor, obserwowane, rozmiary, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.18.1"
+WERSJA = "0.18.2"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_ccc, lacznik_wittchen, lacznik_strony, lacznik_przegladarka, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -130,11 +130,12 @@ def okazje_produktu(p, wyk):
     return wyn
 
 
-def szukaj(q, dzial, okazja=""):
-    """okazja: przyjmowana dla zgodności ze starszą aplikacją, ale nie filtruje (filtr jest w aplikacji)."""
+def szukaj(q, dzial, okazja="", test=False):
+    """okazja: przyjmowana dla zgodności ze starszą aplikacją, ale nie filtruje (filtr jest w aplikacji).
+    test: próba instalatora: sprawdza sklepy bez płatnej oceny AI i niczego nie zapamiętuje w pamięci wyszukiwań."""
     q = " ".join(q.split())[:80]
     klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}"
-    zap = pamiec_czytaj(klucz, WIEK_PAMIECI)
+    zap = None if test else pamiec_czytaj(klucz, WIEK_PAMIECI)
     if zap:
         zap["z_pamieci"] = True
         return zap
@@ -142,7 +143,10 @@ def szukaj(q, dzial, okazja=""):
     sklepy, produkty = pobierz_produkty(q, dzial, LACZNIKI)
     # Ocena każdego produktu (zdjęcie + nazwa), raz na zawsze. Rodzaj hasła równolegle.
     klasyfikacja, nieocenione = "slowa", 0
-    if produkty and klasyfikator.dostepny():
+    if test:
+        produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial) and not p.get("tylko_ai")]
+        klasyfikacja = "pominieta (test instalatora)"
+    elif produkty and klasyfikator.dostepny():
         f_haslo = PULA.submit(klasyfikator.cechy_hasla, q)
         ocenione = klasyfikator.klasyfikuj(produkty, maks=None)  # bez limitu: oceniamy wszystko
         try:
@@ -174,7 +178,7 @@ def szukaj(q, dzial, okazja=""):
              "sklepy": sklepy, "produkty": produkty, "nieocenione": nieocenione, "klasyfikacja": klasyfikacja,
              "okazje_nazwy": {o: OKAZJE_NAZWY[o] for o in OKAZJE_WSZYSTKIE}}
     # Bez pełnej oceny nie zapamiętujemy wyniku na 12 godzin, żeby następne wyszukiwanie spróbowało ocenić resztę.
-    if produkty and (nieocenione == 0 or not klasyfikator.dostepny()):
+    if produkty and not test and (nieocenione == 0 or not klasyfikator.dostepny()):
         pamiec_zapisz(klucz, wynik)
     return wynik
 
@@ -288,7 +292,7 @@ class Obsluga(BaseHTTPRequestHandler):
                 if len(q) < 2:
                     return self._wyslij(400, {"blad": "Wpisz, czego szukasz."})
                 dzial = "meskie" if a.get("dzial") == "meskie" else "damskie"
-                return self._wyslij(200, szukaj(q, dzial, a.get("okazja", "")))
+                return self._wyslij(200, szukaj(q, dzial, a.get("okazja", ""), test=a.get("test") == "1"))
             if u.path == "/link":
                 nazwa, sklep = a.get("nazwa", "")[:200], a.get("sklep", "")[:80]
                 klucz = f"link|{nazwa.lower()}|{sklep.lower()}"
