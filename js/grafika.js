@@ -72,12 +72,121 @@
     return `<svg viewBox="0 0 76 88" aria-hidden="true"><rect width="76" height="88" fill="${k1}"/><path d="M-6 62C16 36 34 70 82 26" stroke="#fff" stroke-opacity=".16" stroke-width="7" fill="none"/><path d="M-6 80C20 60 40 84 82 50" stroke="#fff" stroke-opacity=".07" stroke-width="5" fill="none"/></svg>`;
   }
 
-  function wykresLinii(punkty, kolor, w, h) {
-    w = w || 70; h = h || 30;
-    const max = Math.max(...punkty), min = Math.min(...punkty), z = max - min || 1;
-    const d = punkty.map((p, i) => `${i ? 'L' : 'M'}${(i / (punkty.length - 1) * (w - 2) + 1).toFixed(1)} ${(h - 3 - (p - min) / z * (h - 6)).toFixed(1)}`).join('');
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="${kolor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  /* ---------- wykresy ---------- */
+  let nrWykresu = 0;
+  // Gładka krzywa bez przestrzeleń (monotoniczna, Fritsch–Carlson): nie rysuje wzrostu, którego nie było.
+  function krzywa(p) {
+    if (p.length < 2) return '';
+    if (p.length === 2) return `M${p[0][0]} ${p[0][1]}L${p[1][0]} ${p[1][1]}`;
+    const n = p.length, dx = [], dy = [], m = [], t = [];
+    for (let i = 0; i < n - 1; i++) { dx[i] = p[i + 1][0] - p[i][0]; dy[i] = p[i + 1][1] - p[i][1]; m[i] = dy[i] / dx[i]; }
+    t[0] = m[0]; t[n - 1] = m[n - 2];
+    for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue; }
+      const a = t[i] / m[i], b = t[i + 1] / m[i], h = a * a + b * b;
+      if (h > 9) { const k = 3 / Math.sqrt(h); t[i] = k * a * m[i]; t[i + 1] = k * b * m[i]; }
+    }
+    let d = `M${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;
+    for (let i = 0; i < n - 1; i++) {
+      const c = dx[i] / 3;
+      d += `C${(p[i][0] + c).toFixed(1)} ${(p[i][1] + t[i] * c).toFixed(1)} ${(p[i + 1][0] - c).toFixed(1)} ${(p[i + 1][1] - t[i + 1] * c).toFixed(1)} ${p[i + 1][0].toFixed(1)} ${p[i + 1][1].toFixed(1)}`;
+    }
+    return d;
   }
 
-  window.G = { IK, ubranie, probka, wykresLinii };
+  /* Mały wykres w karcie trendu: krzywa, mgiełka koloru pod nią, kropka „teraz”. Luki w danych zostają lukami. */
+  function wykresTrendu(wartosci, kolor, opcje) {
+    const o = Object.assign({ w: 84, h: 42, os: false }, opcje || {});
+    const id = 'wt' + (++nrWykresu);
+    const zn = wartosci.map((v, i) => [i, v]).filter((x) => x[1] != null);
+    // Zakres od najmniejszej do największej wartości: liczy się kształt (rośnie, spada), nie odległość od zera.
+    const vmax = Math.max(...zn.map((x) => x[1])), vmin = Math.min(...zn.map((x) => x[1]));
+    const zap = (vmax - vmin) * 0.15 || Math.max(1, vmax * 0.2);
+    const max = vmax + zap, min = Math.max(0, vmin - zap);
+    const z = max - min || 1, gora = 7, dol = o.h - 5, lewo = 3, prawo = o.w - 6;
+    const X = (i) => lewo + (i / (wartosci.length - 1)) * (prawo - lewo), Y = (v) => dol - ((v - min) / z) * (dol - gora);
+    // odcinki bez luk
+    const odc = []; let akt = [];
+    wartosci.forEach((v, i) => { if (v == null) { if (akt.length) odc.push(akt); akt = []; } else akt.push([X(i), Y(v)]); });
+    if (akt.length) odc.push(akt);
+    const linie = odc.map((p) => krzywa(p)).join('');
+    const mgla = odc.filter((p) => p.length > 1).map((p) => `${krzywa(p)}L${p[p.length - 1][0].toFixed(1)} ${dol}L${p[0][0].toFixed(1)} ${dol}Z`).join('');
+    const ost = zn[zn.length - 1];
+    return `<svg class="wykres-trendu" width="${o.w}" height="${o.h}" viewBox="0 0 ${o.w} ${o.h}" aria-hidden="true">
+      <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${kolor}" stop-opacity=".34"/><stop offset=".75" stop-color="${kolor}" stop-opacity="0"/></linearGradient></defs>
+      ${o.os ? `<line x1="${lewo}" x2="${prawo}" y1="${dol + .5}" y2="${dol + .5}" stroke="rgba(240,196,182,.16)" stroke-width="1"/>` : ''}
+      <path d="${mgla}" fill="url(#${id})"/>
+      <path d="${linie}" fill="none" stroke="${kolor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${X(ost[0]).toFixed(1)}" cy="${Y(ost[1]).toFixed(1)}" r="7" fill="${kolor}" opacity=".16"/>
+      <circle cx="${X(ost[0]).toFixed(1)}" cy="${Y(ost[1]).toFixed(1)}" r="3.4" fill="${kolor}" stroke="#160E13" stroke-width="2"/></svg>`;
+  }
+
+  /* Znak statusu, gdy danych jest za mało na wykres (mniej niż 3 tygodnie): pierścień w różowym złocie i strzałka w kolorze statusu. */
+  function znakStatusu(status, kolor) {
+    const id = 'zs' + (++nrWykresu);
+    const strzalka = {
+      rosnie: '<path d="M21 31l6-6 4 4 7-8"/><path d="M33 21h5v5"/>',
+      nadchodzi: '<path d="M28 18l1.6 4.6L34 24l-4.4 1.4L28 30l-1.6-4.6L22 24l4.4-1.4z"/><path d="M34.5 29l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/>',
+      szczyt: '<path d="M20 30c3-7 5-10 8-10s5 3 8 10"/><circle cx="28" cy="20" r="1.2" fill="currentColor"/>',
+      wygasa: '<path d="M21 21l6 6 4-4 7 8"/><path d="M33 31h5v-5"/>'
+    }[status] || '';
+    return `<svg class="znak-statusu" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true" style="color:${kolor}">
+      <defs><radialGradient id="${id}g" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="${kolor}" stop-opacity=".22"/><stop offset="1" stop-color="${kolor}" stop-opacity="0"/></radialGradient>
+      <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8DACB"/><stop offset=".5" stop-color="#E7AE98"/><stop offset="1" stop-color="#9C5F4D"/></linearGradient></defs>
+      <circle cx="28" cy="28" r="26" fill="url(#${id}g)"/>
+      <circle cx="28" cy="28" r="22.5" fill="none" stroke="url(#${id}r)" stroke-width="1.2" opacity=".85"/>
+      <circle cx="28" cy="28" r="19" fill="none" stroke="rgba(240,196,182,.12)" stroke-width="1"/>
+      <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 -1)">${strzalka}</g></svg>`;
+  }
+
+  /* Historia ceny: wykres schodkowy (cena obowiązuje do następnej zmiany), dotyk pokazuje cenę z danego dnia. */
+  function wykresCeny(punkty, zl) {
+    const id = 'wc' + (++nrWykresu);
+    const W = 340, H = 132, l = 8, p = 8, g = 22, d = 104;
+    const t0 = punkty[0][1], t1 = Math.max(punkty[punkty.length - 1][1], Date.now() / 1000), dt = t1 - t0 || 1;
+    const ceny = punkty.map((x) => x[0]), max = Math.max(...ceny), min = Math.min(...ceny);
+    const zakres = max - min || max * 0.1 || 1, pmax = max + zakres * 0.25, pmin = Math.max(0, min - zakres * 0.6), z = pmax - pmin || 1;
+    const X = (t) => l + ((t - t0) / dt) * (W - l - p), Y = (v) => d - ((v - pmin) / z) * (d - g);
+    let s = `M${X(t0).toFixed(1)} ${Y(ceny[0]).toFixed(1)}`;
+    punkty.forEach((x, i) => { if (i) s += `H${X(x[1]).toFixed(1)}V${Y(x[0]).toFixed(1)}`; });
+    s += `H${X(t1).toFixed(1)}`;
+    const ost = punkty[punkty.length - 1];
+    const naj = punkty.reduce((a, x) => (x[0] < a[0] ? x : a), punkty[0]);
+    const data = (t) => new Date(t * 1000).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+    return `<div class="wykres-ceny" data-wykres-ceny='${JSON.stringify({ t0, t1, l, p, W, g, d, pmin, pmax, punkty })}'>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Cena ${data(t0)}: ${zl(ceny[0])}, dziś: ${zl(ost[0])}, najniższa: ${zl(min)}">
+      <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#EBBBA7" stop-opacity=".26"/><stop offset="1" stop-color="#EBBBA7" stop-opacity="0"/></linearGradient></defs>
+      <line x1="${l}" x2="${W - p}" y1="${d + .5}" y2="${d + .5}" stroke="rgba(240,196,182,.16)"/>
+      ${min !== max ? `<line x1="${l}" x2="${W - p}" y1="${Y(min).toFixed(1)}" y2="${Y(min).toFixed(1)}" stroke="rgba(158,217,180,.35)" stroke-width="1"/>
+      <text x="${l}" y="${(Y(min) - 6).toFixed(1)}" class="opis-wykresu">najniższa ${zl(min)} · ${data(naj[1])}</text>` : ''}
+      <path d="${s}V${d}H${X(t0).toFixed(1)}Z" fill="url(#${id})"/>
+      <path d="${s}" fill="none" stroke="#EBBBA7" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(t1).toFixed(1)}" cy="${Y(ost[0]).toFixed(1)}" r="7" fill="#EBBBA7" opacity=".18"/>
+      <circle cx="${X(t1).toFixed(1)}" cy="${Y(ost[0]).toFixed(1)}" r="4" fill="#F8DACB" stroke="#160E13" stroke-width="2"/>
+      <text x="${l}" y="${H - 6}" class="os-wykresu">${data(t0)}</text><text x="${W - p}" y="${H - 6}" text-anchor="end" class="os-wykresu">dziś</text>
+      <g class="celownik" visibility="hidden"><line y1="${g - 6}" y2="${d}" stroke="rgba(246,236,231,.35)"/><circle r="4" fill="#F8DACB" stroke="#160E13" stroke-width="2"/></g>
+      </svg><div class="dymek" hidden></div></div>`;
+  }
+  // Dotyk lub kursor nad wykresem ceny: pionowa linia i cena z tego dnia.
+  function podpnijWykresCeny(el, zl) {
+    const o = JSON.parse(el.dataset.wykresCeny), svg = el.querySelector('svg'), cel = el.querySelector('.celownik'), dym = el.querySelector('.dymek');
+    const pokaz = (e) => {
+      const r = svg.getBoundingClientRect(), x = ((e.clientX - r.left) / r.width) * o.W;
+      const t = o.t0 + ((Math.min(Math.max(x, o.l), o.W - o.p) - o.l) / (o.W - o.l - o.p)) * (o.t1 - o.t0);
+      let c = o.punkty[0]; o.punkty.forEach((pk) => { if (pk[1] <= t) c = pk; });
+      const skala = r.width / o.W, px = Math.min(Math.max(x, o.l), o.W - o.p);
+      const y = o.d - ((c[0] - o.pmin) / (o.pmax - o.pmin || 1)) * (o.d - o.g);
+      cel.setAttribute('visibility', 'visible'); cel.setAttribute('transform', `translate(${px.toFixed(1)} 0)`);
+      cel.querySelector('circle').setAttribute('cy', y.toFixed(1));
+      dym.hidden = false;
+      dym.textContent = `${zl(c[0])} · ${new Date(t * 1000).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' })}`;
+      dym.style.left = Math.min(Math.max(px * skala, 60), r.width - 60) + 'px';
+    };
+    const ukryj = () => { cel.setAttribute('visibility', 'hidden'); dym.hidden = true; };
+    el.addEventListener('pointermove', pokaz); el.addEventListener('pointerdown', pokaz);
+    el.addEventListener('pointerleave', ukryj); el.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') setTimeout(ukryj, 1600); });
+  }
+
+  window.G = { IK, ubranie, probka, wykresTrendu, znakStatusu, wykresCeny, podpnijWykresCeny };
 })();

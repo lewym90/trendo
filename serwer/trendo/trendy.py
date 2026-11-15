@@ -14,7 +14,7 @@ Uruchomienie ręczne: cd /opt/trendo && /root/trendo-scraper/bin/python -m trend
 import html as html_mod, json, re, sys, time
 from urllib.parse import urljoin, urlparse
 from . import klasyfikator as K
-from .wspolne import DB, _baza_blokada, licznik, pobierz
+from .wspolne import DB, PRZEGLADARKA, _baza_blokada, licznik, pobierz
 
 # typ: dane = raporty oparte na danych (zakupy, wyszukiwania, pokazy); redakcja = magazyny; branza = serwisy branżowe
 # sposob: rss | linki (strona z listą artykułów) | strona (sama strona jest źródłem) | lyst
@@ -76,7 +76,7 @@ def pobierz_przegladarka(url):
         _przegladarka["ok"] = False
         return ""
     try:
-        with sync_playwright() as p:
+        with PRZEGLADARKA, sync_playwright() as p:
             b = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
             s = b.new_page(user_agent=UA, locale="pl-PL")
             s.goto(url, timeout=45000, wait_until="domcontentloaded")
@@ -358,6 +358,10 @@ IMG = {"spodnie": "spodnie", "jeansy": "spodnie", "koszula": "koszule", "bluzka"
 def zestawienie(dzial):
     od = int(time.time()) - WIEK_DNI * 86400
     with _baza_blokada:
+        start = DB.execute("SELECT MIN(czas) FROM tr_art").fetchone()[0] or int(time.time())
+    # Ile pełnych i rozpoczętych tygodni zbieramy dane (wcześniejsze tygodnie to brak danych, a nie zero).
+    tygodni_danych = min(8, (int(time.time()) - start) // (7 * 86400) + 1)
+    with _baza_blokada:
         w = DB.execute("SELECT w.url, w.zrodlo, w.typ, w.kraj, w.czas, w.dzial, w.kategoria, w.nazwa, w.kolor, w.material, w.wzor, "
                        "w.rodzaj, w.kierunek, w.kiedy, w.haslo, a.tytul FROM tr_wzm w LEFT JOIN tr_art a ON a.url = w.url "
                        "WHERE w.czas > ? AND w.dzial IN (?, 'oba')", (od, dzial)).fetchall()
@@ -400,7 +404,7 @@ def zestawienie(dzial):
         opis = "Piszą o tym: " + ", ".join(wydawcy[:4]) + (f" i {len(wydawcy) - 4} innych" if len(wydawcy) > 4 else "") + "." + dane_opis
         wynik = {"nazwa": t["nazwa"], "opis": opis, "status": status, "zrodla": len(wydawcy), "wydawcy": wydawcy, "polskie": len(pl),
                  "dane_rynkowe": sum(1 for r in rr if r[2] == "dane"), "linki": list(linki.values())[:8], "haslo": t["haslo"],
-                 "kategoria": t["kategoria"], "kolor": t["kolor"], "seria": [x if x is not None else 0 for x in seria] if seria else None,
+                 "kategoria": t["kategoria"], "kolor": t["kolor"], "seria": seria or None, "tygodni_danych": tygodni_danych,
                  "udzial": seria[-1] if seria else None, "zmiana": zmiana, "proba": proba,
                  "wzmianek_w_tygodniach": [sum(1 for r in rr if (int(time.time()) - r[4]) // (7 * 86400) == 7 - i) for i in range(8)],
                  "img": None}

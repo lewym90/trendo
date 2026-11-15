@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.10.0';
+  const WERSJA = '0.11.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -316,12 +316,23 @@
     };
   };
 
+  /* Rozmiary od sklepów przychodzą jako lista, obiekt {"1":"M"} albo napis. Zawsze robimy z nich listę napisów. */
+  function listaRozmiarow(r) {
+    if (!r) return [];
+    if (typeof r === 'string') r = r.split(/[,;/|]/);
+    else if (!Array.isArray(r) && typeof r === 'object') r = Object.values(r);
+    if (!Array.isArray(r)) return [];
+    const w = [];
+    r.forEach((x) => { if (x && typeof x === 'object') x = x.name || x.label || x.size || x.value; x = String(x == null ? '' : x).trim(); if (x && !w.includes(x)) w.push(x); });
+    return w;
+  }
   EKRANY.produkt = (id) => {
     const p = prod(id) || DEMO.P[0];
     const r = rabat(p);
     const ul = st.ulubione.includes(p.id);
     const alert = st.alerty.find((a) => a.id === p.id);
     const wybr = st.rozmiar[p.id];
+    const rozm = listaRozmiarow(p.rozmiary);
     let werInfo = '';
     if (p.weryf === 'ok') werInfo = `<div class="info ok">${IK.ok}<p><b>Obniżka jest prawdziwa.</b> Najniższa cena z 30 dni przed obniżką: ${zl(p.omnibus)}.</p></div>`;
     else if (p.weryf === 'pozorna') werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> Przez ostatnie 30 dni produkt kosztował tyle samo (${zl(p.omnibus)}). Przekreślona cena nie była aktualna.</p></div>`;
@@ -331,12 +342,14 @@
     return {
       akt: 'szukaj', menu: false, klasa: 'bez-menu',
       po: () => {
+        const wc = document.querySelector('#hist .wykres-ceny'); if (wc) G.podpnijWykresCeny(wc, zl);
         if (!prawdziwy(p)) return;
         fetch(`${API}/historia?id=${encodeURIComponent(p.id)}`).then((r) => r.json()).then((d) => {
           const el = document.getElementById('hist'); if (!el) return;
           const c = (d.ceny || []).filter((x) => Date.now() / 1000 - x[1] < 31 * 86400);
           if (c.length >= 2 && (c[c.length - 1][1] - c[0][1]) > 86400) {
-            el.innerHTML = wykresCeny(c.map((x) => x[0]));
+            el.innerHTML = G.wykresCeny(c, zl);
+            G.podpnijWykresCeny(el.querySelector('.wykres-ceny'), zl);
             document.getElementById('hist-opis').textContent = c.every((x) => x[0] === c[0][0]) ? 'bez zmian' : 'zmieniała się';
           } else {
             el.innerHTML = `<p class="maly szary">Historię ceny tego produktu zbieramy od ${new Date((c[0] ? c[0][1] : p.sprawdzono) * 1000).toLocaleDateString('pl-PL')}. Wykres pojawi się po kilku dniach, a ocena promocji po 30 dniach.</p>`;
@@ -351,21 +364,21 @@
       </div>
       <div class="produkt-tresc">
         ${prawdziwy(p) ? '' : demoZnak()}
-        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500;display:flex;align-items:center;gap:8px">${logoSklepu(p.sklep, 'logo-sr')}${esc(p.sklep)}</b><a class="link" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Otwórz w sklepie ${ikonaW('link', 15)}</a></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-weight:500;display:flex;align-items:center">${marka(p.sklep, 'l')}</b><a class="link" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Otwórz w sklepie ${ikonaW('link', 15)}</a></div>
         <h1 style="font-size:30px;margin-top:-8px">${esc(p.nazwa)}</h1>
         <div class="ceny"><span class="cena" style="font-size:38px">${zl(p.cena)}</span>${p.stara ? `<span class="stara" style="font-size:16px">${zl(p.stara)}</span><span class="rabat">−${r}%</span>` : ''}</div>
         ${werInfo}
         <div class="karta"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><b style="font-weight:500">Cena przez 30 dni</b><span class="maly szary" id="hist-opis">${p.historia ? (p.historia.every((v) => v === p.historia[0]) ? 'bez zmian' : 'zmieniała się') : ''}</span></div>
-          <div id="hist">${p.historia ? wykresCeny(p.historia) : '<p class="maly szary">Sprawdzam historię ceny…</p>'}</div></div>
-        ${p.rozmiary ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
-          <div class="rozmiary">${p.rozmiary.map((r) => `<button aria-pressed="${wybr === r}" ${(p.brak || []).includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
+          <div id="hist">${p.historia ? G.wykresCeny(p.historia.map((v, i) => [v, Date.now() / 1000 - (p.historia.length - 1 - i) * 86400]), zl) : '<p class="maly szary">Sprawdzam historię ceny…</p>'}</div></div>
+        ${rozm.length ? `<div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><b style="font-weight:500">Rozmiar</b><span class="maly szary">${esc(p.material || '')}</span></div>
+          <div class="rozmiary">${rozm.map((r) => `<button aria-pressed="${wybr === r}" ${(p.brak || []).includes(r) ? 'disabled aria-label="' + r + ', brak"' : ''} data-akcja="rozmiar" data-id="${p.id}" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
           <a class="btn" href="${p.url}" target="_blank" rel="noopener" ${viaGoogle(p) ? `data-akcja="doSklepu" data-id="${p.id}"` : ''}>Kup w sklepie ${esc(p.sklep)}</a>
           ${viaGoogle(p) ? '<p class="maly szary" style="margin:-4px 2px 0">Ten produkt znaleźliśmy przez Google Shopping. Po dotknięciu wyszukamy jego stronę w sklepie.</p>' : ''}
           <button class="btn drugi" data-akcja="alert" data-id="${p.id}">${IK.dzwonek} ${alert ? `Alert ustawiony: ${zl(alert.cel)}` : 'Powiadom, gdy stanieje'}</button>
           <button class="btn drugi" data-akcja="dodajProdukt" data-id="${p.id}">${IK.torba} ${st.koszyk.includes(p.id) ? 'Jest w zakupach' : 'Dodaj do zakupów'}</button>
           ${prawdziwy(p) ? '' : `<a class="btn drugi" href="#/wyniki" data-akcja="dobierz">${IK.iskra} Dobierz do tego stylizację</a>`}
-          ${prawdziwy(p) ? `<button class="link" style="margin:6px auto 0;display:flex;gap:6px;align-items:center" data-akcja="niePasuje" data-id="${p.id}">${IK.uwaga} Nie pasuje? Zgłoś</button>` : ''}
+          ${prawdziwy(p) ? `<button class="link zglos" data-akcja="niePasuje" data-id="${p.id}">${IK.uwaga.replace('<svg', '<svg width="16" height="16"')}<span>Nie pasuje? Zgłoś</span></button>` : ''}
         </div>
       </div>`
     };
@@ -381,13 +394,39 @@
       .catch(() => { trendyDane[d] = { blad: true, trendy: [] }; })
       .finally(() => { trendyLaduje[d] = false; if (location.hash.startsWith('#/trendy')) render(); });
   }
+  /* Ile tygodni naprawdę zbieramy dane o trendach (wcześniej: brak danych, nie zero). */
+  function tygodnieDanych(t) {
+    if (t.tygodni_danych) return t.tygodni_danych;
+    const w = t.wzmianek_w_tygodniach || [], i = w.findIndex((x) => x > 0);
+    return i < 0 ? 1 : w.length - i;
+  }
+  // Co da się uczciwie narysować: udział w nowościach sklepów albo liczba wzmianek, od 3 tygodni danych.
+  function seriaTrendu(t) {
+    const n = tygodnieDanych(t);
+    const rynek = (t.seria || []).slice(-n);
+    if (rynek.filter((v) => v != null).length >= 3) return { wart: rynek, opis: `udział ${String(t.udzial).replace('.', ',')}%`, rodzaj: 'rynek' };
+    const wzm = (t.wzmianek_w_tygodniach || []).slice(-n);
+    if (n >= 3 && wzm.some((v) => v > 0)) return { wart: wzm, opis: `${wzm[wzm.length - 1]} wzm. w tyg.`, rodzaj: 'wzmianki' };
+    return null;
+  }
+  function grafikaTrendu(t, kol) {
+    const s = seriaTrendu(t);
+    if (!s) return `<div class="grafika-trendu">${G.znakStatusu(t.status, kol)}</div>`;
+    return `<div class="grafika-trendu">${G.wykresTrendu(s.wart, kol)}<span>${s.opis}</span></div>`;
+  }
   function arkuszZrodel(i) {
     const d = dzialTrendow || st.dzial;
     const t = ((trendyDane[d] || {}).trendy || [])[i]; if (!t) return;
     ARK.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-labelledby="ark-t"><div class="uchwyt"></div>
       <h2 id="ark-t">${esc(t.nazwa)}</h2><p class="szary" style="margin:6px 0 14px">${esc(t.opis)}</p>
       <div style="display:flex;flex-direction:column;gap:10px">${t.linki.map((l) => `<a class="karta" style="display:block;text-decoration:none;color:var(--tekst)" href="${esc(l.url)}" target="_blank" rel="noopener"><b style="font-weight:500">${esc(l.wydawca)}</b><span class="maly szary" style="display:block;margin-top:4px">${esc(l.tytul || 'Raport')} · ${new Date(l.data * 1000).toLocaleDateString('pl-PL')}</span></a>`).join('')}</div>
-      ${t.udzial != null ? `<p class="maly szary" style="margin:14px 0 0">Udział w nowościach liczymy sami: ${t.proba} produktów z naszych sklepów z ostatnich 4 tygodni.</p>` : ''}
+      ${(() => {
+        const sr = seriaTrendu(t), kol = ({ rosnie: '#9ED9B4', szczyt: '#FBE3D8', wygasa: '#F3BE7E', nadchodzi: '#C9B8F0' })[t.status] || '#EBBBA7';
+        if (!sr) return `<p class="maly szary" style="margin:14px 0 0">Wykres popularności pojawi się po 3 tygodniach obserwacji. Teraz mamy ${tygodnieDanych(t) === 1 ? 'pierwszy tydzień' : tygodnieDanych(t) + ' tygodnie'} danych.</p>`;
+        return `<div class="karta" style="margin-top:14px"><b style="font-weight:500;font-size:14px">${sr.rodzaj === 'rynek' ? 'Udział w nowościach sklepów' : 'Wzmianki w źródłach'}, tydzień po tygodniu</b>
+          <div style="margin-top:10px">${G.wykresTrendu(sr.wart, kol, { w: 300, h: 96, os: true })}</div>
+          <p class="maly szary" style="margin:8px 0 0">${sr.rodzaj === 'rynek' ? `Liczymy sami: ${t.proba} produktów z naszych sklepów z ostatnich 4 tygodni.` : 'Liczba artykułów o tym trendzie w kolejnych tygodniach.'}</p></div>`;
+      })()}
       <button class="btn" style="margin-top:16px" data-akcja="szukajTrendu" data-q="${esc(t.haslo)}">Znajdź w sklepach</button>
       <button class="link" style="margin:10px auto 0;display:flex" data-akcja="zamknijArkusz">Zamknij</button></div>`;
     ARK.hidden = false;
@@ -415,12 +454,11 @@
         : !lista.length ? '<div class="pusty"><p>W tej grupie nie ma teraz trendów.</p></div>'
         : lista.map((t) => {
           const [ik, nazwa, kol] = stat[t.status] || stat.szczyt;
-          const seria = t.seria || t.wzmianek_w_tygodniach;
           return `<div class="trend" style="cursor:pointer" data-akcja="zrodlaTrendu" data-i="${t.i}" role="button" tabindex="0">
           <div class="probka">${t.img ? `<img src="img/wzorce/${t.img}.webp" alt="" loading="lazy">` : G.probka('gladka', KOLOR_PROBKI[t.kolor] || '#8A6F6A', '')}</div>
           <div class="opis"><h3>${esc(t.nazwa)}</h3><p>${esc(t.opis)}</p>
-            <div style="display:flex;gap:12px;align-items:center"><span class="status ${t.status}">${IK[ik]}${nazwa}</span><span class="zrodla">${t.zrodla} ${t.zrodla < 5 ? 'źródła' : 'źródeł'}${t.polskie ? `, w tym ${t.polskie} polskie` : ''}</span></div></div>
-          ${G.wykresLinii(seria, kol, 64, 30)}</div>`;
+            <div class="trend-meta"><span class="status ${t.status}">${IK[ik]}${nazwa}</span><span class="zrodla">${t.zrodla} ${t.zrodla < 5 ? 'źródła' : 'źródeł'}${t.polskie ? `, w tym ${t.polskie} polskie` : ''}</span></div></div>
+          ${grafikaTrendu(t, kol)}</div>`;
         }).join('')}</div>
       <div class="info neutral" style="margin-top:20px">${IK.info}<p>Trend pokazujemy dopiero, gdy piszą o nim co najmniej dwa niezależne źródła${dane && dane.zrodla ? ` (sprawdzamy: ${dane.zrodla.length} magazynów i raportów, m.in. Lyst Index, Tagwalk, WGSN, Vogue, Elle)` : ''}. Każdą wzmiankę porównujemy z tekstem artykułu. Udział w nowościach liczymy sami z produktów naszych sklepów. Dotknij trendu, żeby zobaczyć źródła.</p></div>`
     };
@@ -459,7 +497,7 @@
       const darmo = d && s >= d.prog;
       if (d && !darmo) sumaD += d.koszt;
       return `<section class="grupa" aria-label="${esc(sk)}">
-        <div class="grupa-gora"><b style="display:flex;align-items:center;gap:8px">${logoSklepu(sk, 'logo-sr')}${esc(sk)}</b><a class="link" href="${ps[0].sklepUrl || ps[0].url}" target="_blank" rel="noopener" ${viaGoogle(ps[0]) && !ps[0].sklepUrl ? `data-akcja="doSklepu" data-id="${ps[0].id}"` : ''}>Zamów w sklepie ${ikonaW('link', 14)}</a></div>
+        <div class="grupa-gora"><b style="display:flex;align-items:center;font-weight:500">${marka(sk, 'l')}</b><a class="link" href="${ps[0].sklepUrl || ps[0].url}" target="_blank" rel="noopener" ${viaGoogle(ps[0]) && !ps[0].sklepUrl ? `data-akcja="doSklepu" data-id="${ps[0].id}"` : ''}>Zamów w sklepie ${ikonaW('link', 14)}</a></div>
         ${ps.map((p) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
           <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${st.rozmiar[p.id] ? 'Rozmiar ' + esc(st.rozmiar[p.id]) : 'Rozmiar wybierzesz w sklepie'}</div>
           <div class="ceny"><span class="cena" style="font-size:19px">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</div></div>
@@ -537,8 +575,17 @@
       return `<div class="el" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%;transform:rotate(${rot}deg)">${foto(p)}</div>`;
     }).join('');
   }
-  function logoSklepu(nazwa, klasa) {
-    return `<img class="${klasa || 'logo-sk'}" src="${API}/logo?sklep=${encodeURIComponent(nazwa)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`;
+  /* Znak sklepu: prawdziwe logo z nagłówka strony sklepu (serwer przygotowuje je jako jasny, przycięty napis).
+     Do czasu wczytania i gdy znaku nie ma, widać nazwę sklepu tekstem. Wielkość wyrównana optycznie: długie napisy niższe, zwarte wyższe. */
+  const ZNAK_POLE = { m: [940, 9, 17], l: [1700, 12, 24] };
+  window.TrendoZnak = (img) => {
+    const r = img.naturalWidth / img.naturalHeight || 4;
+    const [pole, min, max] = ZNAK_POLE[img.dataset.r] || ZNAK_POLE.m;
+    img.style.height = Math.max(min, Math.min(max, Math.sqrt(pole / r))).toFixed(1) + 'px';
+    img.parentNode.classList.add('ma-znak');
+  };
+  function marka(nazwa, r) {
+    return `<span class="marka marka-${r || 'm'}"><img src="${API}/logo?sklep=${encodeURIComponent(nazwa)}&v=2" alt="" data-r="${r || 'm'}" decoding="async" referrerpolicy="no-referrer" onload="TrendoZnak(this)" onerror="this.remove()"><span class="marka-nazwa">${esc(nazwa)}</span></span>`;
   }
   function kartaProduktu(p) {
     const r = rabat(p), ul = st.ulubione.includes(p.id);
@@ -549,32 +596,22 @@
     return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
       <button class="serce" style="position:relative;margin:-50px 8px 14px auto;width:36px;height:36px;border-radius:18px;background:rgba(14,9,12,.6);border:none;display:flex;align-items:center;justify-content:center" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj'}">${(ul ? IK.sercePelne : IK.serce).replace('<svg', '<svg width="18" height="18"')}</button>
       <a href="#/produkt/${p.id}" style="text-decoration:none;color:var(--tekst);display:flex;flex-direction:column;gap:4px">
-      <span class="sklep">${logoSklepu(p.sklep)}${esc(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
+      <span class="sklep">${marka(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</span>${wer}</a></div>`;
   }
   function wierszElementu(p) {
     const r = rabat(p);
     return `<a class="element" href="#/produkt/${p.id}"><span class="miniatura">${foto(p)}</span>
-      <span class="opis"><span class="nazwa" style="display:block">${esc(p.nazwa)}</span><span class="sklep">${logoSklepu(p.sklep)}${esc(p.sklep)}</span>
+      <span class="opis"><span class="nazwa" style="display:block">${esc(p.nazwa)}</span><span class="sklep">${marka(p.sklep)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}${r && p.weryf === 'ok' ? `<span class="rabat">−${r}%</span>` : ''}</span></span>
       <span class="zewn">${IK.dalej}</span></a>`;
   }
   function kartaOkazji(o) {
-    return `<div class="okazja"><span class="znak-sklepu">${logoSklepu(o.sklep, 'logo-duze')}<span>${esc(o.sklep)}</span></span><div class="opis"><b>${esc(o.tytul)}</b><p>${esc(o.opis)}</p>
+    return `<div class="okazja"><div class="opis"><span class="sklep">${marka(o.sklep)}</span><b>${esc(o.tytul)}</b><p>${esc(o.opis)}</p>
       ${o.weryf === 'ok' ? `<div class="weryf ok" style="margin-top:4px">${IK.ok}Sprawdzone</div>` : `<div class="weryf uwaga" style="margin-top:4px">${IK.uwaga}Częściowo pozorna</div>`}</div>
       <span class="rabat" style="align-self:flex-start">−${o.rabat}%</span></div>`;
   }
-  function wykresCeny(h) {
-    const w = 320, hh = 90, max = Math.max(...h) * 1.05, min = Math.min(...h) * 0.85, z = max - min || 1;
-    const pts = h.map((v, i) => [i / (h.length - 1) * (w - 20) + 10, hh - 18 - (v - min) / z * (hh - 30)]);
-    const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
-    const ost = pts[pts.length - 1];
-    return `<svg class="wykres" width="100%" viewBox="0 0 ${w} ${hh}" role="img" aria-label="Cena 30 dni temu ${zl(h[0])}, dziś ${zl(h[h.length - 1])}">
-      <defs><linearGradient id="wg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#EBBBA7" stop-opacity=".28"/><stop offset="1" stop-color="#EBBBA7" stop-opacity="0"/></linearGradient></defs>
-      <path d="${d}L${ost[0]} ${hh - 18}L10 ${hh - 18}Z" fill="url(#wg)"/><path d="${d}" fill="none" stroke="#EBBBA7" stroke-width="2"/>
-      <circle cx="${ost[0]}" cy="${ost[1]}" r="4.5" fill="#F8DACB"/>
-      <text x="10" y="${hh - 2}">30 dni temu: ${zl(h[0])}</text><text x="${w - 10}" y="${hh - 2}" text-anchor="end">dziś: ${zl(h[h.length - 1])}</text></svg>`;
-  }
+
 
   /* ---------- arkusz alertu ---------- */
   function arkuszAlertu(id) {
@@ -746,13 +783,18 @@
     if (!nazwa) nazwa = st.witaj ? 'start' : 'witaj';
     if (nazwa === 'witaj' && st.witaj && !location.hash.includes('witaj')) nazwa = 'start';
     const f = EKRANY[nazwa] || EKRANY.start;
-    const ekran = f(arg);
+    let ekran;
+    try { ekran = f(arg); } catch (e) {
+      console.error(e);
+      ekran = { akt: 'start', menu: false, klasa: 'bez-menu', html: `<div class="naglowek"><a class="ikonka bez" href="javascript:history.back()" aria-label="Wróć">${IK.wstecz}</a><h1>Coś poszło nie tak</h1><span class="puste"></span></div>
+        <div class="info uwaga">${IK.uwaga}<p>Nie udało się otworzyć tego ekranu. Wróć i spróbuj jeszcze raz. Jeśli to się powtarza, zgłoś to przy produkcie przyciskiem „Nie pasuje? Zgłoś”.</p></div>` };
+    }
     const y = window.scrollY;
     E.className = ekran.klasa || '';
     E.innerHTML = ekran.html;
     if (ekran.menu === false) MENU.hidden = true; else { MENU.hidden = false; rysujMenu(ekran.akt); }
     if (zachowajPozycje) window.scrollTo(0, y); else window.scrollTo(0, 0);
-    if (ekran.po) ekran.po();
+    if (ekran.po) { try { ekran.po(); } catch (e) { console.error(e); } }
     document.title = nazwa === 'start' || nazwa === 'witaj' ? 'Trendo' : 'Trendo: ' + (E.querySelector('h1') ? E.querySelector('h1').textContent.replace(/\s+/g, ' ') : '');
   }
   window.addEventListener('hashchange', () => { ARK.hidden = true; render(); });

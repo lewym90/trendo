@@ -5,6 +5,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 DANE = os.environ.get("TRENDO_DANE", "/var/lib/trendo")
 os.makedirs(DANE, exist_ok=True)
 _baza_blokada = threading.Lock()
+PRZEGLADARKA = threading.Lock()  # jedna przeglądarka naraz na całym serwerze (trendy, znaki sklepów)
 
 
 def pobierz(url, naglowki=None, limit=8_000_000, czas=25, dane=None):
@@ -150,7 +151,29 @@ def produkt(sklep, nazwa, cena, url, zdjecie, stara=None, zrodlo="", dzial="", e
          "url": url, "zdjecie": zdjecie, "zrodlo": zrodlo, "dzial": dzial, "sprawdzono": int(time.time())}
     if extra:
         p.update(extra)
+    if "rozmiary" in p:
+        p["rozmiary"] = lista_rozmiarow(p["rozmiary"])
     return p
+
+
+def lista_rozmiarow(r):
+    """Rozmiary zawsze jako lista napisów. Sklepy podają je jako listę, obiekt {"1": "M"} albo napis "S, M, L"."""
+    if not r:
+        return None
+    if isinstance(r, dict):
+        r = [r[k] for k in sorted(r, key=lambda k: (not str(k).isdigit(), int(k) if str(k).isdigit() else 0, str(k)))]
+    elif isinstance(r, str):
+        r = re.split(r"[,;/|]", r)
+    elif not isinstance(r, (list, tuple)):
+        return None
+    wyn = []
+    for x in r:
+        if isinstance(x, dict):
+            x = x.get("name") or x.get("label") or x.get("size") or x.get("value")
+        x = str(x).strip() if x is not None else ""
+        if x and x not in wyn:
+            wyn.append(x)
+    return wyn or None
 
 
 MESKIE = re.compile(r"męsk|mesk|mężczy|mezczy|\bmen\b|\bman\b", re.I)
