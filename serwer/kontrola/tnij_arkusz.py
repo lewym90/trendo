@@ -17,11 +17,12 @@ def tnij(sciezka, pliki, katalog, maks=420):
     etyk, n = ndimage.label(maska)
     rozm = ndimage.sum(maska, etyk, range(1, n + 1))
     srodki = ndimage.center_of_mass(maska, etyk, range(1, n + 1))
-    komorki = {i: [] for i in range(9)}
+    g = 2 if len(pliki) == 4 else 3  # siatka 2x2 albo 3x3
+    komorki = {i: [] for i in range(g * g)}
     for k, (s, (cy, cx)) in enumerate(zip(rozm, srodki), start=1):
         if s < 400:
             continue
-        komorki[min(2, int(cy / (H / 3))) * 3 + min(2, int(cx / (W / 3)))].append(k)
+        komorki[min(g - 1, int(cy / (H / g))) * g + min(g - 1, int(cx / (W / g)))].append(k)
     wyn = []
     for i, plik in enumerate(pliki):
         if not komorki[i]:

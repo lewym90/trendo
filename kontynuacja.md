@@ -157,3 +157,6 @@ Najlepsza droga dla każdego sklepu:
 ## 0.11.4 (15.11.2026): powitanie w 3 slajdach, przedmioty w różowym złocie
 - Arkusz 7 (img/ikony/): tryby wyszukiwania (manekin, wieszak, torebka, aparat) zamiast cienkich ikon; puste ekrany: obserwowane (serce), brak wyników (lupa), trendy (klepsydra), brak promocji (metka); Ustawienia z miarą krawiecką.
 - Powitanie: 3 przesuwane slajdy (scroll-snap) z img/hero.jpg, img/powitanie-2.jpg (promocje), img/powitanie-3.jpg (trendy); przycisk „Dalej” → „Zacznijmy” na ostatnim, kropki klikalne.
+
+## 0.11.5 (15.11.2026): ekran analizy z przedmiotami
+- Arkusz 8 (2×2, tnij_arkusz.py rozpoznaje siatkę po liczbie plików): krok-trendy (magazyny), krok-sklepy (butik), krok-promocje (waga), krok-stylizacje (nożyczki z nicią) w img/ikony/. Każdy krok analizy ma swój przedmiot, a środek pierścienia płynnie zmienia przedmiot na aktywny krok.

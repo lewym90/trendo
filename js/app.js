@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.11.4';
+  const WERSJA = '0.11.5';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -175,17 +175,17 @@
   EKRANY.analiza = () => {
     const s = sezon();
     const kroki = [
-      ['Aktualne trendy', `sezon ${s.nazwa.toLowerCase()} ${s.rok}`],
-      ['Ceny i dostępność w sklepach', 'sklepy internetowe i Google Shopping'],
-      ['Promocje i wyprzedaże', 'porównanie z najniższą ceną z 30 dni'],
-      ['Dobór stylizacji i dodatków', 'w ramach Twojego budżetu']
+      ['Aktualne trendy', `sezon ${s.nazwa.toLowerCase()} ${s.rok}`, 'krok-trendy'],
+      ['Ceny i dostępność w sklepach', 'sklepy internetowe i Google Shopping', 'krok-sklepy'],
+      ['Promocje i wyprzedaże', 'porównanie z najniższą ceną z 30 dni', 'krok-promocje'],
+      ['Dobór stylizacji i dodatków', 'w ramach Twojego budżetu', 'krok-stylizacje']
     ];
     return {
       menu: false, klasa: 'bez-menu',
       html: `<section class="analiza">
-        <div class="pierscien"><img src="icons/icon-192.png" alt=""></div>
+        <div class="pierscien"><img id="pierscien-img" class="pierscien-przedmiot" src="img/ikony/${kroki[0][2]}.webp" alt=""></div>
         <h1 style="font-size:34px;font-weight:400">Analizuję dla Ciebie…</h1>
-        <ol class="kroki" id="kroki">${kroki.map(([a, b], i) => `<li data-i="${i}"><span class="znak"></span><div><b>${a}</b><span>${b}</span></div></li>`).join('')}</ol>
+        <ol class="kroki" id="kroki">${kroki.map(([a, b, ik], i) => `<li data-i="${i}" data-ik="${ik}"><img class="krok-ikona" src="img/ikony/${ik}.webp" alt=""><div><b>${a}</b><span>${b}</span></div><span class="znak"></span></li>`).join('')}</ol>
       </section>`,
       po: () => {
         const li = [...document.querySelectorAll('#kroki li')];
@@ -205,7 +205,10 @@
           if (i === 2 && !gotowe) { EKRANY.analiza.timer = setTimeout(krok, 300); return; }
           if (i > 0) { li[i - 1].classList.remove('aktywny'); li[i - 1].classList.add('gotowy'); li[i - 1].querySelector('.znak').innerHTML = IK.ok; }
           if (i === li.length) { setTimeout(() => { location.hash = '#/wyniki'; }, 450); return; }
-          li[i].classList.add('aktywny'); i++;
+          li[i].classList.add('aktywny');
+          const pi = document.getElementById('pierscien-img');
+          if (pi && i) { pi.classList.add('znika'); const nowy = `img/ikony/${li[i].dataset.ik}.webp`; setTimeout(() => { pi.src = nowy; pi.classList.remove('znika'); }, 220); }
+          i++;
           EKRANY.analiza.timer = setTimeout(krok, 700);
         };
         krok();

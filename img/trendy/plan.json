@@ -1,5 +1,5 @@
 {
-  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor. Arkusze 5–6: kafelki okazji (img/okazje/okazja-<d|m>-<okazja>.webp) i ilustracje pustych ekranów (img/puste/). Arkusz 7: przedmioty w różowym złocie (img/ikony/): tryby wyszukiwania i puste ekrany. Grafiki 8–9: slajdy powitania (img/powitanie-2.jpg, img/powitanie-3.jpg, pionowe, całe).",
+  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor. Arkusze 5–6: kafelki okazji (img/okazje/okazja-<d|m>-<okazja>.webp) i ilustracje pustych ekranów (img/puste/). Arkusz 7: przedmioty w różowym złocie (img/ikony/): tryby wyszukiwania i puste ekrany. Grafiki 8–9: slajdy powitania (img/powitanie-2.jpg, img/powitanie-3.jpg, pionowe, całe). Arkusz 8 (2x2): kroki ekranu analizy (img/ikony/krok-*.webp).",
   "arkusze": {
     "1": [
       {
@@ -325,6 +325,24 @@
       },
       {
         "plik": "rozmiary",
+        "katalog": "ikony"
+      }
+    ],
+    "8": [
+      {
+        "plik": "krok-trendy",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "krok-sklepy",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "krok-promocje",
+        "katalog": "ikony"
+      },
+      {
+        "plik": "krok-stylizacje",
         "katalog": "ikony"
       }
     ]

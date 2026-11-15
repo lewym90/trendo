@@ -161,11 +161,15 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .pierscien::before{background:conic-gradient(from 0deg,transparent 0 12%,rgba(248,218,203,.95) 22%,transparent 34%,transparent 52%,rgba(231,174,152,.8) 64%,transparent 76%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));animation:obrot 2.4s linear infinite}
 .pierscien::after{inset:14px;border:1px dashed rgba(235,187,167,.35);animation:obrot 14s linear infinite reverse}
 .pierscien img{width:112px;height:112px;border-radius:30px;box-shadow:0 0 60px rgba(231,174,152,.35)}
+.pierscien .pierscien-przedmiot{width:118px;height:118px;border-radius:0;box-shadow:none;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(231,174,152,.28));transition:opacity .22s,transform .22s}
+.pierscien .pierscien-przedmiot.znika{opacity:0;transform:scale(.92)}
 @keyframes obrot{to{transform:rotate(360deg)}}
 .kroki{list-style:none;margin:0;padding:0;width:100%;max-width:340px;text-align:left;display:flex;flex-direction:column}
-.kroki li{display:flex;gap:14px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--linia);opacity:.38;transition:opacity .4s}
+.kroki li{display:flex;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--linia);opacity:.38;transition:opacity .4s}
 .kroki li.aktywny,.kroki li.gotowy{opacity:1}
-.kroki .znak{flex:none;width:24px;height:24px;border-radius:12px;border:1px solid var(--linia2);display:flex;align-items:center;justify-content:center;margin-top:1px}
+.kroki .znak{flex:none;width:24px;height:24px;border-radius:12px;border:1px solid var(--linia2);display:flex;align-items:center;justify-content:center;margin-left:auto}
+.kroki li>div{flex:1;min-width:0}
+.krok-ikona{flex:none;width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
 .kroki li.gotowy .znak{background:rgba(235,187,167,.2);border-color:var(--roz);color:var(--roz)}
 .kroki li.aktywny .znak{border-color:var(--roz);border-top-color:transparent;animation:obrot .9s linear infinite}
 .kroki .znak svg{width:14px;height:14px}
