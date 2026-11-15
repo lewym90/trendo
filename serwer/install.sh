@@ -64,14 +64,49 @@ if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; the
   echo; echo "Znaki sklepów: prawdziwe logo z nagłówka strony sklepu (próba na 5 sklepach, reszta pobierze się sama w tle)..."
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 400 "$PY" -m trendo.logo Reserved Zara "H&M" Zalando Sinsay ) || echo "Znaki sklepów: błąd uruchomienia."
   systemctl restart trendo; sleep 6
-  echo; echo "Próbne wyszukiwanie (koszula męska: wszystkie wyniki i te pasujące na wieczór; pierwsze może potrwać do 2 minut):"
-  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie" | "$PY" -c "
-import json,sys; d=json.load(sys.stdin)
+  echo; echo "Sklepy podłączone bezpośrednio (próba: sukienka w damskich, koszula w męskich):"
+  ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 300 "$PY" - <<'PYEOF'
+from trendo import lacznik_strony as L, lacznik_zara, lacznik_lpp, lacznik_modivo
+from collections import Counter
+wyn = {}
+for dz, q in (("damskie", "sukienka"), ("meskie", "koszula")):
+    for l in (lacznik_zara, lacznik_lpp, lacznik_modivo):
+        try:
+            lista, stan = l.szukaj(q, dz)
+        except Exception as e:
+            lista, stan = [], "błąd " + str(e)[:40]
+        for sk, n in Counter(p["sklep"] for p in lista).items():
+            wyn.setdefault(sk, {})[dz] = n
+        if not lista:
+            wyn.setdefault(l.NAZWA, {})[dz] = stan
+    for k in L.SKLEPY_KONF:
+        sk, lista, stan = L._sklep((k, q, dz))
+        if stan != "pomijam":
+            wyn.setdefault(sk, {})[dz] = len(lista) if stan == "ok" else stan
+for sk in sorted(wyn, key=str.lower):
+    d = wyn[sk]
+    print(f"  {sk:12} damskie: {str(d.get('damskie', '-')):5}  męskie: {d.get('meskie', '-')}")
+PYEOF
+  ) || echo "Sklepy: błąd uruchomienia."
+  echo; echo "Próbne wyszukiwanie przez serwer (koszula męska; pierwsze może potrwać do 2 minut):"
+  curl -fsS --max-time 200 "https://$HOST/trendo-api/szukaj?q=koszula&dzial=meskie" -o /tmp/trendo-szukaj.json && "$PY" -c "
+import json; d=json.load(open('/tmp/trendo-szukaj.json'))
 [print(' ', s['nazwa'], '-', s['stan'], '-', s['ile'], 'produktów') for s in d['sklepy']]
 P=d['produkty']; w=[p for p in P if 'wieczor' in (p.get('okazje') or [])]
 print('  Ocena:', d.get('klasyfikacja'), '| wszystkie:', len(P), '| pasuje na wieczór:', len(w), '| bez oceny:', sum(p.get('okazje') is None for p in P), '| czas:', d.get('czas'), 's')
-for p in w[:8]: print('   +', p['sklep'], '-', p['nazwa'][:70])
 " || echo "Próbne wyszukiwanie: brak odpowiedzi."
+  echo; echo "Okazje dnia (tylko obniżki sprawdzone, rosną z każdym wyszukiwaniem i nocnym przeglądem sklepów):"
+  for dz in damskie meskie; do curl -fsS --max-time 30 "https://$HOST/trendo-api/okazje?dzial=$dz" | "$PY" -c "
+import json,sys; d=json.load(sys.stdin); o=d['okazje']
+print('  $dz:', len(o), 'okazji' + (', np. ' + ', '.join(f\"{x['sklep']} −{x['rabat']}%\" for x in o[:3]) if o else ''))
+" || echo "  $dz: brak odpowiedzi"; done
+  echo; echo "Szukanie ze zdjęcia (próba na zdjęciu produktu z wyników):"
+  FOTO=$("$PY" -c "import json; P=json.load(open('/tmp/trendo-szukaj.json'))['produkty']; print(next((p['zdjecie'] for p in P if p.get('zdjecie','').startswith('http') and p['sklep'] in ('Zara','Reserved','House','Modivo')), ''))" 2>/dev/null)
+  if [ -n "$FOTO" ] && curl -fsSL --max-time 30 -A "Mozilla/5.0" "$FOTO" -o /tmp/trendo-foto.jpg; then
+    curl -sS --max-time 90 -X POST -H "Content-Type: image/jpeg" --data-binary @/tmp/trendo-foto.jpg "https://$HOST/trendo-api/zdjecie" | "$PY" -c "
+import json,sys; d=json.load(sys.stdin); print('  Rozpoznane hasło:', d.get('q') or d.get('blad'))"
+  else echo "  Nie udało się pobrać zdjęcia próbnego (to nie błąd aplikacji)."; fi
+  rm -f /tmp/trendo-szukaj.json /tmp/trendo-foto.jpg
 else
   echo "Status: BŁĄD, https://$HOST/trendo-api/zdrowie nie odpowiada."
   journalctl -u trendo -n 15 --no-pager

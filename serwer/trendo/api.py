@@ -7,6 +7,10 @@ Endpointy (za Caddy pod /trendo-api/):
   GET /zgloszenia                 ostatnie zgłoszenia (do poprawiania zasad)
   GET /logo?sklep=...             znak sklepu z nagłówka jego strony, ujednolicony (PNG, pamięć 30 dni)
   GET /trendy?dzial=...           trendy potwierdzone przez co najmniej 2 niezależne źródła + nasze dane ze sklepów
+  GET /okazje?dzial=...           sprawdzone obniżki z ostatnich 48 godzin (Omnibus albo nasza historia z 30 dni)
+  GET /produkty?ids=a,b           ostatni znany stan produktów (alerty, ulubione, koszyk)
+  GET /obserwuj?ids=a,b           serwer odświeża ceny tych produktów co 12 godzin w ich sklepach
+  POST /zdjecie                   zdjęcie rzeczy (JPEG, do 2 MB) -> hasło do wyszukania
 """
 import json, os, re, time, traceback
 from concurrent.futures import ThreadPoolExecutor, wait
@@ -14,10 +18,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote_plus, urlparse
 
 import threading
-from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor, trendy
+from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor, obserwowane, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.13.0"
+WERSJA = "0.14.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -161,6 +165,10 @@ def szukaj(q, dzial, okazja=""):
     wyk = wykluczone()
     for p in produkty:
         p["okazje"] = okazje_produktu(p, wyk)
+    try:
+        obserwowane.zapamietaj(produkty)
+    except Exception:
+        traceback.print_exc()
     wynik = {"zapytanie": q, "dzial": dzial, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
              "sklepy": sklepy, "produkty": produkty, "nieocenione": nieocenione, "klasyfikacja": klasyfikacja,
              "okazje_nazwy": {o: OKAZJE_NAZWY[o] for o in OKAZJE_WSZYSTKIE}}
@@ -192,20 +200,35 @@ def rozgrzewka():
                     pamiec_zapisz(f"trendy|{WERSJA}|{dz}", trendy.zestawienie(dz))
             except Exception:
                 traceback.print_exc()
-        if klasyfikator.dostepny():
-            dzien = time.strftime("rozgrzewka-%Y-%m-%d")
-            if not licznik(dzien):
-                licznik(dzien, 1)
-                bez_google = [l for l in LACZNIKI if l is not lacznik_google]
-                for dzial, hasla in ROZGRZEWKA.items():
-                    for q in hasla:
-                        if klasyfikator.koszt_miesiac() >= klasyfikator.BUDZET * 0.3 or klasyfikator.koszt_dzis() >= 0.1:
-                            break
-                        try:
-                            _, produkty = pobierz_produkty(q, dzial, bez_google)
+        dzien = time.strftime("rozgrzewka-%Y-%m-%d")
+        if not licznik(dzien):
+            licznik(dzien, 1)
+            # Pobieranie ze sklepów jest darmowe i robimy je zawsze (ceny do historii, okazje dnia).
+            # Ocena AI tylko w ramach hamulca: do 0,1 USD na noc i do 30% budżetu miesięcznego.
+            bez_google = [l for l in LACZNIKI if l is not lacznik_google]
+            for dzial, hasla in ROZGRZEWKA.items():
+                for q in hasla:
+                    try:
+                        _, produkty = pobierz_produkty(q, dzial, bez_google)
+                        if klasyfikator.dostepny() and klasyfikator.koszt_miesiac() < klasyfikator.BUDZET * 0.3 \
+                                and klasyfikator.koszt_dzis() < 0.1:
                             klasyfikator.klasyfikuj(produkty, maks=400)
-                        except Exception:
-                            traceback.print_exc()
+                        obserwowane.zapamietaj([p for p in produkty if nadzor.zgodna_plec(p, dzial)])
+                    except Exception:
+                        traceback.print_exc()
+                    time.sleep(5)
+            obserwowane.sprzataj()
+        time.sleep(1800)
+
+
+def odswiezanie():
+    """Ceny obserwowanych produktów (alerty, ulubione) sprawdzane w ich sklepach co 12 godzin."""
+    time.sleep(600)
+    while True:
+        try:
+            obserwowane.odswiez(LACZNIKI)
+        except Exception:
+            traceback.print_exc()
         time.sleep(1800)
 
 
@@ -223,8 +246,36 @@ class Obsluga(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
+
+    def do_POST(self):
+        u = urlparse(self.path)
+        try:
+            if u.path != "/zdjecie":
+                return self._wyslij(404, {"blad": "Nie ma takiej ścieżki."})
+            dl = int(self.headers.get("Content-Length") or 0)
+            if not 0 < dl <= 2_500_000:
+                return self._wyslij(413, {"blad": "Zdjęcie jest za duże. Wybierz mniejsze."})
+            b = self.rfile.read(dl)
+            typ = "image/png" if b[:4] == b"\x89PNG" else "image/webp" if b[8:12] == b"WEBP" else "image/jpeg" if b[:3] == b"\xff\xd8\xff" else None
+            if not typ:
+                return self._wyslij(415, {"blad": "To nie wygląda na zdjęcie (JPEG, PNG albo WebP)."})
+            if not klasyfikator.dostepny():
+                return self._wyslij(503, {"blad": "Rozpoznawanie zdjęć jest teraz niedostępne."})
+            if licznik(time.strftime("zdjecia-%Y-%m-%d"), 1) > 200:
+                return self._wyslij(429, {"blad": "Na dziś wyczerpał się limit zdjęć. Spróbuj jutro albo wpisz, czego szukasz."})
+            kod, wyn = klasyfikator.opis_zdjecia(b, typ)
+            if kod == 402:
+                return self._wyslij(402, {"blad": "W tym miesiącu wyczerpał się budżet na rozpoznawanie zdjęć. Wpisz, czego szukasz."})
+            if not wyn:
+                return self._wyslij(502, {"blad": "Nie udało się rozpoznać zdjęcia. Spróbuj jeszcze raz."})
+            return self._wyslij(200, wyn)
+        except Exception as e:
+            traceback.print_exc()
+            return self._wyslij(500, {"blad": str(e)[:120]})
 
     def do_GET(self):
         u = urlparse(self.path)
@@ -297,6 +348,17 @@ class Obsluga(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(dane)
                 return
+            if u.path == "/okazje":
+                dz = "meskie" if a.get("dzial") == "meskie" else "damskie"
+                zap = pamiec_czytaj(f"okazje|{WERSJA}|{dz}", 1800)
+                if not zap:
+                    zap = {"dzial": dz, "sprawdzono": int(time.time()), "okazje": obserwowane.okazje(dz)}
+                    pamiec_zapisz(f"okazje|{WERSJA}|{dz}", zap)
+                return self._wyslij(200, zap)
+            if u.path == "/produkty":
+                return self._wyslij(200, {"produkty": obserwowane.dane(a.get("ids", "").split(","))})
+            if u.path == "/obserwuj":
+                return self._wyslij(200, {"ok": True, "ile": obserwowane.obserwuj(a.get("ids", "").split(","))})
             if u.path == "/historia":
                 return self._wyslij(200, {"id": a.get("id"), "ceny": historia(a.get("id", ""))})
             return self._wyslij(404, {"blad": "Nie ma takiej ścieżki."})
@@ -312,6 +374,7 @@ def main():
     port = int(os.environ.get("PORT", "18890"))
     print(f"Trendo {WERSJA} nasłuchuje na 127.0.0.1:{port}", flush=True)
     threading.Thread(target=rozgrzewka, daemon=True).start()
+    threading.Thread(target=odswiezanie, daemon=True).start()
     threading.Thread(target=lambda: (time.sleep(300), logo.rozgrzej()), daemon=True).start()  # znaki sklepów, po jednym w tle
     ThreadingHTTPServer(("127.0.0.1", port), Obsluga).serve_forever()
 

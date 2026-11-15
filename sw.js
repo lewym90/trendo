@@ -1,6 +1,6 @@
 /* Trendo: pamięć podręczna, żeby aplikacja startowała szybko i bez sieci */
-const WERSJA = 'trendo-0.13.1';
-const PLIKI = ['./', 'index.html', 'styles.css?v=0.13.1', 'js/wzorce.js?v=0.13.1', 'js/demo.js?v=0.13.1', 'js/grafika.js?v=0.13.1', 'js/app.js?v=0.13.1', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+const WERSJA = 'trendo-0.14.0';
+const PLIKI = ['./', 'index.html', 'styles.css?v=0.14.0', 'js/wzorce.js?v=0.14.0', 'js/demo.js?v=0.14.0', 'js/grafika.js?v=0.14.0', 'js/app.js?v=0.14.0', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(WERSJA).then((c) => c.addAll(PLIKI)).then(() => self.skipWaiting()));
@@ -22,4 +22,13 @@ self.addEventListener('fetch', (e) => {
     if (n.ok) { const k = n.clone(); caches.open(WERSJA).then((c) => c.put(e.request, k)); }
     return n;
   }).catch(() => caches.match(e.request).then((r) => r || caches.match('index.html'))));
+});
+// Dotknięcie powiadomienia o spadku ceny otwiera alerty.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((l) => {
+    const w = l.find((c) => 'focus' in c);
+    if (w) { w.navigate && w.navigate('./#/alerty').catch(() => {}); return w.focus(); }
+    return self.clients.openWindow('./#/alerty');
+  }));
 });

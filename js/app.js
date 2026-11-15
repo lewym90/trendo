@@ -1,7 +1,8 @@
-/* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
+/* Trendo: interfejs. Produkty, ceny, okazje, alerty i trendy pochodzą z serwera; js/demo.js zostaje tylko jako zapas,
+   gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.13.1';
+  const WERSJA = '0.14.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -19,12 +20,16 @@
   const zapisz = () => { try { localStorage.setItem('trendo', JSON.stringify(st)); } catch (e) { /* tryb prywatny */ } };
 
   /* ---------- pomocnicze ---------- */
-  const zl = (n) => n.toLocaleString('pl-PL', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' zł';
+  const zl = (n) => (typeof n === 'number' && isFinite(n) ? n : 0).toLocaleString('pl-PL', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + ' zł';
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const API = (() => { try { return localStorage.getItem('trendo-api'); } catch (e) { return null; } })() || 'https://188-68-247-201.sslip.io/trendo-api';
   let wynik = null; // ostatni prawdziwy wynik z serwera
   try { wynik = JSON.parse(sessionStorage.getItem('trendo-wynik') || 'null'); } catch (e) { wynik = null; }
-  const prod = (id) => DEMO.P.find((p) => p.id === id) || (wynik && wynik.produkty.find((p) => p.id === id)) || (st.znane || {})[id];
+  const OKZ = { damskie: null, meskie: null }; // okazje dnia z serwera: { czas, lista, trwa, blad }
+  const OKZ_ID = {};
+  // Ten sam produkt może być w ostatnim wyniku, w zapamiętanych i w okazjach: bierzemy najświeżej sprawdzony.
+  const prod = (id) => DEMO.P.find((p) => p.id === id) || [wynik && wynik.produkty.find((p) => p.id === id), (st.znane || {})[id], OKZ_ID[id]]
+    .filter(Boolean).sort((a, b) => (b.sprawdzono || 0) - (a.sprawdzono || 0))[0];
   function zapamietaj(p) {
     if (!p || !p.zrodlo) return;
     st.znane = st.znane || {}; st.znane[p.id] = p;
@@ -44,6 +49,61 @@
   function komunikat(t) {
     KOM.textContent = t; KOM.classList.add('widac');
     clearTimeout(komunikat.t); komunikat.t = setTimeout(() => KOM.classList.remove('widac'), 3200);
+  }
+  /* ---------- okazje dnia, obserwowane i alerty (dane z serwera) ---------- */
+  const trasa = () => location.hash.replace(/^#\/?/, '').split('/')[0] || 'start';
+  const odswiezJesliNa = (ekrany) => { if (ekrany.includes(trasa()) && ARK.hidden) render(true); };
+  function wczytajOkazje(dz) {
+    const o = OKZ[dz];
+    if (o && (o.trwa || Date.now() - o.czas < 15 * 60e3)) return;
+    OKZ[dz] = { czas: Date.now(), trwa: true, lista: o ? o.lista : null };
+    fetch(`${API}/okazje?dzial=${dz}`).then((r) => r.json()).then((d) => {
+      const l = Array.isArray(d.okazje) ? d.okazje : [];
+      l.forEach((p) => { OKZ_ID[p.id] = p; });
+      OKZ[dz] = { czas: Date.now(), lista: l };
+      odswiezJesliNa(['start', 'okazje']);
+    }).catch(() => { OKZ[dz] = { czas: Date.now(), lista: (o && o.lista) || [], blad: true }; odswiezJesliNa(['start', 'okazje']); });
+  }
+  const obserwowaneIds = () => [...new Set(st.ulubione.concat(st.alerty.map((a) => a.id)))].filter((id) => prawdziwy(prod(id)));
+  function zglosObserwowane(ids) {
+    ids = (ids || obserwowaneIds()).filter((id) => prawdziwy(prod(id)));
+    if (ids.length) fetch(`${API}/obserwuj?ids=${ids.map(encodeURIComponent).join(',')}`).catch(() => {});
+  }
+  function powiadom(p) {
+    const tresc = { body: `${p.nazwa} (${p.sklep}) kosztuje teraz ${zl(p.cena)}.`, icon: 'icons/icon-192.png', tag: 'trendo-' + p.id };
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then((r) => r.showNotification('Cena spadła', tresc)).catch(() => {});
+      else new Notification('Cena spadła', tresc);
+    } catch (e) { /* przeglądarka bez powiadomień */ }
+  }
+  let sprawdzonoObs = 0;
+  function odswiezObserwowane(wymus) {
+    const ids = obserwowaneIds();
+    if (!ids.length || (!wymus && Date.now() - sprawdzonoObs < 10 * 60e3)) return;
+    sprawdzonoObs = Date.now();
+    fetch(`${API}/produkty?ids=${ids.map(encodeURIComponent).join(',')}`).then((r) => r.json()).then((d) => {
+      const P = d.produkty || {};
+      let zmiana = false;
+      Object.keys(P).forEach((id) => {
+        const s0 = st.znane[id], n = P[id];
+        if (!s0) return;
+        if (s0.cena !== n.cena || s0.stara !== n.stara || s0.weryf !== n.weryf || s0.brak_w_sklepie !== n.brak_w_sklepie) zmiana = true;
+        st.znane[id] = Object.assign({}, s0, n);
+      });
+      const spadki = [];
+      st.alerty.forEach((a) => {
+        const p = st.znane[a.id];
+        if (!p) return;
+        if (p.cena <= a.cel && !a.osiagniety) { a.osiagniety = Date.now(); spadki.push(p); zmiana = true; }
+        if (p.cena > a.cel && a.osiagniety) { a.osiagniety = null; zmiana = true; }
+      });
+      if (spadki.length) {
+        komunikat(spadki.length === 1 ? `Cena spadła: ${spadki[0].nazwa}, teraz ${zl(spadki[0].cena)}` : `Cena spadła w ${spadki.length} obserwowanych rzeczach`);
+        spadki.forEach(powiadom);
+      }
+      if (zmiana) { zapisz(); odswiezJesliNa(['start', 'alerty', 'okazje', 'koszyk', 'produkt']); }
+    }).catch(() => {});
   }
   const foto = (p) => (p.zdjecie ? `<img class="zdj" src="${esc(p.zdjecie)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
     : p.img ? `<img src="img/wzorce/${p.img}.webp" alt="" loading="lazy" decoding="async">`
@@ -99,12 +159,13 @@
     const s = sezon();
     const zap = st.zapisane.map((id) => DEMO.S.find((x) => x.id === id)).filter(Boolean);
     const ost = st.ostatnie.slice(0, 6);
+    const spadly = st.alerty.filter((a) => a.osiagniety).length;
     return {
       akt: 'start',
       html: `<div class="powitanie-dnia">
         <div><p class="szary maly">${pow}</p><h1>Czego dziś<br>szukasz?</h1></div>
         <div class="akcje">
-          <a class="ikonka" href="#/alerty" aria-label="Alerty cenowe${st.alerty.length ? ', ' + st.alerty.length : ''}">${IK.dzwonek}${st.alerty.length ? '<span class="kropka"></span>' : ''}</a>
+          <a class="ikonka" href="#/alerty" aria-label="Alerty cenowe${st.alerty.length ? ', ' + st.alerty.length : ''}${spadly ? ', cena spadła w ' + spadly : ''}">${IK.dzwonek}${spadly ? '<span class="kropka"></span>' : ''}</a>
           <a class="ikonka" href="#/profil" aria-label="Profil i ustawienia">${IK.profil}</a>
         </div></div>
       <a href="#/szukaj" class="pole-szukaj" style="text-decoration:none">${IK.szukaj}<span style="flex:1;color:var(--szary2);font-size:17px">Np. skórzane spodnie, płaszcz…</span><span class="ikonka" aria-hidden="true">${IK.aparat}</span></a>
@@ -126,13 +187,10 @@
         </a>
       </div>
 
-      ${zap.length ? `<div class="sekcja"><div class="sekcja-tytul"><h2>Zapisane stylizacje</h2></div><div class="karuzela">${zap.map(kartaStylizacji).join('')}</div></div>` : ''}
+      ${zap.length ? `<div class="sekcja"><div class="sekcja-tytul"><h2>Zapisane stylizacje</h2></div><div class="karuzela">${zap.map(kartaStylizacji).join('')}</div><p class="maly szary" style="margin-top:8px">Stylizacje są na razie przykładowe.</p></div>` : ''}
 
-      <div class="sekcja">
-        <div class="sekcja-tytul"><h2>Okazje dnia</h2><a class="link" href="#/okazje">Wszystkie</a></div>
-        ${DEMO.OK.filter((o) => o.weryf === 'ok').slice(0, 3).map(kartaOkazji).join('')}
-        <p class="maly szary" style="margin-top:10px">Wersja próbna: okazje są przykładowe.</p>
-      </div>`
+      ${sekcjaOkazjiDnia()}`,
+      po: () => { wczytajOkazje(st.dzial); odswiezObserwowane(); }
     };
   };
 
@@ -383,8 +441,8 @@
     const wybr = st.rozmiar[p.id];
     const rozm = listaRozmiarow(p.rozmiary);
     let werInfo = '';
-    if (p.weryf === 'ok') werInfo = `<div class="info ok">${IK.ok}<p><b>Obniżka jest prawdziwa.</b> Najniższa cena z 30 dni przed obniżką: ${zl(p.omnibus)}.</p></div>`;
-    else if (p.weryf === 'pozorna') werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> Przez ostatnie 30 dni produkt kosztował tyle samo (${zl(p.omnibus)}). Przekreślona cena nie była aktualna.</p></div>`;
+    if (p.weryf === 'ok') werInfo = `<div class="info ok">${IK.ok}<p><b>Obniżka jest prawdziwa.</b> ${p.omnibus ? `Najniższa cena z 30 dni przed obniżką: ${zl(p.omnibus)}.` : 'Przez ostatnie 30 dni sprawdzaliśmy cenę sami i była wyższa niż teraz.'}${p.stara_sklepu ? ` Sklep podaje cenę regularną ${zl(p.stara_sklepu)}, ale rabat liczymy uczciwie, od najniższej ceny z 30 dni.` : ''}</p></div>`;
+    else if (p.weryf === 'pozorna') werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> ${p.omnibus ? `Przez ostatnie 30 dni produkt kosztował tyle samo (${zl(p.omnibus)}).` : 'Przez ostatnie 30 dni produkt kosztował tyle samo albo mniej.'} Przekreślona cena nie była aktualna.</p></div>`;
     else if (p.weryf === 'second') werInfo = `<div class="info neutral">${IK.info}<p>Ogłoszenie z drugiej ręki. Stan i opis podaje sprzedający, sprawdź zdjęcia przed zakupem.</p></div>`;
     else if (p.weryf === 'sklep') werInfo = `<div class="info neutral">${IK.info}<p><b>Obniżkę podaje sklep</b> (wcześniej ${zl(p.stara)}). Historię ceny tego produktu zbieramy od ${new Date(p.sprawdzono * 1000).toLocaleDateString('pl-PL')}. Po 30 dniach ocenimy, czy obniżka jest prawdziwa.</p></div>`;
     if (p.weryf === 'pozorna' && prawdziwy(p)) werInfo = `<div class="info uwaga">${IK.uwaga}<p><b>Promocja pozorna.</b> ${p.omnibus ? `Najniższa cena z 30 dni przed obniżką, podana przez sklep, to ${zl(p.omnibus)}, czyli tyle samo albo mniej niż teraz.` : 'W ostatnich 30 dniach ten produkt kosztował już tyle samo albo mniej.'} Przekreślona cena nie była aktualna.</p></div>`;
@@ -524,20 +582,29 @@
 
   let zakladkaOkazji = 'promocje';
   EKRANY.okazje = () => {
-    let lista = DEMO.OK.filter((o) => o.typ === zakladkaOkazji);
+    const o = OKZ[st.dzial];
     const obs = st.ulubione.map(prod).filter(Boolean);
+    let tresc;
+    if (zakladkaOkazji === 'obserwowane') {
+      tresc = obs.length ? `<div class="elementy">${obs.map(wierszElementu).join('')}</div>
+        <p class="maly szary" style="margin-top:14px">Ceny obserwowanych rzeczy sprawdzamy w sklepach co 12 godzin.</p>`
+        : `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-obserwowane.webp" alt=""><p>Dotknij serca przy produkcie, żeby go obserwować. Gdy stanieje, zobaczysz to tutaj.</p><a class="btn maly" href="#/szukaj">Szukaj produktów</a></div>`;
+    } else if (!o || (o.trwa && !o.lista)) {
+      tresc = '<p class="szary" style="text-align:center;margin-top:30px">Sprawdzam dzisiejsze obniżki…</p>';
+    } else if (!o.lista.length) {
+      tresc = `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-obserwowane.webp" alt=""><p>${o.blad ? 'Serwer nie odpowiada. Spróbuj za chwilę.' : 'Dziś nie znaleźliśmy jeszcze sprawdzonych obniżek. Lista rośnie z każdym wyszukiwaniem i codziennym przeglądem sklepów.'}</p><a class="btn maly" href="#/szukaj">Szukaj produktów</a></div>`;
+    } else {
+      tresc = `<p class="szary maly" style="margin:0 0 12px">${o.lista.length} sprawdzonych obniżek z ostatnich 48 godzin, od największej.</p>
+        <div class="siatka">${o.lista.map(kartaProduktu).join('')}</div>`;
+    }
     return {
       akt: 'okazje',
+      po: () => { wczytajOkazje(st.dzial); odswiezObserwowane(); },
       html: `<div class="naglowek"><span class="puste"></span><h1>Najlepsze okazje</h1><span class="puste"></span></div>
-      ${demoZnak()}
-      <div class="przelacznik trzy" role="tablist" aria-label="Rodzaj okazji">
-        ${[['promocje', 'Promocje'], ['wyprzedaze', 'Wyprzedaże'], ['obserwowane', 'Obserwowane']].map(([v, n]) => `<button role="tab" aria-selected="${zakladkaOkazji === v}" data-akcja="zakladkaOkazji" data-v="${v}">${n}</button>`).join('')}</div>
-      <div style="margin-top:16px">
-      ${zakladkaOkazji === 'obserwowane'
-        ? (obs.length ? `<div class="elementy">${obs.map(wierszElementu).join('')}</div>` : `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusty-obserwowane.webp" alt=""><p>Dotknij serca przy produkcie, żeby go obserwować. Gdy stanieje, zobaczysz to tutaj.</p><a class="btn maly" href="#/szukaj">Szukaj produktów</a></div>`)
-        : lista.map(kartaOkazji).join('')}
-      </div>
-      ${zakladkaOkazji !== 'obserwowane' ? '<p class="maly szary" style="margin-top:14px">Każdą promocję porównujemy z najniższą ceną z 30 dni przed obniżką. Pozorne oznaczamy na pomarańczowo.</p>' : ''}`
+      <div class="przelacznik" role="tablist" aria-label="Rodzaj okazji">
+        ${[['promocje', 'Sprawdzone obniżki'], ['obserwowane', 'Obserwowane']].map(([v, n]) => `<button role="tab" aria-selected="${zakladkaOkazji === v}" data-akcja="zakladkaOkazji" data-v="${v}">${n}</button>`).join('')}</div>
+      <div style="margin-top:16px">${tresc}</div>
+      ${zakladkaOkazji !== 'obserwowane' ? '<p class="maly szary" style="margin-top:14px">Każdą promocję porównujemy z najniższą ceną z 30 dni przed obniżką (podaną przez sklep albo z naszej historii cen). Rabat liczymy od tej ceny, nie od „ceny regularnej”.</p>' : ''}`
     };
   };
 
@@ -581,13 +648,17 @@
 
   EKRANY.alerty = () => {
     const al = st.alerty.map((a) => ({ a, p: prod(a.id) })).filter((x) => x.p);
+    const kiedy = (t) => t ? new Date(t * 1000).toLocaleString('pl-PL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
     return {
       akt: 'start',
+      po: () => odswiezObserwowane(true),
       html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Alerty cenowe</h1><span class="puste"></span></div>
       ${al.length ? `<div class="elementy">${al.map(({ a, p }) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
-        <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${esc(p.sklep)}, teraz ${zl(p.cena)}</div><div class="maly" style="color:var(--roz);margin-top:3px">Powiadom poniżej ${zl(a.cel)}</div></div>
+        <div class="opis"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${esc(p.sklep)}, teraz ${zl(p.cena)}</div>
+        ${a.osiagniety ? `<div class="maly" style="color:var(--ok);margin-top:3px;font-weight:500">Cena spadła poniżej ${zl(a.cel)}</div>` : `<div class="maly" style="color:var(--roz);margin-top:3px">Powiadom poniżej ${zl(a.cel)}</div>`}
+        ${p.brak_w_sklepie ? '<div class="maly" style="color:var(--promo);margin-top:3px">Ostatnio nie znaleźliśmy go w sklepie. Mógł się wyprzedać.</div>' : p.sprawdzono ? `<div class="maly szary" style="margin-top:3px">Sprawdzono ${kiedy(p.sprawdzono)}</div>` : ''}</div>
         <button class="ikonka bez" data-akcja="usunAlert" data-id="${p.id}" aria-label="Usuń alert">${IK.kosz}</button></div>`).join('')}</div>
-        <div class="info uwaga" style="margin-top:18px">${IK.uwaga}<p>Powiadomienia na telefon zaczną przychodzić po podłączeniu serwera, który codziennie sprawdza ceny.</p></div>`
+        <div class="info neutral" style="margin-top:18px">${IK.info}<p>Ceny sprawdzamy w sklepach co 12 godzin. Gdy cena spadnie poniżej progu, zobaczysz to tutaj i kropkę na dzwonku${'Notification' in window ? ', a jeśli pozwolisz, także powiadomienie po otwarciu aplikacji' : ''}. Rzeczy znalezione przez Google Shopping sprawdzamy tylko przy nowym wyszukiwaniu.</p></div>`
       : `<div class="pusty"><img class="ilustracja-pusta" src="img/puste/pusty-alerty.webp" alt=""><p>Nie masz jeszcze alertów. Na stronie produktu dotknij „Powiadom, gdy stanieje”.</p></div>`}`
     };
   };
@@ -607,7 +678,7 @@
       <div class="ustawienie"><span>Pokaż ekran powitalny</span><button class="link" data-akcja="pokazPowitanie">Pokaż</button></div>
       <div class="ustawienie"><span>Usuń wszystkie dane z telefonu</span><button class="link" data-akcja="wyczyscWszystko">Usuń</button></div>
     </div>
-    <p class="maly szary" style="text-align:center;margin-top:20px">Trendo ${WERSJA}, wersja próbna</p>`
+    <p class="maly szary" style="text-align:center;margin-top:20px">Trendo ${WERSJA}. Gotowe stylizacje są na razie przykładowe.</p>`
   });
 
   /* ---------- elementy wielokrotne ---------- */
@@ -649,7 +720,7 @@
   function kartaProduktu(p) {
     const r = rabat(p), ul = st.ulubione.includes(p.id);
     const wer = p.weryf === 'ok' ? `<div class="weryf ok">${IK.ok}Obniżka potwierdzona</div>`
-      : p.weryf === 'pozorna' ? `<div class="weryf uwaga">${IK.uwaga}Promocja pozorna: przez 30 dni było ${zl(p.omnibus)}</div>`
+      : p.weryf === 'pozorna' ? `<div class="weryf uwaga">${IK.uwaga}${p.omnibus ? `Promocja pozorna: przez 30 dni było ${zl(p.omnibus)}` : 'Promocja pozorna'}</div>`
       : p.weryf === 'second' ? `<div class="weryf" style="color:var(--szary)">${IK.second}Z drugiej ręki</div>`
       : p.weryf === 'sklep' ? `<div class="weryf" style="color:var(--promo)">${IK.okazje}Promocja według sklepu</div>` : '';
     return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
@@ -664,6 +735,14 @@
       <span class="opis"><span class="nazwa" style="display:block">${esc(p.nazwa)}</span><span class="sklep">${marka(p.sklep)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}${r && p.weryf === 'ok' ? `<span class="rabat">−${r}%</span>` : ''}</span></span>
       <span class="zewn">${IK.dalej}</span></a>`;
+  }
+  function sekcjaOkazjiDnia() {
+    const o = OKZ[st.dzial];
+    const tytul = '<div class="sekcja-tytul"><h2>Okazje dnia</h2><a class="link" href="#/okazje">Wszystkie</a></div>';
+    if (!o || (o.trwa && !o.lista)) return `<div class="sekcja">${tytul}<p class="maly szary">Sprawdzam dzisiejsze obniżki…</p></div>`;
+    if (!o.lista.length) return '';
+    return `<div class="sekcja">${tytul}<div class="elementy">${o.lista.slice(0, 3).map(wierszElementu).join('')}</div>
+      <p class="maly szary" style="margin-top:10px">Tylko obniżki sprawdzone: cena niższa niż najniższa z 30 dni przed promocją.</p></div>`;
   }
   function kartaOkazji(o) {
     return `<div class="okazja"><div class="opis"><span class="sklep">${marka(o.sklep)}</span><b>${esc(o.tytul)}</b><p>${esc(o.opis)}</p>
@@ -681,7 +760,7 @@
       <h2 id="ark-t">Powiadom, gdy stanieje</h2><p class="szary" style="margin:6px 0 18px">${esc(p.sklep)}, ${esc(p.nazwa)}. Teraz ${zl(p.cena)}.</p>
       <div class="budzet-wiersz"><div class="budzet-gora"><label for="cel">Cena docelowa</label><span class="budzet-kwota" id="celv">${zl(cel)}</span></div>
       <input id="cel" type="range" min="${Math.round(p.cena * 0.4)}" max="${Math.round(p.cena)}" step="1" value="${cel}"></div>
-      <p class="maly szary" style="margin:10px 0 18px">Damy znać także wtedy, gdy wróci Twój rozmiar.</p>
+      <p class="maly szary" style="margin:10px 0 18px">Cenę sprawdzamy w sklepie co 12 godzin.</p>
       <button class="btn" data-akcja="zapiszAlert" data-id="${id}">Ustaw alert</button>
       ${ist ? `<button class="btn drugi" style="margin-top:10px" data-akcja="usunAlert" data-id="${id}">Usuń alert</button>` : ''}
       <button class="link" style="margin:10px auto 0;display:flex" data-akcja="zamknijArkusz">Anuluj</button></div>`;
@@ -729,10 +808,7 @@
     szukaj() {
       const q = (document.getElementById('q').value || '').trim();
       if (!q) { komunikat('Wpisz, czego szukasz.'); document.getElementById('q').focus(); return; }
-      st.zapytanie = q;
-      st.ostatnie = [st.zapytanie].concat(st.ostatnie.filter((x) => x.toLowerCase() !== st.zapytanie.toLowerCase())).slice(0, 8);
-      filtrOkazji = 'wszystkie'; budzetWl = true; tylkoPromocje = false; tylkoSecond = false; kolejnosc = 'polecane';
-      zapisz(); location.hash = '#/analiza';
+      zacznijSzukanie(q);
     },
     kategoria(el) { st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
     szukajOstatnie(el) { st.zapytanie = el.dataset.q; zapisz(); location.hash = '#/szukaj'; },
@@ -763,7 +839,7 @@
     ulubiony(el) {
       const id = el.dataset.id, i = st.ulubione.indexOf(id);
       zapamietaj(prod(id));
-      if (i >= 0) { st.ulubione.splice(i, 1); komunikat('Usunięto z obserwowanych'); } else { st.ulubione.push(id); komunikat('Obserwujesz ten produkt'); }
+      if (i >= 0) { st.ulubione.splice(i, 1); komunikat('Usunięto z obserwowanych'); } else { st.ulubione.push(id); komunikat('Obserwujesz ten produkt'); zglosObserwowane([id]); }
       zapisz(); render(true);
     },
     zapiszStyl(el) {
@@ -788,6 +864,8 @@
       zapamietaj(prod(id));
       zapisz(); ARK.hidden = true; render(true);
       komunikat(`Alert ustawiony na ${zl(cel)}`);
+      zglosObserwowane([id]);
+      try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); } catch (e) { /* stara przeglądarka */ }
     },
     usunAlert(el) { st.alerty = st.alerty.filter((a) => a.id !== el.dataset.id); zapisz(); ARK.hidden = true; render(true); },
     zamknijArkusz() { ARK.hidden = true; },
@@ -839,7 +917,7 @@
       if (t.dataset.ust === 'dzial') render(true);
     }
     if (t.id === 'plik' && t.files && t.files[0]) {
-      komunikat('Szukanie po zdjęciu zadziała po podłączeniu serwera.');
+      szukajZeZdjecia(t.files[0]);
       t.value = '';
     }
   });
@@ -891,6 +969,48 @@
     if (META_KOLOR) META_KOLOR.setAttribute('content', sw === 'm' ? '#0C0B0A' : '#0E090C');
   }
 
+  /* ---------- szukanie: z hasła albo ze zdjęcia ---------- */
+  function zacznijSzukanie(q) {
+    st.zapytanie = q;
+    st.ostatnie = [q].concat(st.ostatnie.filter((x) => x.toLowerCase() !== q.toLowerCase())).slice(0, 8);
+    filtrOkazji = 'wszystkie'; budzetWl = true; tylkoPromocje = false; tylkoSecond = false; kolejnosc = 'polecane';
+    zapisz(); location.hash = '#/analiza';
+  }
+  // Zdjęcie zmniejszamy na telefonie (dłuższy bok 1280 px, JPEG), żeby wysyłka była szybka także na komórkowym internecie.
+  function zmniejsz(plik) {
+    return new Promise((ok, zle) => {
+      const u = URL.createObjectURL(plik), im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 1280 / Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(u);
+        c.toBlob((b) => (b ? ok(b) : zle(new Error('zdjecie'))), 'image/jpeg', 0.85);
+      };
+      im.onerror = () => { URL.revokeObjectURL(u); zle(new Error('zdjecie')); };
+      im.src = u;
+    });
+  }
+  let rozpoznaje = false;
+  function szukajZeZdjecia(plik) {
+    if (rozpoznaje) return;
+    rozpoznaje = true;
+    komunikat('Rozpoznaję rzecz ze zdjęcia…');
+    zmniejsz(plik)
+      .then((b) => fetch(`${API}/zdjecie`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: b }))
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) { komunikat(d.blad || 'Nie udało się rozpoznać zdjęcia. Spróbuj jeszcze raz.'); return; }
+        if (!d.rzecz || !d.q) { komunikat('Nie widzę na zdjęciu ubrania ani dodatku. Spróbuj innego zdjęcia.'); return; }
+        komunikat(`Szukam: ${d.q}`);
+        zacznijSzukanie(d.q);
+      })
+      .catch(() => komunikat('Nie udało się wysłać zdjęcia. Sprawdź internet albo wpisz, czego szukasz.'))
+      .finally(() => { rozpoznaje = false; });
+  }
+
+
   /* ---------- router ---------- */
   function render(zachowajPozycje) {
     clearTimeout(EKRANY.analiza.timer);
@@ -917,6 +1037,8 @@
   }
   window.addEventListener('hashchange', () => { ARK.hidden = true; render(); });
   render();
+  setTimeout(() => { zglosObserwowane(); odswiezObserwowane(); }, 1500);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') odswiezObserwowane(); });
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -14,6 +14,14 @@ SKLEPY_KONF = [
     ("Bizuu", "searchanise:1r4h1n5E9I:https://bizuu.com", None, "searchanise"),
     ("Kazar", "https://kazar.com/catalogsearch/result/?q={q}", "https://kazar.com/catalogsearch/result/?q={q}", "magento"),
     ("Showroom", "https://www.showroom.pl/search?q={q}", "https://www.showroom.pl/search?q={q}", "showroom"),
+    ("Top Secret", "https://www.topsecret.pl/wszystkie-produkty?q={q}", None, "kafle2"),
+    ("Molton", "https://molton.pl/pl/search.html?text={q}", None, "idosell"),
+    ("Moodo", "https://moodo.pl/pl/search.html?text={q}", None, "idosell"),
+    # Kappahl miesza w wynikach dzieci, kobiety i mężczyzn; słowo działu w zapytaniu zawęża wyniki do niego
+    # Grupa Monnari: wyszukiwarka przyjmuje tylko formularz (POST), dane produktu są w atrybucie data-product
+    ("Quiosque", "https://www.quiosque.pl/szukaj.html", None, "monnari"),
+    ("Monnari", "https://emonnari.pl/szukaj.html", None, "monnari"),
+    ("Kappahl", "https://www.kappahl.com/pl-pl/szukaj/?q={q}%20damska", "https://www.kappahl.com/pl-pl/szukaj/?q={q}%20m%C4%99ska", "kappahl"),
 ]
 SKLEPY = [s[0] for s in SKLEPY_KONF]
 
@@ -50,21 +58,149 @@ def _itemlist(sklep, url, dzial):
 
 
 def _kafle(sklep, url, dzial):
+    """Kafle z atrybutami data-dl-* na linku do produktu (Born2Be, Renee). Klasa linku bywa różna
+    („main-img dl-product-click”, „d-flex r-main-img r-dl-product-click”), więc szukamy po atrybutach."""
     kod, b = pobierz(url)
     if kod != 200:
         return [], f"brak odpowiedzi ({kod})"
     t = b.decode("utf-8", "ignore")
     wyn = []
-    for m in re.finditer(r'<a href="([^"]+)"[^>]*class="main-img dl-product-click"([^>]*)>\s*<img src="([^"]+)"', t):
-        href, atr, img = m.groups()
-        a = dict(re.findall(r'data-dl-([a-z0-9]+)="([^"]*)"', atr))
+    for m in re.finditer(r'<a\s[^>]*class="[^"]*dl-product-click[^"]*"[^>]*>', t):
+        tag = m.group(0)
+        href = re.search(r'href="([^"]+)"', tag)
+        a = dict(re.findall(r'data-dl-([a-z0-9]+)="([^"]*)"', tag))
         cena = liczba(a.get("price"))
         nazwa = html.unescape(a.get("name", ""))
-        if not cena or not nazwa or not pasuje_dzial(nazwa + " " + a.get("category", ""), dzial):
+        if not href or not cena or not nazwa or not pasuje_dzial(nazwa + " " + a.get("category", ""), dzial):
             continue
+        dalej = t[m.end():m.end() + 4000]
+        img = re.search(r'<img[^>]*?\s(?:data-src|src)="(https?://[^"]+\.(?:jpe?g|png|webp)[^"]*)"', dalej)
         rozm = [r for r in (a.get("dimension11") or "").split("|") if r] or None
-        wyn.append(produkt(sklep, nazwa, cena, urljoin(url, href), img, zrodlo="sklep", dzial=dzial,
-                           extra={"rozmiary": rozm, "material": a.get("dimension16") or None}))
+        wyn.append(produkt(sklep, nazwa, cena, urljoin(url, href.group(1)), img.group(1) if img else None,
+                           zrodlo="sklep", dzial=dzial, extra={"rozmiary": rozm, "material": a.get("dimension16") or None}))
+    return wyn, "ok"
+
+
+def _zl(t):
+    return liczba(t) if t else None
+
+
+def _kafle2(sklep, url, dzial):
+    """Kafle z atrybutami data-dl-* na całym bloku produktu (Top Secret)."""
+    kod, b = pobierz(url)
+    if kod != 200:
+        return [], f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    wyn = []
+    for blok in t.split('class="product dl-product-click"')[1:]:
+        blok = blok[:9000]
+        a = dict(re.findall(r'data-dl-([a-z0-9]+)="([^"]*)"', blok[:800]))
+        link = re.search(r'<a href="([^"]+)" class="product__link"', blok)
+        img = re.search(r'class="product__img[^"]*"[^>]*?\ssrc="([^"]+)"', blok)
+        cena = liczba(a.get("price"))
+        nazwa = html.unescape(a.get("name", "")).strip()
+        if not cena or not nazwa or not link or not pasuje_dzial(nazwa + " " + a.get("category", ""), dzial):
+            continue
+        st = re.search(r'product__price-old">.*?<b>([^<]+)</b>', blok, re.S)
+        om = re.search(r'Najniższa cena z 30 dni[^0-9]*([\d\s,.]+zł)', blok)
+        stara = _zl(st.group(1)) if st else None
+        rozm = re.findall(r'class="product__variant-value">\s*([^<\s][^<]*?)\s*<', blok)
+        wyn.append(produkt(sklep, nazwa, cena, urljoin(url, link.group(1)), img.group(1) if img else None,
+                           stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
+                           extra={"rozmiary": rozm or None, "omnibus": _zl(om.group(1)) if om else None}))
+    return wyn, "ok"
+
+
+def _idosell(sklep, url, dzial):
+    """Sklepy na platformie IdoSell: wspólny szablon listy wyników (product__name, product__prices)."""
+    kod, b = pobierz(url)
+    if kod != 200:
+        return [], f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    wyn = []
+    for blok in t.split('data-product_id="')[1:]:
+        blok = blok[:7000]
+        m = re.search(r'class="product__name" href="([^"]+)"[^>]*>([^<]+)</a>', blok)
+        c = re.search(r'<strong class="price">([^<]+)</strong>', blok)
+        if not m or not c:
+            continue
+        cena = _zl(c.group(1))
+        nazwa = html.unescape(m.group(2)).strip()
+        if not cena or not pasuje_dzial(nazwa, dzial):
+            continue
+        st = re.search(r'<del class="price --max">([^<]+)</del>', blok)
+        stara = _zl(st.group(1)) if st else None
+        om = re.search(r'data-omniprice="([\d,.]+)"', blok)
+        img = re.search(r'data-src="(/hpeciai/[^"]+)"', blok) or re.search(r'<img src="(/hpeciai/[^"]+)"', blok)
+        rozm = re.findall(r'<span class="product__size">([^<]+)</span>', blok)
+        wyn.append(produkt(sklep, nazwa, cena, urljoin(url, m.group(1).split("?")[0]), urljoin(url, img.group(1)) if img else None,
+                           stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
+                           extra={"rozmiary": rozm or None, "omnibus": _zl(om.group(1)) if om else None}))
+    return wyn, "ok"
+
+
+def _kappahl(sklep, url, dzial):
+    kod, b = pobierz(url)
+    if kod != 200:
+        return [], f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    i = t.find('"products": [')
+    if i < 0:
+        return [], "brak danych na stronie"
+    try:
+        lista, _ = json.JSONDecoder().raw_decode(t[i + len('"products": '):])
+    except Exception:
+        return [], "nieczytelne dane"
+    obszar = "Man" if dzial == "meskie" else "Woman"
+    wyn = []
+    for x in lista:
+        if x.get("businessArea") != obszar or not x.get("url"):
+            continue
+        cen = x.get("price") or {}
+        cena = ((cen.get("current") or {}).get("inclVat"))
+        if not cena:
+            continue
+        stara = ((cen.get("previous") or {}).get("inclVat")) or ((cen.get("original") or {}).get("inclVat"))
+        stara = round(stara, 2) if stara and stara > cena + 0.01 else None
+        zdj = next((z.get("url") for z in x.get("images") or [] if z.get("imageType") == "modelImage"), None) \
+            or next((z.get("url") for z in x.get("images") or []), None)
+        nazwa = x.get("displayName") or ""
+        if x.get("brandName") and x["brandName"].lower() not in ("kappahl",):
+            nazwa = f"{x['brandName']} {nazwa}"
+        wyn.append(produkt(sklep, nazwa, cena, urljoin(url, x["url"]), urljoin(url, zdj.split("?")[0]) if zdj else None,
+                           stara=stara, zrodlo="sklep", dzial=dzial,
+                           extra={"plec_sklepu": "meskie" if obszar == "Man" else "damskie", "kolor": x.get("color")}))
+    return wyn, "ok"
+
+
+def _monnari(sklep, url, q, dzial):
+    kod, b = pobierz(url, {"Content-Type": "application/x-www-form-urlencoded"}, dane="search_phrase=" + quote(q))
+    if kod != 200:
+        return [], f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    i = t.find("product-list-search")
+    if i < 0:  # brak wyników: sklep pokazuje wtedy polecane produkty, nie trafienia
+        return [], "ok"
+    t = t[i:]
+    wyn, byly = [], set()
+    for blok in t.split("<div class=\"product-brick\" data-product='")[1:]:
+        try:
+            d = json.loads(html.unescape(blok[:blok.index("'")]))
+        except Exception:
+            continue
+        link = re.search(r'<a href="([^"]+)" class="product-brick__link', blok)
+        if not link or link.group(1) in byly:
+            continue
+        byly.add(link.group(1))
+        img = re.search(r'data-original="\s*(https?://[^"\s]+)', blok)
+        cena = liczba(d.get("price"))
+        nazwa = d.get("item_name") or ""
+        if not cena or not link or not pasuje_dzial(nazwa + " " + (d.get("item_category2") or ""), dzial):
+            continue
+        st = re.search(r'product-brick__price-regular--new[^>]*>\s*([^<]+)<', blok[:8000])
+        stara = liczba(html.unescape(st.group(1))) if st else None
+        wyn.append(produkt(sklep, nazwa, cena, link.group(1), img.group(1) if img else None,
+                           stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial))
     return wyn, "ok"
 
 
@@ -100,7 +236,7 @@ MESKIE_KAT = ("Shirts", "Suits", "Blazers > Suit", "Ties")
 DAMSKIE_KAT = ("Blouses", "Dresses", "Skirts", "Jumpsuits", "Bras", "Lingerie")
 
 
-def _showroom(sklep, url, dzial):
+def _showroom(sklep, url, dzial, ponow=True):
     kod, b = pobierz(url)
     if kod != 200:
         return [], f"brak odpowiedzi ({kod})"
@@ -113,6 +249,8 @@ def _showroom(sklep, url, dzial):
         d, _ = json.JSONDecoder().raw_decode(t[i + len(znak):])
     except Exception:
         return [], "nieczytelne dane"
+    if not d.get("products") and ponow:  # np. „sukienka” daje pustą stronę, „sukienka damska” już nie
+        return _showroom(sklep, url + ("%20damska" if dzial == "damskie" else "%20m%C4%99ska"), dzial, ponow=False)
     wyn = []
     for x in d.get("products") or []:
         kat = x.get("category") or ""
@@ -159,9 +297,12 @@ def _sklep(arg):
     try:
         if sposob == "searchanise":
             lista, stan = _searchanise(sklep, wzor, q, dzial)
+        elif sposob == "monnari":
+            lista, stan = _monnari(sklep, wzor, q, dzial)
         else:
             url = wzor.format(q=quote(q))
-            lista, stan = {"itemlist": _itemlist, "kafle": _kafle, "magento": _magento, "showroom": _showroom}[sposob](sklep, url, dzial)
+            lista, stan = {"itemlist": _itemlist, "kafle": _kafle, "kafle2": _kafle2, "idosell": _idosell,
+                            "kappahl": _kappahl, "magento": _magento, "showroom": _showroom}[sposob](sklep, url, dzial)
         return sklep, lista, stan
     except Exception as e:
         return sklep, [], "błąd: " + str(e)[:40]
@@ -169,7 +310,7 @@ def _sklep(arg):
 
 def szukaj(q, dzial):
     out, stany = [], []
-    for w in rownolegle(_sklep, [(k, q, dzial) for k in SKLEPY_KONF], watki=5):
+    for w in rownolegle(_sklep, [(k, q, dzial) for k in SKLEPY_KONF], watki=6):
         if w:
             out += w[1]
             if w[2] not in ("ok", "pomijam"):

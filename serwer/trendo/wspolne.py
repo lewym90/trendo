@@ -84,14 +84,36 @@ def pid(sklep, url, nazwa=""):
     return hashlib.sha1(f"{sklep}|{url or nazwa}".encode()).hexdigest()[:16]
 
 
+def _od_poprawki_cen():
+    """Od kiedy ceny są czytane poprawnie (do wersji 0.13.1 parser gubił grosze i cyfry: 109,99 → 109, 2499 → 249)."""
+    DB.execute("CREATE TABLE IF NOT EXISTS ustawienia (klucz TEXT PRIMARY KEY, wartosc TEXT)")
+    r = DB.execute("SELECT wartosc FROM ustawienia WHERE klucz='ceny_poprawne_od'").fetchone()
+    if r:
+        return int(r[0])
+    teraz = int(time.time())
+    DB.execute("INSERT OR REPLACE INTO ustawienia VALUES ('ceny_poprawne_od', ?)", (str(teraz),))
+    DB.commit()
+    return teraz
+
+
+def _slad_bledu(stara, nowa):
+    """Czy zapisana dawniej cena to dokładnie zepsuty odczyt obecnej (obcięte grosze albo zgubiona ostatnia cyfra)."""
+    return stara < nowa - 0.001 and (abs(stara - int(nowa)) < 0.001 or abs(stara - int(nowa / 10)) < 0.001)
+
+
 def zapisz_cene(p):
     """Dopisuje cenę do historii (najwyżej raz na 6 godzin dla produktu)."""
     teraz = int(time.time())
     with _baza_blokada:
+        od = _od_poprawki_cen()
+        stare = DB.execute("SELECT rowid, cena FROM ceny WHERE pid=? AND czas<?", (p["id"], od)).fetchall()
+        zle = [rid for rid, c in stare if _slad_bledu(c, p["cena"])]
+        if zle:
+            DB.execute(f"DELETE FROM ceny WHERE rowid IN ({','.join('?' * len(zle))})", zle)
         r = DB.execute("SELECT cena, czas FROM ceny WHERE pid=? ORDER BY czas DESC LIMIT 1", (p["id"],)).fetchone()
         if not r or teraz - r[1] > 6 * 3600 or abs(r[0] - p["cena"]) > 0.001:
             DB.execute("INSERT INTO ceny VALUES (?,?,?)", (p["id"], p["cena"], teraz))
-            DB.commit()
+        DB.commit()
 
 
 def historia(pid_):
@@ -110,8 +132,13 @@ def weryfikuj(p):
         return "reg"
     om = p.get("omnibus")
     if om:
-        # sklep podał najniższą cenę z 30 dni przed obniżką (dyrektywa Omnibus)
-        return "ok" if p["cena"] < om - 0.01 else "pozorna"
+        # Sklep podał najniższą cenę z 30 dni przed obniżką (dyrektywa Omnibus). Obniżkę liczymy od niej,
+        # nie od „ceny regularnej”: 199,99 → 39,99 przy najniższej 69,99 to −43%, nie −80%.
+        if p["cena"] < om - 0.01:
+            if om < p["stara"] - 0.01:
+                p["stara_sklepu"], p["stara"] = p["stara"], om
+            return "ok"
+        return "pozorna"
     h = historia(p["id"])
     teraz = time.time()
     przed = [c for c, t in h if teraz - t <= 30 * 86400 and teraz - t > 2 * 86400]
@@ -125,20 +152,29 @@ def weryfikuj(p):
 
 
 def liczba(t):
-    """'1 299,99 zł' -> 1299.99"""
+    """Cena z dowolnego zapisu: '1 299,99 zł', '1.299,99', '1299.99', '2499', '1,299.00' -> liczba.
+    Separator, po którym stoją 1–2 cyfry na końcu, jest dziesiętny; grupy po 3 cyfry to tysiące."""
     if t is None:
         return None
     if isinstance(t, (int, float)):
         return float(t)
-    t = str(t).replace("\xa0", " ")
-    m = re.search(r"(\d{1,3}(?:[ .]\d{3})*(?:,\d{1,2})?|\d+(?:\.\d{1,2})?)", t)
+    t = str(t).replace("\xa0", " ").replace("\u202f", " ")
+    m = re.search(r"\d+(?:(?:[.,]| (?=\d{3}(?!\d)))\d+)*", t)  # spacja tylko przed grupą 3 cyfr (tysiące)
     if not m:
         return None
-    s = m.group(1)
-    if "," in s:
-        s = s.replace(" ", "").replace(".", "").replace(",", ".")
-    else:
-        s = s.replace(" ", "")
+    s = m.group(0).strip().rstrip(".,").replace(" ", "")
+    if "," in s and "." in s:  # ostatni z nich jest dziesiętny
+        dz = "," if s.rfind(",") > s.rfind(".") else "."
+        s = s.replace("." if dz == "," else ",", "").replace(dz, ".")
+    elif "," in s or "." in s:
+        sep = "," if "," in s else "."
+        cz = s.split(sep)
+        if len(cz) == 2 and 1 <= len(cz[1]) <= 2:
+            s = cz[0] + "." + cz[1]
+        elif all(len(c) == 3 for c in cz[1:]):
+            s = "".join(cz)
+        else:
+            s = "".join(cz[:-1]) + "." + cz[-1]
     try:
         return float(s)
     except ValueError:
@@ -182,7 +218,7 @@ DAMSKIE = re.compile(r"damsk|kobiet|\bwomen\b|\bwoman\b|\blady\b", re.I)
 
 # Sklepy, w których szukamy wprost w dziale damskim albo męskim: płeć produktu = dział wyszukiwania.
 DZIAL_ZE_SKLEPU = {"Zara", "Modivo", "eobuwie", "Born2Be", "Renee", "Reserved", "House", "Cropp", "Sinsay", "Mohito"}
-TYLKO_DAMSKIE_SKLEPY = {"Bizuu", "Mohito"}
+TYLKO_DAMSKIE_SKLEPY = {"Bizuu", "Mohito", "Top Secret", "Molton", "Moodo", "Quiosque", "Monnari"}
 
 
 def plec_ze_sklepu(p, dzial):

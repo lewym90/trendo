@@ -37,8 +37,11 @@ def _marka(arg):
     c = _konfiguracja(marka, adres)
     if not c:
         return marka, [], "brak konfiguracji wyszukiwarki"
+    # Płeć filtruje sama Algolia: bez tego 40 trafień „koszula” to niemal same damskie i dziecięce, a męskich zostaje kilka.
+    plec_f = "sex:Mężczyzna" if dzial == "meskie" else "sex:Kobieta"
     url = f"https://{c['app']}-dsn.algolia.net/1/indexes/{c['idx']}?" + urlencode(
-        {"query": q, "hitsPerPage": 40, "x-algolia-application-id": c["app"], "x-algolia-api-key": c["key"]})
+        {"query": q, "hitsPerPage": 40, "facetFilters": f'["{plec_f}"]',
+         "x-algolia-application-id": c["app"], "x-algolia-api-key": c["key"]})
     kod, d = pobierz_json(url)
     if not d:
         return marka, [], f"brak odpowiedzi ({kod})"

@@ -389,3 +389,29 @@ def stan():
     return {"klucz": dostepny(), "model": modele()[0], "ocenione_produkty": ile,
             "koszt_dzis_usd": round(koszt_dzis(), 4), "koszt_miesiac_usd": round(koszt_miesiac(), 3), "budzet_miesieczny_usd": BUDZET,
             "kontrola": json.loads(ustawienie("kontrola_wynik") or "null")}
+
+
+SCHEMAT_ZDJECIE = {"type": "OBJECT", "properties": {
+    "rzecz": {"type": "BOOLEAN"}, "q": {"type": "STRING"}, "dzial": {"type": "STRING", "enum": ["damskie", "meskie", "nieznany"]}},
+    "required": ["rzecz", "q", "dzial"]}
+
+
+def opis_zdjecia(b, typ="image/jpeg"):
+    """Zdjęcie rzeczy (np. zrzut ekranu z Instagrama) -> krótkie hasło do wyszukiwarki sklepów, po polsku.
+    Zwraca (kod, {"rzecz": bool, "q": str, "dzial": str}) albo (kod, None)."""
+    czesci = [{"inline_data": {"mime_type": typ, "data": base64.b64encode(b).decode()}},
+              {"text": "Na zdjęciu jest ubranie, buty albo dodatek, który ktoś chce kupić. Jeśli rzeczy jest kilka, wybierz tę "
+                       "na pierwszym planie albo w środku kadru. Napisz hasło do wyszukiwarki polskiego sklepu odzieżowego: "
+                       "2 do 5 słów, po polsku, w mianowniku, tak jak wpisałby je człowiek, np. „czarne skórzane spodnie”, "
+                       "„beżowy płaszcz wełniany”, „brązowe botki na obcasie”. Podaj rodzaj rzeczy, kolor i najważniejszą cechę "
+                       "(materiał, krój albo wzór), bez marki. dzial: damskie albo meskie, jeśli rzecz jest wyraźnie dla jednej "
+                       "płci, inaczej nieznany. rzecz = false, jeśli na zdjęciu nie ma żadnej rzeczy do kupienia (wtedy q puste)."}]
+    for m in [x for x in modele() if x not in _martwe]:
+        kod, wyn = _wywolaj(m, czesci, SCHEMAT_ZDJECIE)
+        if kod == 404:
+            continue
+        if isinstance(wyn, dict):
+            wyn["q"] = " ".join((wyn.get("q") or "").split())[:60]
+            return 200, wyn
+        return kod, None
+    return 0, None
