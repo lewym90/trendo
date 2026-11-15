@@ -1,0 +1,23 @@
+{
+  "opis": "Grafika trendu po nazwie (klucz: nazwa małymi literami, bez polskich znaków). d = damskie, m = męskie. cechy = próbki wzorów dla trendów o wzorze, gdy trend nie ma własnej grafiki. Wpisujemy tylko grafiki, które naprawdę przedstawiają trend.",
+  "d": {
+    "wysokie kozaki ze skory": "wzorce/d-buty-2",
+    "krata": "wzorce/d-koszule-2",
+    "zamszowa odziez wierzchnia": "wzorce/d-okrycia-4",
+    "futro": "wzorce/d-okrycia-9",
+    "proste jeansy": "wzorce/d-spodnie-4",
+    "skorzana odziez wierzchnia": "wzorce/d-okrycia-2",
+    "mokasyny": "wzorce/d-buty-7",
+    "spodnice midi": "wzorce/d-sukienki-7",
+    "zloty kolor": "wzorce/d-dodatki-1",
+    "szerokie spodnie": "wzorce/d-spodnie-8"
+  },
+  "m": {
+    "krata": "wzorce/m-koszule-3",
+    "proste jeansy": "wzorce/m-spodnie-1",
+    "zamszowa odziez wierzchnia": "wzorce/m-okrycia-4",
+    "skorzana odziez wierzchnia": "wzorce/m-okrycia-3",
+    "mokasyny": "wzorce/m-buty-5"
+  },
+  "cechy": { "wzor": {} }
+}

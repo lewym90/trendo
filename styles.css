@@ -356,3 +356,8 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 
 .trend-meta{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:center}
 .trend-meta>span{white-space:nowrap}
+.grafika-trendu .medalion{width:58px;height:58px;display:block;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+
+/* kafel trendu bez własnej grafiki: monogram, nie przypadkowa rzecz */
+.trend .probka.bez-grafiki{background:radial-gradient(120% 90% at 30% 15%,#3A2430 0%,#1E1218 55%,#140C11 100%)}
+.trend .probka.bez-grafiki span{font:500 40px/1 var(--szeryf);background:var(--zloto);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:.55}

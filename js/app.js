@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.11.0';
+  const WERSJA = '0.11.1';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -386,8 +386,16 @@
 
   let dzialTrendow = null, filtrTrendow = 'wszystkie';
   const trendyDane = {}, trendyLaduje = {};
-  const KOLOR_PROBKI = { czarny: '#1D1A1B', bialy_ecru: '#EFE8DC', szary: '#8E8E8E', granatowy: '#23304F', niebieski: '#5B86C5', bezowy_brazowy: '#8A6648', zielony: '#4F6B4A', czerwony_bordo: '#7A1F2B', rozowy: '#E4A7B5', fioletowy: '#6B3D8F', zolty_pomaranczowy: '#E0A53A', zloty_srebrny: '#C9B37A' };
+  /* Grafiki trendów: tylko te przypisane ręcznie do konkretnego trendu (img/trendy/mapa.json), bez zgadywania po kategorii. */
+  let mapaGrafik = null;
+  const kluczTrendu = (s) => (s || '').toLowerCase().replace(/ł/g, 'l').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  function grafikaKafla(t, d) {
+    if (!mapaGrafik) return null;
+    const m = mapaGrafik[d === 'meskie' ? 'm' : 'd'] || {};
+    return m[kluczTrendu(t.nazwa)] || (t.kategoria === 'wzor' && t.wzor && ((mapaGrafik.cechy || {}).wzor || {})[t.wzor]) || null;
+  }
   function pobierzTrendy(d) {
+    if (!mapaGrafik) fetch('img/trendy/mapa.json?v=' + WERSJA).then((r) => r.json()).then((m) => { mapaGrafik = m; if (location.hash.startsWith('#/trendy')) render(); }).catch(() => { mapaGrafik = {}; });
     if (trendyDane[d] || trendyLaduje[d]) return;
     trendyLaduje[d] = true;
     fetch(`${API}/trendy?dzial=${d}`).then((r) => r.json()).then((x) => { trendyDane[d] = x; })
@@ -411,7 +419,7 @@
   }
   function grafikaTrendu(t, kol) {
     const s = seriaTrendu(t);
-    if (!s) return `<div class="grafika-trendu">${G.znakStatusu(t.status, kol)}</div>`;
+    if (!s) return `<div class="grafika-trendu"><img class="medalion" src="img/status/${['rosnie', 'nadchodzi', 'szczyt', 'wygasa'].includes(t.status) ? t.status : 'szczyt'}.webp" alt="" width="58" height="58" loading="lazy"></div>`;
     return `<div class="grafika-trendu">${G.wykresTrendu(s.wart, kol)}<span>${s.opis}</span></div>`;
   }
   function arkuszZrodel(i) {
@@ -455,12 +463,12 @@
         : lista.map((t) => {
           const [ik, nazwa, kol] = stat[t.status] || stat.szczyt;
           return `<div class="trend" style="cursor:pointer" data-akcja="zrodlaTrendu" data-i="${t.i}" role="button" tabindex="0">
-          <div class="probka">${t.img ? `<img src="img/wzorce/${t.img}.webp" alt="" loading="lazy">` : G.probka('gladka', KOLOR_PROBKI[t.kolor] || '#8A6F6A', '')}</div>
+          ${(() => { const g = grafikaKafla(t, d); return g ? `<div class="probka"><img src="img/${g}.webp" alt="" loading="lazy"></div>` : '<div class="probka bez-grafiki" aria-hidden="true"><span>T</span></div>'; })()}
           <div class="opis"><h3>${esc(t.nazwa)}</h3><p>${esc(t.opis)}</p>
             <div class="trend-meta"><span class="status ${t.status}">${IK[ik]}${nazwa}</span><span class="zrodla">${t.zrodla} ${t.zrodla < 5 ? 'źródła' : 'źródeł'}${t.polskie ? `, w tym ${t.polskie} polskie` : ''}</span></div></div>
           ${grafikaTrendu(t, kol)}</div>`;
         }).join('')}</div>
-      <div class="info neutral" style="margin-top:20px">${IK.info}<p>Trend pokazujemy dopiero, gdy piszą o nim co najmniej dwa niezależne źródła${dane && dane.zrodla ? ` (sprawdzamy: ${dane.zrodla.length} magazynów i raportów, m.in. Lyst Index, Tagwalk, WGSN, Vogue, Elle)` : ''}. Każdą wzmiankę porównujemy z tekstem artykułu. Udział w nowościach liczymy sami z produktów naszych sklepów. Dotknij trendu, żeby zobaczyć źródła.</p></div>`
+      <div class="info neutral" style="margin-top:20px">${IK.info}<p>Trend pokazujemy dopiero, gdy piszą o nim co najmniej dwa niezależne źródła${dane && dane.zrodla ? ` (sprawdzamy: ${dane.zrodla.length} magazynów i raportów, m.in. ${d === 'meskie' ? 'GQ, Esquire, Permanent Style, Tagwalk, Mr Vintage' : 'Lyst Index, Tagwalk, WGSN, Vogue, Elle'})` : ''}. Każdą wzmiankę porównujemy z tekstem artykułu. Udział w nowościach liczymy sami z produktów naszych sklepów. Dotknij trendu, żeby zobaczyć źródła.</p></div>`
     };
   };
 

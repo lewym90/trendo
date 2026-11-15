@@ -11,7 +11,7 @@ W aplikacji pokazujemy tylko nazwę trendu, nasze liczby i linki do źródeł (b
 
 Uruchomienie ręczne: cd /opt/trendo && /root/trendo-scraper/bin/python -m trendo.trendy [--zbierz] [--raport]
 """
-import html as html_mod, json, re, sys, time
+import html as html_mod, json, re, sys, time, unicodedata
 from urllib.parse import urljoin, urlparse
 from . import klasyfikator as K
 from .wspolne import DB, PRZEGLADARKA, _baza_blokada, licznik, pobierz
@@ -21,7 +21,7 @@ from .wspolne import DB, PRZEGLADARKA, _baza_blokada, licznik, pobierz
 # przegladarka: True = strona blokuje zwykłe pobieranie, używamy przeglądarki na serwerze
 ZRODLA = [
     {"nazwa": "Lyst Index", "typ": "dane", "kraj": "INT", "sposob": "lyst", "url": "https://www.lyst.co.uk/the-lyst-index/"},
-    {"nazwa": "Tagwalk", "typ": "dane", "kraj": "INT", "sposob": "strona", "url": "https://www.tag-walk.com/en/trends/woman"},
+    {"nazwa": "Tagwalk", "typ": "dane", "kraj": "INT", "sposob": "strona", "url": "https://www.tag-walk.com/en/trends/woman", "dzial": "damskie"},
     {"nazwa": "Pinterest Predicts", "typ": "dane", "kraj": "INT", "sposob": "strona", "url": "https://business.pinterest.com/pinterest-predicts/",
      "przegladarka": True},
     {"nazwa": "Heuritech", "typ": "dane", "kraj": "INT", "sposob": "linki", "url": "https://heuritech.com/blog/", "sciezka": r"/articles/"},
@@ -38,10 +38,31 @@ ZRODLA = [
     {"nazwa": "fashionbiznes.pl", "typ": "branza", "kraj": "PL", "sposob": "rss", "url": "https://fashionbiznes.pl/feed/"},
     {"nazwa": "Breuninger Magazyn", "typ": "redakcja", "kraj": "PL", "sposob": "linki", "url": "https://www.breuninger.com/pl/magazyn/moda/",
      "sciezka": r"/magazyn/moda/trendy"},
+    # Moda męska: te same zasady (dosłowny cytat, co najmniej dwóch różnych wydawców), źródła piszące o modzie męskiej.
+    {"nazwa": "Tagwalk", "typ": "dane", "kraj": "INT", "sposob": "strona", "url": "https://www.tag-walk.com/en/trends/man", "dzial": "meskie"},
+    {"nazwa": "GQ", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.gq.com/feed/rss", "sciezka": r"/story/", "dzial": "meskie", "modowy": True},
+    {"nazwa": "British GQ", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.gq-magazine.co.uk/feed/rss", "sciezka": r"/article/",
+     "dzial": "meskie", "modowy": True},
+    {"nazwa": "Esquire", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.esquire.com/rss/style.xml/", "sciezka": r"/mens-fashion/",
+     "dzial": "meskie", "modowy": True},
+    {"nazwa": "Highsnobiety", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.highsnobiety.com/feed/", "dzial": "meskie", "modowy": True},
+    {"nazwa": "Permanent Style", "typ": "redakcja", "kraj": "INT", "sposob": "rss", "url": "https://www.permanentstyle.com/feed", "dzial": "meskie", "modowy": True},
+    {"nazwa": "Mr Vintage", "typ": "redakcja", "kraj": "PL", "sposob": "rss", "url": "https://mrvintage.pl/feed", "dzial": "meskie", "modowy": True},
+    {"nazwa": "K MAG", "typ": "redakcja", "kraj": "PL", "sposob": "rss", "url": "https://kmag.pl/rss", "sciezka": r"/article/"},
 ]
+
+
+def _kolejnosc():
+    """Źródła na przemian: damskie/wspólne i męskie, żeby dzienny limit nie odcinał jednego działu."""
+    a = [z for z in ZRODLA if z.get("dzial") != "meskie"]
+    b = [z for z in ZRODLA if z.get("dzial") == "meskie"]
+    wyn = []
+    for i in range(max(len(a), len(b))):
+        wyn += ([a[i]] if i < len(a) else []) + ([b[i]] if i < len(b) else [])
+    return wyn
 WIEK_DNI = 150          # ile wstecz liczymy wzmianki
 MAKS_NA_ZRODLO = 6      # nowych artykułów z jednego źródła na dobę
-MAKS_NA_DOBE = 45
+MAKS_NA_DOBE = 90
 TANIE_MODELE = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]  # wyciąganie wzmianek: weryfikacja i tak jest twarda
 KW = re.compile(r"trend|modn|sezon|jesie|zim[aey]|wiosn|lato|lata\b|kolor|must[- ]?have|runway|fall|winter|spring|summer|"
                 r"fw\d\d|ss\d\d|aw\d\d|catwalk|pokaz|kolekcj|nosi|styl", re.I)
@@ -115,9 +136,13 @@ def _linki(z, h):
     return out
 
 
+_TRESC_RSS = {}  # pełna treść z kanału (content:encoded), gdy strona artykułu blokuje pobieranie
+
+
 def _rss(z, h):
     out = []
     for it in re.findall(r"<item>(.*?)</item>", h, re.S):
+        tr = re.search(r"<content:encoded>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</content:encoded>", it, re.S)
         t = re.search(r"<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</title>", it, re.S)
         l = re.search(r"<link>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</link>", it, re.S)
         if not (t and l):
@@ -126,8 +151,11 @@ def _rss(z, h):
         u = l.group(1).strip()
         if z.get("sciezka") and not re.search(z["sciezka"], u):
             continue
-        if KW.search(tyt + " " + u):
+        # Kanały w całości o modzie: bez wstępnego filtra słów (tytuły ocenia AI, wzmianki weryfikuje cytat).
+        if z.get("modowy") or KW.search(tyt + " " + u):
             out.append((u, tyt[:200]))
+            if tr:
+                _TRESC_RSS[u] = tr.group(1)
     return out
 
 
@@ -219,13 +247,14 @@ def wyciagnij(zrodlo, tytul, tekst):
              "Wypisz trendy w modzie (ubrania, buty, torebki, biżuteria), które TEN TEKST wprost przedstawia jako modne teraz "
              "albo w najbliższym sezonie. Nie dopisuj niczego od siebie. Pomiń reklamy pojedynczych produktów bez mowy o trendzie, "
              "urodę, fryzury i wnętrza. Najwyżej 8 trendów.\n"
-             "nazwa = krótka polska nazwa trendu (2-5 słów, mianownik, np. „Królewski fiolet”, „Spódnice midi z satyny”, "
-             "„Baleriny”, „Kożuchy”). Jeśli trend jest na tej liście znanych nazw, użyj DOKŁADNIE tej nazwy: "
+             "nazwa = krótka polska nazwa trendu (2-5 słów, mianownik, poprawna polszczyzna z polskimi znakami ą ć ę ł ń ó ś ź ż, "
+             "np. „Królewski fiolet”, „Spódnice midi z satyny”, „Baleriny”, „Kożuchy”, „Dwurzędowe marynarki”, „Kurtki robocze”, "
+             "„Szerokie spodnie z zakładkami”, „Mokasyny z frędzlami”). Jeśli trend jest na tej liście znanych nazw, użyj DOKŁADNIE tej nazwy: "
              f"{'; '.join(nazwy) if nazwy else '(brak)'}\n"
              "kategoria, kolor, material, wzor, rodzaj = ujednolicone cechy trendu (brak, gdy nie dotyczy).\n"
              "dzial = dla kogo (oba, gdy tekst nie rozróżnia). kierunek = co tekst mówi o trendzie. "
              "kiedy = teraz (obecny sezon) albo nastepny_sezon (zapowiedź z pokazów na kolejny sezon).\n"
-             "haslo = polskie hasło do wyszukania takich rzeczy w sklepie (np. „fioletowy sweter”, „spódnica midi satynowa”).\n"
+             "haslo = polskie hasło do wyszukania takich rzeczy w sklepie (np. „fioletowy sweter”, „spódnica midi satynowa”, „marynarka dwurzędowa”).\n"
              "cytat = DOSŁOWNY fragment tekstu (3-30 słów, w oryginalnym języku, skopiowany znak w znak), który mówi o tym trendzie. "
              "Bez cytatu z tekstu nie wypisuj trendu.")
     for m in _modele_tanie():
@@ -240,7 +269,7 @@ def wyciagnij(zrodlo, tytul, tekst):
 def zbierz(maks=MAKS_NA_DOBE, wypisuj=False):
     """Pobiera nowe artykuły, wyciąga i weryfikuje wzmianki. Zwraca statystykę."""
     stat = {"zrodla": {}, "artykuly": 0, "wzmianki": 0, "odrzucone_cytaty": 0}
-    for z in ZRODLA:
+    for z in _kolejnosc():
         if stat["artykuly"] >= maks:
             break
         h = _strona(z, z["url"])
@@ -279,6 +308,8 @@ def zbierz(maks=MAKS_NA_DOBE, wypisuj=False):
             h2 = h if url == z["url"] else _strona(z, url)
             # strony z danymi (Lyst, Tagwalk, Pinterest) to tabele i kafelki, nie akapity: bierzemy cały tekst strony
             tekst = (tekst_strony(h2) if z["sposob"] in ("strona", "lyst") else tekst_artykulu(h2)) if h2 else ""
+            if len(tekst) < 400 and url in _TRESC_RSS:
+                tekst = tekst_artykulu("<p>" + html_mod.unescape(_TRESC_RSS[url]).replace("\n", "</p><p>") + "</p>")
             stan = "pusty"
             if len(tekst) > 400:
                 wzm = wyciagnij(z["nazwa"], tytul, tekst)
@@ -308,16 +339,44 @@ def zbierz(maks=MAKS_NA_DOBE, wypisuj=False):
 
 
 # ---------- nasze dane ze sklepów ----------
+RODZAJ_W_NAZWIE = re.compile(r"\w+")
+
+
+def klucz_trendu(s):
+    """Klucz nazwy trendu jak w img/trendy/mapa.json: małe litery, bez polskich znaków i interpunkcji."""
+    s = unicodedata.normalize("NFKD", (s or "").lower().replace("ł", "l")).encode("ascii", "ignore").decode()
+    return " ".join(re.sub(r"[^a-z0-9 ]+", " ", s).split())
+
+
+def mierzalny(t):
+    """Czy nasze cechy produktów oddają ten trend w całości. Fason, detal, styl, marki i zestawienia kolorów: nie
+    (np. „Spodnie Capri” to nie wszystkie spodnie, „Pudrowy róż i żółty” to nie sam róż). Wtedy nie podajemy udziału w sklepach."""
+    nazwa = (t.get("nazwa") or "").lower()
+    if t["kategoria"] in ("fason", "detal", "styl") or " i " in f" {nazwa} " or "," in nazwa:
+        return False
+    cechy = [t[k] for k in ("kolor", "material", "wzor", "rodzaj") if t.get(k) and t[k] != "brak"]
+    if not cechy:
+        return False
+    if t["kategoria"] == "rzecz":
+        # sama rzecz (np. „Mokasyny”): nazwa to tylko rodzaj, bez przymiotników, których nie mierzymy
+        return len(RODZAJ_W_NAZWIE.findall(nazwa)) == 1 and t.get("rodzaj") not in (None, "brak")
+    return True
+
+
 def _pasuje(dane, t):
-    if t["kategoria"] == "kolor" and t["kolor"] != "brak":
-        return dane.get("kolor") == t["kolor"]
-    if t["kategoria"] == "material" and t["material"] != "brak":
-        return dane.get("material") in K.ZGODNE_MATERIALY.get(t["material"], {t["material"]})
-    if t["kategoria"] == "wzor" and t["wzor"] != "brak":
-        return dane.get("wzor_rodzaj") == t["wzor"]
-    if t["rodzaj"] != "brak":
-        return dane.get("r") == t["rodzaj"]
-    return None
+    """Produkt ma WSZYSTKIE cechy trendu (kolor, materiał, wzór, rodzaj; pomijamy „brak”)."""
+    if not mierzalny(t):
+        return None
+    for k, pole in (("kolor", "kolor"), ("material", "material"), ("wzor", "wzor_rodzaj"), ("rodzaj", "r")):
+        v = t.get(k)
+        if not v or v == "brak":
+            continue
+        if k == "material":
+            if dane.get(pole) not in K.ZGODNE_MATERIALY.get(v, {v}):
+                return False
+        elif dane.get(pole) != v:
+            return False
+    return True
 
 
 def dane_sklepow(dzial, cechy, tygodni=8):
@@ -349,12 +408,6 @@ def dane_sklepow(dzial, cechy, tygodni=8):
 
 
 # ---------- zestawienie ----------
-IMG = {"spodnie": "spodnie", "jeansy": "spodnie", "koszula": "koszule", "bluzka": "koszule", "sweter": "swetry", "kardigan": "swetry",
-       "kurtka": "okrycia", "płaszcz": "okrycia", "marynarka": "okrycia", "sukienka": "sukienki", "spódnica": "sukienki",
-       "torebka": "torebki", "botki": "buty", "kozaki": "buty", "szpilki": "buty", "baleriny": "buty", "mokasyny": "buty",
-       "sneakersy": "buty", "półbuty": "buty", "biżuteria": "dodatki", "pasek": "dodatki", "szal": "dodatki", "czapka": "dodatki"}
-
-
 def zestawienie(dzial):
     od = int(time.time()) - WIEK_DNI * 86400
     with _baza_blokada:
@@ -404,13 +457,11 @@ def zestawienie(dzial):
         opis = "Piszą o tym: " + ", ".join(wydawcy[:4]) + (f" i {len(wydawcy) - 4} innych" if len(wydawcy) > 4 else "") + "." + dane_opis
         wynik = {"nazwa": t["nazwa"], "opis": opis, "status": status, "zrodla": len(wydawcy), "wydawcy": wydawcy, "polskie": len(pl),
                  "dane_rynkowe": sum(1 for r in rr if r[2] == "dane"), "linki": list(linki.values())[:8], "haslo": t["haslo"],
-                 "kategoria": t["kategoria"], "kolor": t["kolor"], "seria": seria or None, "tygodni_danych": tygodni_danych,
+                 "kategoria": t["kategoria"], "kolor": t["kolor"], "material": t["material"], "wzor": t["wzor"], "rodzaj": t["rodzaj"],
+                 "seria": seria or None, "tygodni_danych": tygodni_danych,
                  "udzial": seria[-1] if seria else None, "zmiana": zmiana, "proba": proba,
                  "wzmianek_w_tygodniach": [sum(1 for r in rr if (int(time.time()) - r[4]) // (7 * 86400) == 7 - i) for i in range(8)],
-                 "img": None}
-        k = IMG.get(t["rodzaj"])
-        if k:
-            wynik["img"] = f"{'d' if dzial == 'damskie' else 'm'}-{k}-1"
+                 }
         wynik["punkty"] = len(wydawcy) * 3 + wynik["dane_rynkowe"] * 2 + len(pl) * 2 + (2 if (zmiana or 0) > 15 else 0)
         out.append(wynik)
     out.sort(key=lambda x: -x["punkty"])
@@ -433,8 +484,19 @@ def main():
         print(f"\nŹródła: " + "; ".join(f"{k}: {v}" for k, v in s["zrodla"].items()))
         print(f"Przeczytane artykuły: {s['artykuly']}, potwierdzone wzmianki: {s['wzmianki']}, odrzucone (cytat nie z tekstu): {s['odrzucone_cytaty']}")
     if "--raport" in arg or not arg:
+        mapa = {}
+        kod, b = pobierz("https://raw.githubusercontent.com/lewym90/trendo/main/img/trendy/mapa.json", czas=20)
+        try:
+            mapa = json.loads(b) if kod == 200 else {}
+        except Exception:
+            pass
         for dz in ("damskie", "meskie"):
             z = zestawienie(dz)
+            m = mapa.get("d" if dz == "damskie" else "m", {})
+            bez = [t["nazwa"] for t in z["trendy"] if klucz_trendu(t["nazwa"]) not in m
+                   and not (t["kategoria"] == "wzor" and mapa.get("cechy", {}).get("wzor", {}).get(t["wzor"]))]
+            if mapa:
+                print(f"\n{dz.capitalize()}: trendy bez własnej grafiki: {len(bez)} z {len(z['trendy'])}" + (f" ({'; '.join(bez)})" if bez else ""))
             print(f"\n=== Trendy {dz} (co najmniej 2 niezależne źródła): {len(z['trendy'])} ===")
             for t in z["trendy"][:15]:
                 print(f"  {t['nazwa']} [{t['status']}] — {', '.join(t['wydawcy'])}" + (f"; sklepy {t['udzial']}%" if t["udzial"] is not None else ""))
