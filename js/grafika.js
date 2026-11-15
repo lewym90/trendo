@@ -8,6 +8,7 @@
     okazje: s('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8A2 2 0 0 1 4.8 2.8H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
     torba: s('<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'),
     dzwonek: s('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'),
+    zegar: s('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
     profil: s('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
     wstecz: s('<path d="M15 5l-7 7 7 7"/>', 1.8),
     dalej: s('<path d="M9 5l7 7-7 7"/>', 1.8),

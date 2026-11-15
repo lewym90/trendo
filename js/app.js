@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.19.3';
+  const WERSJA = '0.20.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -13,7 +13,7 @@
   const DOMYSLNE = {
     witaj: false, dzial: 'damskie', zapytanie: 'Skórzane spodnie', b1: 3000, b2: 800,
     okazja: 'codzien', stylTryb: 'outfit', stylStart: null, stylQ: '', koszyk: [], ulubione: [], zapisane: [], alerty: [],
-    ostatnie: [], rozmiar: {}, ust: { gora: '', dol: '', buty: '' }, rozm: { d: {}, m: {} }, znane: {}
+    ostatnie: [], rozmiar: {}, ust: { gora: '', dol: '', buty: '' }, rozm: { d: {}, m: {} }, hist: { produkty: [], szukania: [], styl: [] }, stylRozm: null, znane: {}
   };
   let st;
   try { st = Object.assign({}, DOMYSLNE, JSON.parse(localStorage.getItem('trendo') || '{}')); } catch (e) { st = Object.assign({}, DOMYSLNE); }
@@ -34,9 +34,69 @@
     if (!p || !p.zrodlo) return;
     st.znane = st.znane || {}; st.znane[p.id] = p;
     const k = Object.keys(st.znane);
-    if (k.length > 300) k.slice(0, k.length - 300).forEach((x) => { if (!st.koszyk.includes(x) && !st.ulubione.includes(x)) delete st.znane[x]; });
+    if (k.length > 300) { const chron = idsHistorii(); k.slice(0, k.length - 300).forEach((x) => { if (!st.koszyk.includes(x) && !st.ulubione.includes(x) && !chron.has(x)) delete st.znane[x]; }); }
   }
   const prawdziwy = (p) => !!(p && p.zrodlo);
+
+  /* ---------- historia (0.20.0, prośba użytkownika): oglądane produkty, wyszukiwania i stylizacje, tylko na tym telefonie ---------- */
+  const HIST = () => (st.hist = Object.assign({ produkty: [], szukania: [], styl: [] }, st.hist || {}));
+  const idsHistorii = () => new Set(HIST().produkty.map((x) => x.id).concat(...HIST().styl.map((e) => ((e.m || {}).el || []).map((x) => x.id))));
+  function kiedyTemu(t) {
+    const m = Math.round((Date.now() - t) / 60000);
+    if (m < 2) return 'przed chwilą';
+    if (m < 60) return m + ' min temu';
+    if (m < 24 * 60) return Math.round(m / 60) + ' godz. temu';
+    if (m < 48 * 60) return 'wczoraj';
+    return new Date(t).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+  }
+  function dopiszOgladany(p) {
+    if (!prawdziwy(p)) return;
+    const h = HIST(), byl = h.produkty.find((x) => x.id === p.id);
+    h.produkty = [{ id: p.id, t: Date.now(), cena: byl ? byl.cena : p.cena }].concat(h.produkty.filter((x) => x.id !== p.id)).slice(0, 30);
+    zapamietaj(p); zapisz();
+  }
+  function dopiszSzukanie(q) {
+    const h = HIST();
+    h.szukania = [{ q, dzial: st.dzial, b1: st.b1, t: Date.now(), n: null }].concat(h.szukania.filter((x) => !(x.q.toLowerCase() === q.toLowerCase() && x.dzial === st.dzial))).slice(0, 20);
+  }
+  let zapisStylT;
+  function zapiszStylHistorie(teraz) {
+    clearTimeout(zapisStylT);
+    const zrob = () => {
+      const d = STYL && STYL.dane; if (!d) return;
+      const { wyn, suma } = stylWybor(d, stylWidok.tryb, stylWidok.z), P = d.produkty;
+      const el = d.miejsca.filter(({ k }) => wyn[k] && wyn[k].id && !wyn[k].s.wyl).map(({ k, nazwa }) => {
+        const p = P[wyn[k].id]; zapamietaj(STYL_ID[p.id] || p);
+        return { id: p.id, nazwa: p.nazwa, sklep: p.sklep, cena: p.cena, zdjecie: p.zdjecie, slot: nazwa };
+      });
+      const h = HIST(), byl = h.styl.find((e) => e.k === STYL.klucz);
+      const wpis = { k: STYL.klucz, t: Date.now(), przypiety: !!(byl && byl.przypiety),
+        p: { dzial: d.dzial, okazja: d.okazja, stylTryb: d.tryb, stylStart: (d.baza && d.baza.id) || null, stylQ: d.baza && !d.baza.id ? d.baza.nazwa : '', rozm: rozmSwiata() },
+        widok: Object.assign({}, stylWidok), wyb: JSON.parse(JSON.stringify(stylWyb)),
+        m: { baza: d.baza, el, zestaw: d.tryby[stylWidok.tryb].zestawy[stylWidok.z].nazwa, sklep: stylWidok.tryb === 'sklep' ? d.tryby.sklep.sklep : '',
+          suma: Math.round((suma + (d.baza && d.baza.cena ? d.baza.cena : 0)) * 100) / 100 } };
+      const reszta = h.styl.filter((e) => e.k !== STYL.klucz);
+      const przyp = reszta.filter((e) => e.przypiety), zwykle = reszta.filter((e) => !e.przypiety);
+      h.styl = [wpis].concat(przyp, zwykle.slice(0, wpis.przypiety ? 20 : 19)).sort((a, b) => b.t - a.t);
+      zapisz();
+    };
+    if (teraz) zrob(); else zapisStylT = setTimeout(zrob, 500);
+  }
+  let stylDoPrzywrocenia = null;
+  function odswiezHistorie() {
+    const ids = HIST().produkty.map((x) => x.id).filter((id) => prawdziwy(prod(id)));
+    if (!ids.length) return;
+    fetch(`${API}/produkty?ids=${ids.map(encodeURIComponent).join(',')}`).then((r) => r.json()).then((d) => {
+      const P = d.produkty || {};
+      let zmiana = false;
+      Object.keys(P).forEach((id) => {
+        const s0 = st.znane[id]; if (!s0) return;
+        if (s0.cena !== P[id].cena || s0.brak_w_sklepie !== P[id].brak_w_sklepie) zmiana = true;
+        st.znane[id] = Object.assign({}, s0, P[id]);
+      });
+      if (zmiana) { zapisz(); odswiezJesliNa(['historia', 'start']); }
+    }).catch(() => {});
+  }
   const viaGoogle = (p) => !!(p && p.zrodlo === 'google' && /google\./.test(p.url || ''));
   const rabat = (p) => (p.stara ? Math.round((1 - p.cena / p.stara) * 100) : 0);
   const demoZnak = () => `<div class="demo">${IK.info.replace('<svg', '<svg width="15" height="15"')}Wersja próbna: dane przykładowe</div>`;
@@ -157,7 +217,8 @@
     const g = new Date().getHours();
     const pow = g < 5 ? 'Dobry wieczór' : g < 18 ? 'Dzień dobry' : 'Dobry wieczór';
     const s = sezon();
-    const zap = st.zapisane.map((id) => DEMO.S.find((x) => x.id === id)).filter(Boolean);
+    const przyp = HIST().styl.filter((e) => e.przypiety);
+    const ogl = HIST().produkty.map((x) => prod(x.id)).filter((p) => prawdziwy(p)).slice(0, 10);
     const ost = st.ostatnie.slice(0, 6);
     const spadly = st.alerty.filter((a) => a.osiagniety).length;
     return {
@@ -165,6 +226,7 @@
       html: `<div class="powitanie-dnia">
         <div><p class="szary maly">${pow}</p><h1>Czego dziś<br>szukasz?</h1></div>
         <div class="akcje">
+          <a class="ikonka" href="#/historia" aria-label="Historia: oglądane, wyszukiwania, stylizacje">${IK.zegar}</a>
           <a class="ikonka" href="#/alerty" aria-label="Alerty cenowe${st.alerty.length ? ', ' + st.alerty.length : ''}${spadly ? ', cena spadła w ' + spadly : ''}">${IK.dzwonek}${spadly ? '<span class="kropka"></span>' : ''}</a>
           <a class="ikonka" href="#/profil" aria-label="Profil i ustawienia">${IK.profil}</a>
         </div></div>
@@ -187,7 +249,10 @@
         </a>
       </div>
 
-      ${zap.length ? `<div class="sekcja"><div class="sekcja-tytul"><h2>Zapisane stylizacje</h2></div><div class="karuzela">${zap.map(kartaStylizacji).join('')}</div><p class="maly szary" style="margin-top:8px">Stylizacje są na razie przykładowe.</p></div>` : ''}
+      ${ogl.length ? `<div class="sekcja"><div class="sekcja-tytul"><h2>Ostatnio oglądane</h2><a class="link" href="#/historia" data-akcja="histTab" data-v="produkty">Historia</a></div>
+        <div class="karuzela">${ogl.map((p) => `<a class="mini-produkt" href="#/produkt/${p.id}"><span class="foto">${foto(p)}</span><span class="sklep">${esc(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span><b>${zl(p.cena)}</b></a>`).join('')}</div></div>` : ''}
+
+      ${przyp.length ? `<div class="sekcja"><div class="sekcja-tytul"><h2>Zapisane stylizacje</h2></div><div class="elementy">${przyp.map(kartaHistStyl).join('')}</div></div>` : ''}
 
       ${sekcjaOkazjiDnia()}`,
       po: () => { wczytajOkazje(st.dzial); odswiezObserwowane(); }
@@ -262,7 +327,7 @@
     };
   };
 
-  /* ---------- stylizacje z prawdziwych produktów (0.19.3, wariant B wybrany przez użytkownika) ----------
+  /* ---------- stylizacje z prawdziwych produktów (0.20.0, wariant B wybrany przez użytkownika) ----------
      Serwer zwraca dla każdego miejsca w zestawie uszeregowanych kandydatów; suwak ceny przy rzeczy podmienia ją na bieżąco
      (najlepiej pasująca rzecz do tej kwoty), suwak całości obniża zestaw tam, gdzie tańszy zamiennik traci najmniej. */
   const STYL_ID = {};
@@ -271,7 +336,7 @@
   const stylWyb = {};
   const STATUS_TRENDU = { szczyt: 'szczyt', rosnie: 'rośnie', nadchodzi: 'nadchodzi', wygasa: 'wygasa' };
   const swiatLit = () => (st.dzial === 'meskie' ? 'm' : 'd');
-  const rozmSwiata = () => ((st.rozm || {})[swiatLit()] || {});
+  const rozmSwiata = () => st.stylRozm || ((st.rozm || {})[swiatLit()] || {});
   function kluczStylizacji() {
     return JSON.stringify([st.dzial, st.okazja, st.stylTryb, st.stylStart || '', st.stylStart ? '' : (st.stylQ || ''), rozmSwiata()]);
   }
@@ -291,7 +356,14 @@
         Object.values(d.produkty).forEach((p) => { p.sprawdzono = p.sprawdzono || d.sprawdzono; STYL_ID[p.id] = p; });
         Object.keys(stylWyb).forEach((x) => delete stylWyb[x]);
         stylWidok = { tryb: d.tryby.sklep ? 'sklep' : 'wszystkie', z: 0 };
+        if (stylDoPrzywrocenia && stylDoPrzywrocenia.k === k) { // stylizacja z historii: ten sam zestaw, suwaki i „Mam już”
+          Object.assign(stylWyb, stylDoPrzywrocenia.wyb || {});
+          const w = stylDoPrzywrocenia.widok || {};
+          if (d.tryby[w.tryb] && d.tryby[w.tryb].zestawy[w.z]) stylWidok = { tryb: w.tryb, z: w.z };
+        }
+        stylDoPrzywrocenia = null;
         STYL = { klucz: k, dane: d };
+        zapiszStylHistorie();
       })
       .catch((e) => {
         STYL = { klucz: k, blad: e.name === 'AbortError' ? 'Składanie trwało za długo. Spróbuj jeszcze raz.'
@@ -409,6 +481,7 @@
     if (cale) document.getElementById('styl-lista').innerHTML = stylLista(d);
     const ps = document.getElementById('styl-pasek'); if (ps) ps.innerHTML = stylPasek(d);
     const ts = document.getElementById('styl-trendy'); if (ts) ts.innerHTML = stylTrendy(d);
+    zapiszStylHistorie();
     podmienGrafikiSwiata(E);
   }
   const KROKI_STYL = [['Analizuję Twoją rzecz', 'kolor, materiał, styl', 'krok-stylizacje'], ['Szukam w sklepach', 'w rozmiarach z Ustawień', 'krok-sklepy'],
@@ -464,7 +537,7 @@
           });
         }
       },
-      html: `<div class="naglowek"><a class="ikonka bez" href="#/komponuj" aria-label="Wróć">${IK.wstecz}</a><h1>Stylizacja</h1><span class="puste"></span></div>
+      html: `<div class="naglowek"><a class="ikonka bez" href="javascript:history.back()" aria-label="Wróć">${IK.wstecz}</a><h1>Stylizacja</h1>${(() => { const e = HIST().styl.find((x) => x.k === STYL.klucz), on = !!(e && e.przypiety); return `<button class="ikonka bez" data-akcja="stylPrzypnij" data-k="${esc(STYL.klucz)}" aria-pressed="${on}" aria-label="${on ? 'Odepnij stylizację' : 'Zapisz stylizację na stałe'}">${on ? IK.sercePelne : IK.serce}</button>`; })()}</div>
       <p class="szary styl-pod">${esc(NAZWA_OKAZJI[d.okazja] || '')}${d.baza ? ' · do: ' + esc(d.baza.nazwa) : ''}</p>
       ${d.opis ? `<div class="styl-hero">${d.baza && d.baza.zdjecie ? `<span class="fot">${foto(d.baza)}</span>` : ''}<p>${esc(d.opis)}</p></div>` : ''}
       <div class="styl-trendy" id="styl-trendy">${stylTrendy(d)}</div>
@@ -503,7 +576,11 @@
         const czas = setTimeout(() => ctrl.abort(), 150000);
         fetch(`${API}/szukaj?q=${encodeURIComponent(st.zapytanie)}&dzial=${st.dzial}`, { signal: ctrl.signal })
           .then((r) => r.json())
-          .then((d) => { wynik = d && d.produkty ? d : null; })
+          .then((d) => {
+            wynik = d && d.produkty ? d : null;
+            const h = HIST().szukania.find((x) => x.q === st.zapytanie && x.dzial === st.dzial);
+            if (h && wynik) { h.n = wynik.produkty.length; zapisz(); }
+          })
           .catch(() => { wynik = null; komunikat('Serwer nie odpowiada. Pokazuję przykład.'); })
           .finally(() => {
             clearTimeout(czas); gotowe = true;
@@ -785,6 +862,7 @@
 
   EKRANY.produkt = (id) => {
     const p = prod(id) || DEMO.P[0];
+    dopiszOgladany(p);
     const r = rabat(p);
     const ul = st.ulubione.includes(p.id);
     const alert = st.alerty.find((a) => a.id === p.id);
@@ -953,6 +1031,52 @@
         ${[['promocje', 'Sprawdzone obniżki'], ['obserwowane', 'Obserwowane']].map(([v, n]) => `<button role="tab" aria-selected="${zakladkaOkazji === v}" data-akcja="zakladkaOkazji" data-v="${v}">${n}</button>`).join('')}</div>
       <div style="margin-top:16px">${tresc}</div>
       ${zakladkaOkazji !== 'obserwowane' ? '<p class="maly szary" style="margin-top:14px">Każdą promocję porównujemy z najniższą ceną z 30 dni przed obniżką (podaną przez sklep albo z naszej historii cen). Rabat liczymy od tej ceny, nie od „ceny regularnej”.</p>' : ''}`
+    };
+  };
+
+  let histTab = 'produkty';
+  function kartaHistStyl(e) {
+    const m = e.m || {}, fot = (m.baza && m.baza.zdjecie ? [m.baza] : []).concat(m.el || []).slice(0, 5);
+    return `<div class="hist-styl"><a class="hist-styl-gora" href="#/stylizacje" data-akcja="otworzStyl" data-k="${esc(e.k)}">
+        <span class="hist-fot">${fot.map((p) => `<span>${foto(p)}</span>`).join('')}</span>
+        <span class="opis"><span class="nazwa">${esc(NAZWA_OKAZJI[e.p.okazja] || '')}${m.baza ? ' · do: ' + esc(m.baza.nazwa) : ''}</span>
+          <span class="sklep">${esc(m.zestaw || '')}${m.sklep ? ' · ' + esc(m.sklep) : ''} · ${kiedyTemu(e.t)}</span>
+          <span class="cena" style="font-size:18px">${zl(m.suma || 0)}</span></span></a>
+      <span class="hist-akcje"><button class="ikonka bez" data-akcja="stylPrzypnij" data-k="${esc(e.k)}" aria-pressed="${!!e.przypiety}" aria-label="${e.przypiety ? 'Odepnij' : 'Zapisz na stałe'}">${e.przypiety ? IK.sercePelne : IK.serce}</button>
+        <button class="ikonka bez" data-akcja="histUsun" data-v="styl" data-k="${esc(e.k)}" aria-label="Usuń z historii">${IK.zamknij}</button></span></div>`;
+  }
+  EKRANY.historia = () => {
+    const h = HIST(), pusto = (t) => `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/pusta-historia.webp" alt="" onerror="this.remove()"><p>${t}</p></div>`;
+    let tresc = '';
+    if (histTab === 'produkty') {
+      const L = h.produkty.map((x) => ({ x, p: prod(x.id) })).filter(({ p }) => prawdziwy(p));
+      tresc = L.length ? `<div class="elementy">${L.map(({ x, p }) => `<div class="element"><a class="miniatura" href="#/produkt/${p.id}" aria-label="${esc(p.nazwa)}">${foto(p)}</a>
+        <a class="opis" href="#/produkt/${p.id}" style="text-decoration:none;color:var(--tekst)"><div class="nazwa">${esc(p.nazwa)}</div><div class="sklep">${esc(p.sklep)} · ${kiedyTemu(x.t)}</div>
+        <div class="ceny"><span class="cena" style="font-size:19px">${zl(p.cena)}</span>${x.cena && p.cena < x.cena - 0.01 ? `<span class="maly" style="color:var(--ok);margin-left:8px">taniej o ${zl(Math.round((x.cena - p.cena) * 100) / 100)}</span>` : x.cena && p.cena > x.cena + 0.01 ? `<span class="maly" style="color:var(--uwaga);margin-left:8px">drożej o ${zl(Math.round((p.cena - x.cena) * 100) / 100)}</span>` : ''}${p.brak_w_sklepie ? '<span class="maly" style="color:var(--uwaga);margin-left:8px">zniknęło ze sklepu</span>' : ''}</div></a>
+        <button class="ikonka bez" data-akcja="histUsun" data-v="produkty" data-k="${p.id}" aria-label="Usuń z historii">${IK.zamknij}</button></div>`).join('')}</div>`
+        : pusto('Tu pojawią się rzeczy, które oglądasz. Wejdź w dowolny produkt, a wrócisz do niego jednym dotknięciem.');
+    } else if (histTab === 'szukania') {
+      tresc = h.szukania.length ? `<div class="elementy">${h.szukania.map((x, i) => `<div class="element"><span class="miniatura hist-ikona">${IK.szukaj}</span>
+        <button class="opis hist-przycisk" data-akcja="histSzukaj" data-i="${i}"><div class="nazwa">${esc(x.q)}</div>
+        <div class="sklep">${x.dzial === 'meskie' ? 'Męskie' : 'Damskie'}${x.b1 && x.b1 < BEZ_LIMITU ? ' · do ' + zl(x.b1) : ''}${x.n != null ? ' · ' + x.n + ' wyników' : ''} · ${kiedyTemu(x.t)}</div></button>
+        <button class="ikonka bez" data-akcja="histUsun" data-v="szukania" data-k="${i}" aria-label="Usuń z historii">${IK.zamknij}</button></div>`).join('')}</div>`
+        : pusto('Tu pojawią się Twoje wyszukiwania. Dotknięcie otworzy wyniki z tymi samymi ustawieniami.');
+    } else {
+      tresc = h.styl.length ? `<div class="elementy">${h.styl.map(kartaHistStyl).join('')}</div>
+        <p class="maly szary" style="margin-top:10px">Serduszko zapisuje stylizację na stałe. Pozostałe trzymamy do 20 ostatnich.</p>`
+        : pusto('Tu pojawią się Twoje stylizacje razem z tym, co w nich ustawisz.');
+    }
+    const ile = histTab === 'styl' ? h.styl.filter((e) => !e.przypiety).length : h[histTab].length;
+    return {
+      akt: 'start',
+      po: () => { if (histTab === 'produkty') odswiezHistorie(); },
+      html: `<div class="naglowek"><a class="ikonka bez" href="#/start" aria-label="Wróć">${IK.wstecz}</a><h1>Historia</h1><span class="puste"></span></div>
+      <div class="przelacznik trzy" role="tablist" style="margin-bottom:12px">
+        <button role="tab" aria-selected="${histTab === 'produkty'}" data-akcja="histTab" data-v="produkty">Oglądane</button>
+        <button role="tab" aria-selected="${histTab === 'szukania'}" data-akcja="histTab" data-v="szukania">Szukane</button>
+        <button role="tab" aria-selected="${histTab === 'styl'}" data-akcja="histTab" data-v="styl">Stylizacje</button></div>
+      ${tresc}
+      ${ile ? `<button class="link" style="margin-top:12px" data-akcja="histWyczysc">Wyczyść ${histTab === 'produkty' ? 'oglądane' : histTab === 'szukania' ? 'wyszukiwania' : 'stylizacje (bez zapisanych)'}</button>` : ''}`
     };
   };
 
@@ -1161,7 +1285,36 @@
     wejscieStyl(el) { st.stylTryb = el.dataset.v === 'dodatki' ? 'dodatki' : 'outfit'; zapisz(); },
     stylTryb(el) { st.stylTryb = el.dataset.v; zapisz(); render(true); },
     bezStartu() { st.stylStart = null; zapisz(); render(true); },
-    dobierzDo(el) { st.stylStart = el.dataset.id; st.stylTryb = 'outfit'; if (filtrOkazji && filtrOkazji !== 'wszystkie') st.okazja = filtrOkazji; zapisz(); },
+    dobierzDo(el) { st.stylRozm = null; st.stylStart = el.dataset.id; st.stylTryb = 'outfit'; if (filtrOkazji && filtrOkazji !== 'wszystkie') st.okazja = filtrOkazji; zapisz(); },
+    histTab(el) { histTab = el.dataset.v; if (location.hash === '#/historia') render(true); },
+    histSzukaj(el) { const x = HIST().szukania[+el.dataset.i]; if (!x) return; st.dzial = x.dzial; st.b1 = x.b1 || st.b1; zacznijSzukanie(x.q); },
+    histUsun(el) {
+      const h = HIST(), k = el.dataset.k;
+      if (el.dataset.v === 'produkty') h.produkty = h.produkty.filter((x) => x.id !== k);
+      else if (el.dataset.v === 'szukania') h.szukania.splice(+k, 1);
+      else h.styl = h.styl.filter((e) => e.k !== k);
+      zapisz(); render(true);
+    },
+    histWyczysc() {
+      const h = HIST();
+      if (!confirm('Wyczyścić tę część historii?')) return;
+      if (histTab === 'styl') h.styl = h.styl.filter((e) => e.przypiety); else h[histTab] = [];
+      zapisz(); render(true);
+    },
+    otworzStyl(el) {
+      const e = HIST().styl.find((x) => x.k === el.dataset.k); if (!e) return;
+      const [dzial, okazja, stylTryb, stylStart, stylQ, rozm] = JSON.parse(e.k); // dokładnie te same ustawienia co przy złożeniu
+      Object.assign(st, { dzial, okazja, stylTryb, stylStart: stylStart || null, stylQ: stylQ || '', stylRozm: rozm || null });
+      if (!(STYL && STYL.klucz === e.k && STYL.dane)) { STYL = null; stylDoPrzywrocenia = e; }
+      zapisz();
+    },
+    stylPrzypnij(el) {
+      if (STYL && STYL.dane && STYL.klucz === el.dataset.k) zapiszStylHistorie(true);
+      const e = HIST().styl.find((x) => x.k === el.dataset.k); if (!e) return;
+      e.przypiety = !e.przypiety; zapisz();
+      komunikat(e.przypiety ? 'Stylizacja zapisana na stałe' : 'Stylizacja odpięta');
+      render(true);
+    },
     stylTrybW(el) { stylWidok = { tryb: el.dataset.v, z: 0 }; render(true); },
     stylWl(el) { const S = stylStan(stylWidok.tryb, stylWidok.z), s = S.sloty[el.dataset.k]; if (!s) return; s.wyl = !s.wyl; stylOdswiez(true); },
     stylInna(el) { const S = stylStan(stylWidok.tryb, stylWidok.z), s = S.sloty[el.dataset.k]; if (!s) return; s.skok++; S.suma = null; stylOdswiez(true); },
@@ -1179,6 +1332,7 @@
     komponuj() {
       const qs = document.getElementById('qs');
       if (qs) st.stylQ = qs.value.trim();
+      st.stylRozm = null;
       zapisz(); location.hash = '#/stylizacje';
     },
     okazja(el) {
@@ -1345,6 +1499,7 @@
     'ikony/krok-stylizacje.webp',
     'ikony/krok-trendy.webp',
     'ikony/pusty-obserwowane.webp',
+    'ikony/pusta-historia.webp',
     'ikony/pusty-okazje.webp',
     'ikony/pusty-trendy.webp',
     'ikony/pusty-wyniki.webp',
@@ -1383,6 +1538,7 @@
   function zacznijSzukanie(q) {
     st.zapytanie = q;
     st.ostatnie = [q].concat(st.ostatnie.filter((x) => x.toLowerCase() !== q.toLowerCase())).slice(0, 8);
+    dopiszSzukanie(q);
     filtrOkazji = 'wszystkie'; budzetWl = true; tylkoPromocje = false; tylkoSecond = false; kolejnosc = 'polecane';
     zapisz(); location.hash = '#/analiza';
   }

@@ -195,7 +195,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .kroki span{font-size:13px;color:var(--szary)}
 
 /* stylizacje */
-.karuzela{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -20px;padding:4px 20px 6px;scrollbar-width:none}
+.karuzela{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:20px;margin:0 -20px;padding:4px 20px 6px;scrollbar-width:none}
 .karuzela::-webkit-scrollbar{display:none}
 .styl-karta{flex:none;width:78%;max-width:340px;scroll-snap-align:center;border-radius:26px;overflow:hidden;position:relative;border:1px solid var(--linia2);text-decoration:none;color:var(--tekst);background:var(--kafel2)}
 .styl-karta .kolaz{height:400px}
@@ -523,3 +523,23 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:12px;ba
 .styl-brak b{font-weight:500}
 .styl-brak p{margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--tekst2)}
 .styl-brak .link{margin-top:6px;font-size:13px;background:none;border:none;padding:0}
+
+/* ---------- historia (0.20.0) ---------- */
+.mini-produkt{flex:0 0 132px;scroll-snap-align:start;display:flex;flex-direction:column;gap:3px;text-decoration:none;color:var(--tekst)}
+.mini-produkt .foto{width:132px;height:170px;border-radius:16px;overflow:hidden;background:#f4f1ee;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.mini-produkt .foto img{width:100%;height:100%;object-fit:cover}
+.mini-produkt .sklep{font-size:11.5px;color:var(--szary)}
+.mini-produkt .nazwa{font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mini-produkt b{font:600 16px var(--szeryf);color:var(--akcent-jasny)}
+.hist-styl{display:flex;gap:6px;align-items:center;padding:12px 0;border-bottom:1px solid var(--linia)}
+.hist-styl-gora{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--tekst)}
+.hist-fot{display:flex;gap:6px}
+.hist-fot>span{width:54px;height:70px;border-radius:10px;overflow:hidden;background:#f4f1ee;display:flex;align-items:center;justify-content:center;flex:none}
+.hist-fot img{width:100%;height:100%;object-fit:cover}
+.hist-styl .opis{display:flex;flex-direction:column;gap:2px}
+.hist-styl .nazwa{font-size:15px;font-weight:500;line-height:1.25}
+.hist-styl .sklep{font-size:13px;color:var(--szary)}
+.hist-styl .cena{font-family:var(--szeryf);font-weight:600;color:var(--akcent-jasny)}
+.hist-akcje{display:flex;flex-direction:column;gap:4px}
+.hist-ikona{display:flex;align-items:center;justify-content:center;color:var(--szary)}
+.hist-przycisk{flex:1;min-width:0;text-align:left;background:none;border:none;padding:0;color:var(--tekst)}
