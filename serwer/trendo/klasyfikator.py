@@ -15,6 +15,15 @@ RODZAJE = ["koszula", "bluzka", "t-shirt", "polo", "top", "sweter", "kardigan", 
 OKAZJE = ["codzien", "smartcasual", "praca", "randka", "wieczor", "wesele", "sylwester", "wyjazd", "sport", "plaza", "dom"]
 PLEC = ["damskie", "meskie", "unisex", "dzieciece"]
 WZORY = ["gladki", "male_logo", "duze_logo_lub_nadruk", "wzor_stonowany", "wzor_wyrazisty", "motyw_tematyczny"]
+MATERIALY = ["bawelna", "len", "welna_kaszmir", "dzianina", "jedwab_satyna", "wiskoza_szyfon", "koronka", "aksamit_welur",
+             "dzins", "flanela", "sztruks", "skora", "skora_ekologiczna", "zamsz", "powlekany_woskowany", "cekiny_brokat_metaliczny",
+             "puch_pikowany", "techniczny_sportowy", "syntetyk", "inny"]
+WZORY_RODZAJ = ["brak", "krata", "paski", "kropki", "kwiaty", "zwierzecy", "moro", "geometryczny", "etniczny_paisley",
+                "jodelka_pepitka", "inny"]
+NADRUKI = ["brak", "male_logo_haft", "duze_logo_przod", "nadruk_na_plecach", "napis_haslo", "grafika_postac", "naszywki_aplikacje"]
+KOLORY = ["czarny", "bialy_ecru", "szary", "granatowy", "niebieski", "bezowy_brazowy", "zielony", "czerwony_bordo", "rozowy",
+          "fioletowy", "zolty_pomaranczowy", "zloty_srebrny", "wielokolorowy"]
+STYLE = ["sportowy", "plazowy_domowy", "casual", "smart_casual", "elegancki", "wieczorowy"]
 BUTY = {"botki", "kozaki", "sneakersy", "półbuty", "szpilki", "czółenka", "mokasyny", "baleriny", "sandały", "klapki", "kapcie"}
 
 DOMYSLNE_MODELE = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"]
@@ -24,7 +33,7 @@ CENY = [("3.8-flash", 0.75, 3.75), ("3.7-flash", 0.75, 3.75), ("3.5-flash-lite",
         ("3.1-flash-lite", 0.25, 1.50), ("2.5-flash-lite", 0.10, 0.40), ("2.5-flash", 0.30, 2.50)]
 BUDZET = float(os.environ.get("GEMINI_BUDZET_MIESIECZNY", "12"))
 PACZKA = 10
-OCENA_WERSJA = 3  # zmiana zasad = ponowna ocena produktów
+OCENA_WERSJA = 4  # zmiana zasad = ponowna ocena produktów
 
 ZASADY = """Jesteś doświadczoną, surową stylistką. Stosujesz zasady ubioru według Emily Post, Debrett's i polskiego protokołu
 (Orłowski, PISM). Oceniasz produkty ze sklepów na podstawie ZDJĘCIA i nazwy. Zdjęcie jest ważniejsze niż nazwa, bo sklepy
@@ -47,7 +56,15 @@ wzor = jak wygląda powierzchnia rzeczy:
   wzor_wyrazisty: duże, kolorowe lub krzykliwe wzory: zwierzęce, moro, duże kwiaty, kolorowa krata, etniczne;
   motyw_tematyczny: postaci, bajki, marki niemodowe (np. Coca-Cola), motywy świąteczne, zwierzątka, żartobliwe napisy.
 zgodne = true, gdy zdjęcie pokazuje rzecz z nazwy; false, gdy zdjęcie pokazuje wyraźnie co innego.
-bialy = true, gdy rzecz jest w przeważającej części biała, ecru, kremowa lub w kolorze złamanej bieli.
+Cechy rzeczy (opisz to, co widzisz na zdjęciu ORAZ to, co mówi nazwa i opis sklepu; opis wygrywa, gdy mówi o czymś
+niewidocznym na zdjęciu, np. o nadruku na plecach albo o materiale). Słowa mogą mieć dowolną formę: „kraciasta”, „w kratę”,
+„w kratkę” to ta sama krata; „ze skóry”, „skórzana” to skóra; „gładka na plecach” znaczy BRAK nadruku.
+material = główny materiał (z listy). Sztuczna skóra, ekoskóra, imitacja skóry = skora_ekologiczna.
+wzor_rodzaj = rodzaj wzoru (z listy), brak = jednolity.
+nadruk = brak / male_logo_haft (mały znaczek, haft, logo kilka cm) / duze_logo_przod / nadruk_na_plecach / napis_haslo /
+  grafika_postac / naszywki_aplikacje. Mała litera, monogram albo logo marki wyhaftowane na piersi to male_logo_haft.
+kolor = dominujący kolor (z listy). Biel, ecru, kremowy, złamana biel, śmietankowy = bialy_ecru.
+styl = ogólny charakter rzeczy: sportowy / plazowy_domowy / casual / smart_casual / elegancki / wieczorowy.
 o = okazje, na które ta rzecz NAPRAWDĘ się nadaje (może być pusta lista). Oceniasz rzecz jako ELEMENT stroju: zakładasz,
   że reszta stroju zostanie dobrana właściwie. Wypisz WSZYSTKIE okazje, na które rzecz pasuje, nie tylko najlepszą.
   codzien = na co dzień (casual).
@@ -78,10 +95,11 @@ parki, wiatrówki, plecaki, duże torby na zakupy, rzeczy z dziurami i przetarci
 
 SCHEMAT_PROD = {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
     "i": {"type": "INTEGER"}, "r": {"type": "STRING", "enum": RODZAJE}, "p": {"type": "STRING", "enum": PLEC},
-    "f": {"type": "INTEGER"}, "wzor": {"type": "STRING", "enum": WZORY}, "zgodne": {"type": "BOOLEAN"}, "bialy": {"type": "BOOLEAN"},
+    "f": {"type": "INTEGER"}, "wzor": {"type": "STRING", "enum": WZORY}, "zgodne": {"type": "BOOLEAN"},
+    "material": {"type": "STRING", "enum": MATERIALY}, "wzor_rodzaj": {"type": "STRING", "enum": WZORY_RODZAJ},
+    "nadruk": {"type": "STRING", "enum": NADRUKI}, "kolor": {"type": "STRING", "enum": KOLORY}, "styl": {"type": "STRING", "enum": STYLE},
     "o": {"type": "ARRAY", "items": {"type": "STRING", "enum": OKAZJE}}},
-    "required": ["i", "r", "p", "f", "wzor", "zgodne", "bialy", "o"]}}
-SCHEMAT_HASLO = {"type": "OBJECT", "properties": {"r": {"type": "STRING", "enum": RODZAJE}}, "required": ["r"]}
+    "required": ["i", "r", "p", "f", "wzor", "zgodne", "material", "wzor_rodzaj", "nadruk", "kolor", "styl", "o"]}}
 
 
 def _klucz():
@@ -228,7 +246,10 @@ def _partia(lista, model):
             i = int(x["i"])
             if 0 <= i < len(lista) and lista[i]["id"] not in out:
                 out[lista[i]["id"]] = {"v": OCENA_WERSJA, "r": x["r"], "p": x["p"], "f": max(1, min(5, int(x["f"]))), "wzor": x.get("wzor", "gladki"),
-                                       "zgodne": bool(x.get("zgodne", True)), "bialy": bool(x.get("bialy", False)), "o": [o for o in (x.get("o") or []) if o in OKAZJE],
+                                       "zgodne": bool(x.get("zgodne", True)), "material": x.get("material", "inny"),
+                                       "wzor_rodzaj": x.get("wzor_rodzaj", "brak"), "nadruk": x.get("nadruk", "brak"),
+                                       "kolor": x.get("kolor", "wielokolorowy"), "styl": x.get("styl", "casual"),
+                                       "bialy": x.get("kolor") == "bialy_ecru", "o": [o for o in (x.get("o") or []) if o in OKAZJE],
                                        "zdj": obrazy[i] is not None}
         except Exception:
             continue
@@ -279,28 +300,66 @@ def klasyfikuj(produkty, maks=240, swiezo=False, model=None, zapisuj=True):
     return sum(1 for p in produkty if "klasa" in p)
 
 
+SCHEMAT_HASLO = {"type": "OBJECT", "properties": {
+    "r": {"type": "STRING", "enum": RODZAJE}, "kolor": {"type": "STRING", "enum": ["dowolny"] + KOLORY},
+    "material": {"type": "STRING", "enum": ["dowolny"] + MATERIALY}, "wzor_rodzaj": {"type": "STRING", "enum": ["dowolny"] + WZORY_RODZAJ}},
+    "required": ["r", "kolor", "material", "wzor_rodzaj"]}
 _haslo_pamiec = {}
 
 
-def rodzaj_hasla(q):
-    q = q.lower().strip()
-    if q in _haslo_pamiec:
+def cechy_hasla(q, swiezo=False):
+    """Co klientka/klient naprawdę wpisał(a): rodzaj rzeczy i cechy, niezależnie od formy słów
+    („kraciasta koszula” = „koszula w kratę”, „spodnie ze skóry” = „skórzane spodnie”). Wynik pamiętany na stałe."""
+    q = " ".join(q.lower().split())
+    if q in _haslo_pamiec and not swiezo:
         return _haslo_pamiec[q]
-    zap = ustawienie("haslo|" + q)
+    zap = None if swiezo else ustawienie("hasloV4|" + q)
     if zap:
-        _haslo_pamiec[q] = zap
-        return zap
+        _haslo_pamiec[q] = json.loads(zap)
+        return _haslo_pamiec[q]
     for m in [x for x in modele() if x not in _martwe]:
-        kod, wyn = _wywolaj(m, [{"text": f"Jaki rodzaj rzeczy (jedna wartość z listy) opisuje hasło wyszukiwania w sklepie "
-                                         f"odzieżowym: „{q}”?\nRodzaje: {', '.join(RODZAJE)}"}], SCHEMAT_HASLO)
+        kod, wyn = _wywolaj(m, [{"text": f"Klientka lub klient wpisał w wyszukiwarkę sklepu odzieżowego: „{q}”.\n"
+                                         "Ustal rodzaj rzeczy (jedna wartość z listy) oraz cechy, o które WPROST prosi "
+                                         "(kolor, materiał, wzór). Jeśli o cechę nie prosi, wpisz „dowolny”. Słowa mogą mieć "
+                                         "dowolną formę: „kraciasta”, „w kratkę”, „w kratę” = krata; „ze skóry”, „skórzane” = "
+                                         "skora; „ekoskóra”, „sztuczna skóra” = skora_ekologiczna; „czarna”, „czarne” = czarny.\n"
+                                         f"Rodzaje: {', '.join(RODZAJE)}"}], SCHEMAT_HASLO)
         if kod == 404:
             continue
-        r = (wyn or {}).get("r") if isinstance(wyn, dict) else None
-        if r:
-            _haslo_pamiec[q] = r
-            ustawienie("haslo|" + q, r)
-        return r
+        if isinstance(wyn, dict) and wyn.get("r"):
+            _haslo_pamiec[q] = wyn
+            ustawienie("hasloV4|" + q, json.dumps(wyn, ensure_ascii=False))
+            return wyn
+        return None
     return None
+
+
+def rodzaj_hasla(q):
+    c = cechy_hasla(q)
+    return c.get("r") if c else None
+
+
+ZGODNE_MATERIALY = {"skora": {"skora", "skora_ekologiczna"}, "skora_ekologiczna": {"skora", "skora_ekologiczna"},
+                    "jedwab_satyna": {"jedwab_satyna", "wiskoza_szyfon"}, "welna_kaszmir": {"welna_kaszmir", "dzianina"}}
+
+
+def pasuje_do_hasla(c, k):
+    """Czy cechy produktu (ocena zdjęcia) spełniają cechy, o które prosi hasło. None = brak danych."""
+    if not c or not k:
+        return None
+    for pole in ("kolor", "material", "wzor_rodzaj"):
+        chce = c.get(pole)
+        if not chce or chce == "dowolny":
+            continue
+        ma = k.get(pole)
+        if ma is None:
+            return None
+        if pole == "material":
+            if ma not in ZGODNE_MATERIALY.get(chce, {chce}):
+                return False
+        elif ma != chce:
+            return False
+    return True
 
 
 def zgodny_rodzaj(r_hasla, r_produktu):

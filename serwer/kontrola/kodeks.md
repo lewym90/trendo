@@ -58,7 +58,12 @@ Na tym kodeksie opierają się trzy rzeczy: polecenie dla AI (klasyfikator.py), 
 18. Smart casual lub dressy casual. Zadbanie i styl tak, sport i niechlujność nie. Wszystko, co pasuje na wieczór albo do pracy, pasuje też na randkę.
 
 ## Jak to przekłada się na Trendo
-- AI dostaje te definicje w poleceniu, z tymi samymi przykładami.
-- Twarde zasady (nadzor.py) wynikają z reguł 2, 7, 9, 12, 16. AI nie może ich obejść.
-- Ręczne oceny zestawu kontrolnego są poprawione według tego kodeksu, z kolumną „smart casual”.
+- AI dostaje te definicje w poleceniu i dla każdego produktu (zdjęcie + opis sklepu) zapisuje ujednolicone cechy: rodzaj,
+  elegancję, materiał, rodzaj wzoru, nadruk (w tym na plecach), kolor, styl i okazje. Forma słów nie ma znaczenia:
+  „kraciasta”, „w kratkę”, „w kratę” to ta sama krata; „gładka na plecach” to brak nadruku.
+- Twarde zasady (nadzor.py) działają na tych cechach, nie na fragmentach słów. Z nazwy sprawdzane są tylko pełne nazwy
+  marek licencyjnych (Coca-Cola, Disney…).
+- Hasło wyszukiwania też jest rozumiane według znaczenia (rodzaj + kolor, materiał, wzór), więc „kraciasta koszula”
+  i „koszula w kratę” dają te same wyniki.
+- Ręczne oceny zestawu kontrolnego są zgodne z kodeksem; kontrola sprawdza też rozumienie różnych form tych samych haseł.
 - Gdy reguła się zmienia, zmieniamy ją tutaj, potem w kodzie i w ocenach, a kontrola sprawdza całość na kilku przebiegach modelu.

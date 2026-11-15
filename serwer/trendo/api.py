@@ -16,7 +16,7 @@ import threading
 from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, logo, nadzor
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.8.1"
+WERSJA = "0.9.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -88,7 +88,9 @@ def pobierz_produkty(q, dzial, laczniki):
                 continue
             p["trafnosc"] = trafnosc(p, tok) if tok else 2
             if not p["trafnosc"]:
-                continue
+                if not klasyfikator.dostepny():
+                    continue  # bez AI zostaje dopasowanie słów
+                p["trafnosc"], p["tylko_ai"] = 1, True  # słowa się nie zgadzają („polówka” / „koszulka polo”): rozstrzygnie rodzaj ze zdjęcia
             widziane.add(k)
             p["plec_sklepu"] = plec_ze_sklepu(p, dzial)
             logo.poznaj(p)
@@ -112,17 +114,24 @@ def szukaj(q, dzial, okazja=""):
     # Ocena każdego produktu (zdjęcie + nazwa), raz na zawsze. Rodzaj hasła równolegle.
     klasyfikacja, nieocenione = "slowa", 0
     if produkty and klasyfikator.dostepny():
-        f_haslo = PULA.submit(klasyfikator.rodzaj_hasla, q)
+        f_haslo = PULA.submit(klasyfikator.cechy_hasla, q)
         ocenione = klasyfikator.klasyfikuj(produkty, maks=400)
         try:
-            r_hasla = f_haslo.result(timeout=40)
+            c_hasla = f_haslo.result(timeout=40)
         except Exception:
-            r_hasla = None
+            c_hasla = None
+        r_hasla = (c_hasla or {}).get("r")
         nieocenione = len(produkty) - ocenione
         if ocenione:
             klasyfikacja = "ai"
             produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)
-                        and (not p.get("klasa") or klasyfikator.zgodny_rodzaj(r_hasla, p["klasa"]["r"]))]
+                        and (klasyfikator.zgodny_rodzaj(r_hasla, p["klasa"]["r"]) if p.get("klasa") else not p.get("tylko_ai"))]
+            # Trafność według znaczenia, nie formy słów: „kraciasta koszula” = „koszula w kratę” (cechy ze zdjęcia i opisu).
+            for p in produkty:
+                if p.get("klasa") and klasyfikator.pasuje_do_hasla(c_hasla, p["klasa"]):
+                    p["trafnosc"] = 2
+        else:
+            produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial) and not p.get("tylko_ai")]
     else:
         produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)]
     pominiete = 0

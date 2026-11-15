@@ -58,6 +58,53 @@ def ocen_model(model, lista):
     return r
 
 
+# Ta sama rzecz wpisana różnymi słowami musi dać to samo (rodzaj i cechy). Pola nieustawione = dowolne.
+HASLA = [
+    ("koszula w kratę", {"r": "koszula", "wzor_rodzaj": "krata"}),
+    ("koszula w kratkę", {"r": "koszula", "wzor_rodzaj": "krata"}),
+    ("kraciasta koszula", {"r": "koszula", "wzor_rodzaj": "krata"}),
+    ("koszula w paski", {"r": "koszula", "wzor_rodzaj": "paski"}),
+    ("koszula w paseczki", {"r": "koszula", "wzor_rodzaj": "paski"}),
+    ("skórzane spodnie", {"r": "spodnie", "material": "skora"}),
+    ("spodnie ze skóry", {"r": "spodnie", "material": "skora"}),
+    ("spodnie skóra", {"r": "spodnie", "material": "skora"}),
+    ("spodnie z ekoskóry", {"r": "spodnie", "material": "skora_ekologiczna"}),
+    ("czarna polówka", {"r": "polo", "kolor": "czarny"}),
+    ("polo czarne", {"r": "polo", "kolor": "czarny"}),
+    ("koszulka polo czarna", {"r": "polo", "kolor": "czarny"}),
+    ("sukienka w kwiaty", {"r": "sukienka", "wzor_rodzaj": "kwiaty"}),
+    ("kwiecista sukienka", {"r": "sukienka", "wzor_rodzaj": "kwiaty"}),
+    ("sukienka w kwiatki", {"r": "sukienka", "wzor_rodzaj": "kwiaty"}),
+    ("biała koszula", {"r": "koszula", "kolor": "bialy_ecru"}),
+    ("koszula biała", {"r": "koszula", "kolor": "bialy_ecru"}),
+    ("dżinsy", {"r": "jeansy"}),
+    ("jeansy", {"r": "jeansy"}),
+    ("spodnie jeansowe", {"r": "jeansy"}),
+    ("marynarka w pepitkę", {"r": "marynarka", "wzor_rodzaj": "jodelka_pepitka"}),
+    ("sweter z kaszmiru", {"r": "sweter", "material": "welna_kaszmir"}),
+    ("kaszmirowy sweter", {"r": "sweter", "material": "welna_kaszmir"}),
+    ("satynowa sukienka", {"r": "sukienka", "material": "jedwab_satyna"}),
+    ("sukienka z satyny", {"r": "sukienka", "material": "jedwab_satyna"}),
+    ("botki", {"r": "botki"}),
+    ("szpilki", {"r": "szpilki"}),
+    ("trencz", {"r": "płaszcz"}),
+]
+
+
+def test_hasel():
+    bledy = []
+    for q, oczek in HASLA:
+        c = klasyfikator.cechy_hasla(q, swiezo=True) or {}
+        zle = {pole: (c.get(pole), w) for pole, w in oczek.items()
+               if not (c.get(pole) == w or (pole == "r" and klasyfikator.zgodny_rodzaj(w, c.get(pole)) and klasyfikator.zgodny_rodzaj(c.get(pole), w)))}
+        if zle:
+            bledy.append(f"„{q}”: " + ", ".join(f"{p} = {a} (powinno {b})" for p, (a, b) in zle.items()))
+    print(f"\n=== Rozumienie haseł (różne formy słów) ===\n  Zgodne: {len(HASLA) - len(bledy)} z {len(HASLA)}")
+    for b in bledy:
+        print("    -", b)
+    return len(bledy)
+
+
 def drukuj(r):
     print(f"\n=== {r['model']} ===")
     if not r["ocenione"]:
@@ -109,6 +156,7 @@ def main():
     if not wyniki:
         print("\nKONTROLA: żaden model nie odpowiedział. Sprawdź, czy płatności w Google AI Studio są aktywne.")
         return
+    bledy_hasel = test_hasel()
     naj = min(wyniki, key=lambda r: (r["punkty_karne"], klasyfikator._cena(r["model"])))
     if len(modele) > 1 or not klasyfikator.ustawienie("model_ai"):
         klasyfikator.ustawienie("model_ai", naj["model"])
@@ -119,7 +167,7 @@ def main():
     klasyfikator.ustawienie("kontrola_przebiegi", json.dumps(przebiegi, ensure_ascii=False))
     klasyfikator.ustawienie("kontrola_wynik", json.dumps({
         "czas": int(time.time()), "model": naj["model"], "krytyczne": len(naj["krytyczne"]), "sprawdzen": naj["sprawdzen"],
-        "trafione": naj["trafione"], "ukryte_dobre": len(naj["ukryte_dobre"]), "plec": len(naj["plec"])}))
+        "trafione": naj["trafione"], "ukryte_dobre": len(naj["ukryte_dobre"]), "plec": len(naj["plec"]), "hasla_bledy": bledy_hasel}))
     if naj["krytyczne"]:
         print("\nUWAGA: są błędy krytyczne. Wklej ten wynik, poprawię zasady.")
     print(f"\nKONTROLA: model w użyciu: {naj['model']}. Błędy krytyczne: {len(naj['krytyczne'])}, "
