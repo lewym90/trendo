@@ -57,7 +57,7 @@ fi
 sleep 6
 if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; then
   echo; echo "Status: OK"; cat /tmp/trendo-zdrowie.json; echo
-  echo; echo "Kontrola jakości oceny na produktach wzorcowych (pierwszy raz kilka minut)..."
+  echo; echo "Kontrola jakości oceny na produktach wzorcowych (dwa przebiegi, 1–3 minuty)..."
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && "$PY" -m trendo.kontrola ) || echo "Kontrola: błąd uruchomienia."
   systemctl restart trendo; sleep 6
   echo; echo "Próbne wyszukiwanie (koszula męska na wieczór, pierwsze może potrwać do 2 minut):"

@@ -1,5 +1,5 @@
 /* Trendo: pamięć podręczna, żeby aplikacja startowała szybko i bez sieci */
-const WERSJA = 'trendo-0.9.0';
+const WERSJA = 'trendo-0.9.1';
 const PLIKI = ['./', 'index.html', 'styles.css?v=0.6.0', 'js/wzorce.js?v=0.6.0', 'js/demo.js?v=0.6.0', 'js/grafika.js?v=0.6.0', 'js/app.js?v=0.6.0', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

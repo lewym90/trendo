@@ -1907,7 +1907,6 @@
   "plec": "meskie",
   "oczekiwane": {
    "wesele": false,
-   "sylwester": false,
    "smartcasual": true
   },
   "kodeks": "2026-11-15"
@@ -4458,8 +4457,7 @@
    "wieczor": false,
    "wesele": false,
    "praca": false,
-   "sylwester": false,
-   "smartcasual": false
+   "sylwester": false
   },
   "kodeks": "2026-11-15"
  },

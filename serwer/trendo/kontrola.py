@@ -105,8 +105,15 @@ def test_hasel():
     return len(bledy)
 
 
+def zapisz_przebieg(r):
+    """Kolejne przebiegi (do 6) do kalibracji zasad na wielu odpowiedziach modelu naraz."""
+    przebiegi = json.loads(klasyfikator.ustawienie("kontrola_przebiegi") or "[]")
+    przebiegi = (przebiegi + [{"czas": int(time.time()), "model": r["model"], "szczegoly": r["szczegoly"]}])[-6:]
+    klasyfikator.ustawienie("kontrola_przebiegi", json.dumps(przebiegi, ensure_ascii=False))
+
+
 def drukuj(r):
-    print(f"\n=== {r['model']} ===")
+    print(f"\n=== {r.get('model_opis', r['model'])} ===")
     if not r["ocenione"]:
         print("  Model nie odpowiada (brak dostępu albo nie istnieje).")
         return
@@ -148,11 +155,20 @@ def main():
     lista = produkty_wzorcowe()
     print(f"Kontrola jakości: {len(lista)} produktów wzorcowych, modele: {', '.join(modele)}")
     wyniki = []
+    # Model przy każdym pytaniu odpowiada odrobinę inaczej, więc sprawdzamy dwa niezależne przebiegi i liczymy gorszy.
+    ile_przebiegow = 1 if len(modele) > 1 else 2
     for m in modele:
-        r = ocen_model(m, [dict(p) for p in lista])
-        drukuj(r)
-        if r["ocenione"]:
-            wyniki.append(r)
+        przebiegi = []
+        for nr in range(ile_przebiegow):
+            r = ocen_model(m, [dict(p) for p in lista])
+            if ile_przebiegow > 1:
+                r["model_opis"] = f"{m}, przebieg {nr + 1}"
+            drukuj(r)
+            if r["ocenione"]:
+                przebiegi.append(r)
+                zapisz_przebieg(r)
+        if przebiegi:
+            wyniki.append(max(przebiegi, key=lambda x: (len(x["krytyczne"]), x["punkty_karne"])))
     if not wyniki:
         print("\nKONTROLA: żaden model nie odpowiedział. Sprawdź, czy płatności w Google AI Studio są aktywne.")
         return
@@ -161,10 +177,6 @@ def main():
     if len(modele) > 1 or not klasyfikator.ustawienie("model_ai"):
         klasyfikator.ustawienie("model_ai", naj["model"])
     klasyfikator.ustawienie("kontrola_szczegoly", json.dumps(naj["szczegoly"], ensure_ascii=False))
-    # Zbieramy kolejne przebiegi (model odpowiada za każdym razem odrobinę inaczej): reguły kalibrujemy na wszystkich naraz.
-    przebiegi = json.loads(klasyfikator.ustawienie("kontrola_przebiegi") or "[]")
-    przebiegi = (przebiegi + [{"czas": int(time.time()), "model": naj["model"], "szczegoly": naj["szczegoly"]}])[-6:]
-    klasyfikator.ustawienie("kontrola_przebiegi", json.dumps(przebiegi, ensure_ascii=False))
     klasyfikator.ustawienie("kontrola_wynik", json.dumps({
         "czas": int(time.time()), "model": naj["model"], "krytyczne": len(naj["krytyczne"]), "sprawdzen": naj["sprawdzen"],
         "trafione": naj["trafione"], "ukryte_dobre": len(naj["ukryte_dobre"]), "plec": len(naj["plec"]), "hasla_bledy": bledy_hasel}))

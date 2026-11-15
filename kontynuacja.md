@@ -117,3 +117,10 @@ Najlepsza droga dla każdego sklepu:
 - Wyszukiwanie: cechy_hasla(q) (rodzaj + kolor/materiał/wzór, „dowolny” gdy nie podano), pasuje_do_hasla → trafność 2 według znaczenia. Gdy AI działa, produkty nie odpadają przez formę słowa (trafnosc 0 → 1, tylko_ai; rozstrzyga rodzaj ze zdjęcia).
 - Kontrola: test_hasel (28 haseł w różnych formach: krata/kratka/kraciasta, skórzane/ze skóry, polówka/polo, dżinsy/jeansy, kaszmir…).
 - Kalibracja reguł okazji do powtórzenia na nowych przebiegach (stare przebiegi nie mają nowych cech).
+
+## 0.9.1 (15.11.2026): kalibracja na cechach
+- Kontrola 0.9.0: test haseł 28/28; okazje: 4 krytyczne, 46 ukrytych, zgodność 96%.
+- Poprawki ogólne (nie pod produkt): zakaz skóry/luźnych materiałów na wesele/wieczór tylko dla ubrań, nie dodatków (skórzana torebka OK); naszywki_aplikacje na rzeczach wieczorowych (styl wieczorowy lub cekiny) = ozdoby, dozwolone na wieczór/sylwestra/randkę; smart casual wyklucza „wieczorowy” tylko dla sukni/kombinezonów; skórzane sneakersy ⇒ smart casual tylko gdy AI nie oznaczyło „sport”; wniosek codzien ⇒ randka tylko dla bluzek, swetrów, sukienek, polo (nie spodnie: bojówki).
+- Wzorzec wg kodeksu: #107 (kurtka biker z ekoskóry) sylwester → sporne (kodeks 17 dopuszcza skórę); #255 (t-shirt HUGO z tonalnym emblematem) smart casual → sporne.
+- Wynik na przebiegu 0.9.0: 0 krytycznych, 42 ukryte, 96,6%.
+- Kontrola robi teraz dwa niezależne przebiegi tego samego modelu i raportuje gorszy; każdy zapisywany do historii (kalibracja na wielu przebiegach).

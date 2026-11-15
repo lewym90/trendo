@@ -41,10 +41,12 @@ STYL_ZAKAZANY = {
     "sylwester": {"sportowy", "plazowy_domowy"},
     "praca": {"sportowy", "plazowy_domowy", "wieczorowy"},
     "randka": {"sportowy", "plazowy_domowy"},
-    "smartcasual": {"sportowy", "plazowy_domowy", "wieczorowy"},
+    "smartcasual": {"sportowy", "plazowy_domowy"},  # suknie wieczorowe: osobno w decyzja()
 }
+DODATKI = {"buty", "botki", "kozaki", "sneakersy", "półbuty", "szpilki", "czółenka", "mokasyny", "baleriny", "sandały",
+           "torebka", "plecak", "portfel", "pasek", "biżuteria", "zegarek", "okulary", "czapka", "kapelusz", "szal", "rękawiczki", "krawat"}
 WIECZOR_RODZAJE = {"koszula", "bluzka", "spódnica", "spodnie", "sweter", "top", "sukienka"}
-RANDKA_RODZAJE = {"sweter", "kardigan", "polo", "sukienka", "bluzka", "spódnica", "spodnie", "top", "kombinezon"}
+RANDKA_RODZAJE = {"sweter", "kardigan", "polo", "sukienka", "bluzka", "top", "kombinezon"}  # przy spodniach o charakterze decyduje krój
 
 
 def _tekst(p):
@@ -95,7 +97,7 @@ def okazje(p, k):
             and mat not in LUZNE_MATERIALY and wr != "krata"):
         o |= {"wieczor", "randka"}
     # kodeks 6: smart casual obejmuje skórzane sneakersy i kurtki, swetry, koszule, sukienki dzienne
-    if r == "sneakersy" and sk and wz in ("gladki", "male_logo") and styl != "sportowy":
+    if r == "sneakersy" and sk and wz in ("gladki", "male_logo") and styl != "sportowy" and "sport" not in o0:
         o.add("smartcasual")
     if r == "kurtka" and sk:
         o.add("smartcasual")
@@ -126,8 +128,10 @@ def decyzja(p, okazja, wykluczone=()):
     r, mat, styl = k.get("r"), k.get("material"), k.get("styl")
     if r in RODZAJ_ZAKAZANY.get(okazja, ()):
         return "nie", f"rodzaj: {r}"
-    if k.get("nadruk") in NADRUK_ZAKAZANY:
-        return "nie", f"nadruk: {k.get('nadruk')}"
+    nd = k.get("nadruk")
+    ozdoby_wieczorowe = nd == "naszywki_aplikacje" and (styl == "wieczorowy" or mat == "cekiny_brokat_metaliczny")
+    if nd in NADRUK_ZAKAZANY and not (ozdoby_wieczorowe and okazja in ("wieczor", "sylwester", "randka")):
+        return "nie", f"nadruk: {nd}"  # cyrkonie, frędzle, cekiny na rzeczy wieczorowej to ozdoby, nie naszywki
     if (k.get("wzor") or "gladki") in WZOR_ZAKAZANY:
         return "nie", f"wzór: {k.get('wzor')}"
     if styl in STYL_ZAKAZANY.get(okazja, ()):
@@ -135,10 +139,13 @@ def decyzja(p, okazja, wykluczone=()):
             return "nie", f"styl: {styl}"
     if k.get("wzor_rodzaj") == "moro":
         return "nie", "moro"
-    if okazja in ("wieczor", "wesele") and mat in LUZNE_MATERIALY and not (mat == "len" and r in ("garnitur", "marynarka")):
+    ubranie = r not in DODATKI  # kodeks 16 dotyczy ubrań; skórzana torebka czy buty na weselu są w porządku
+    if ubranie and okazja in ("wieczor", "wesele") and mat in LUZNE_MATERIALY and not (mat == "len" and r in ("garnitur", "marynarka")):
         return "nie", f"materiał: {mat}"
-    if okazja == "wesele" and mat in SKORA:
+    if ubranie and okazja == "wesele" and mat in SKORA:
         return "nie", "skóra na wesele"
+    if okazja == "smartcasual" and styl == "wieczorowy" and r in ("sukienka", "kombinezon"):
+        return "nie", "suknia wieczorowa"  # kodeks 7
     if okazja in ("praca", "smartcasual") and mat == "cekiny_brokat_metaliczny":
         return "nie", "cekiny"
     if okazja not in okazje(p, k):
