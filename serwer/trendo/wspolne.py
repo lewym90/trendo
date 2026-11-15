@@ -127,6 +127,8 @@ def weryfikuj(p):
     pozorna  - w naszej historii z ostatnich 30 dni produkt kosztował tyle samo co teraz albo mniej,
     sklep    - obniżkę deklaruje sklep, nie mamy jeszcze dość własnej historii,
     reg      - brak obniżki."""
+    if p.get("uzywany"):
+        return "second"  # ogłoszenie z drugiej ręki (Vinted): bez oceny promocji
     if not p.get("stara") or p["stara"] <= p["cena"]:
         p["stara"] = None
         return "reg"

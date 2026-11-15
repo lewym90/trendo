@@ -21,6 +21,10 @@ SKLEPY_KONF = [
     # Grupa Monnari: wyszukiwarka przyjmuje tylko formularz (POST), dane produktu są w atrybucie data-product
     ("Quiosque", "https://www.quiosque.pl/szukaj.html", None, "monnari"),
     ("Monnari", "https://emonnari.pl/szukaj.html", None, "monnari"),
+    # Grupa VRG: ten sam szablon, płeć w atrybucie data-filter-gender, Omnibus pod ceną
+    ("Vistula", "https://vistula.pl/search?query={q}", "https://vistula.pl/search?query={q}", "vrg"),
+    ("Wólczanka", "https://wolczanka.pl/search?query={q}", "https://wolczanka.pl/search?query={q}", "vrg"),
+    ("Bytom", "https://bytom.com.pl/search?query={q}", "https://bytom.com.pl/search?query={q}", "vrg"),
     ("Kappahl", "https://www.kappahl.com/pl-pl/szukaj/?q={q}%20damska", "https://www.kappahl.com/pl-pl/szukaj/?q={q}%20m%C4%99ska", "kappahl"),
 ]
 SKLEPY = [s[0] for s in SKLEPY_KONF]
@@ -204,6 +208,42 @@ def _monnari(sklep, url, q, dzial):
     return wyn, "ok"
 
 
+def _vrg(sklep, url, dzial):
+    kod, b = pobierz(url)
+    if kod != 200:
+        return [], f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    wyn = []
+    for m in re.finditer(r'data-filter-gender="([^"]*)"[^>]*>\s*<div class="product-tag-details"([^>]*)>', t):
+        plec, atr = m.group(1).lower(), m.group(2)
+        blok = t[m.end():m.end() + 6000]
+        a = dict(re.findall(r'data-([a-z]+)="([^"]*)"', atr))
+        if plec.startswith("m") and dzial == "damskie" or plec.startswith("d") and dzial == "meskie":
+            continue
+        link = re.search(r'<a href="([^"]+)"', blok)
+        nazwa = html.unescape(re.sub(r"\s+", " ", (re.search(r'class="product-title">([^<]+)<', blok) or [None, a.get("name", "")])[1])).strip()
+        cena_b = re.search(r'class="product-price">\s*<span class="([^"]+)">([^<]+)<', blok)
+        if not link or not nazwa or not cena_b:
+            continue
+        if nazwa.isupper():  # Bytom pisze nazwy wielkimi literami
+            nazwa = nazwa.capitalize()
+        cena = liczba(cena_b.group(2))
+        if not cena or not pasuje_dzial(nazwa, dzial):
+            continue
+        stara = om = None
+        if cena_b.group(1) != "reg":
+            st = re.search(r'Cena regularna:\s*([^<]+)<', blok)
+            on = re.search(r'Najniższa cena:\s*([^<]+)<', blok)
+            stara, om = (liczba(st.group(1)) if st else None), (liczba(on.group(1)) if on else None)
+        img = re.search(r'<img class="thumb[^"]*"[^>]*data-src="([^"]+)"', blok)
+        mat = re.search(r'class="product-line">\s*([^<]+?)\s*<', blok)
+        wyn.append(produkt(sklep, nazwa, cena, link.group(1), img.group(1) if img else None,
+                           stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
+                           extra={"omnibus": om, "material": mat.group(1) if mat else None,
+                                  "plec_sklepu": "damskie" if plec.startswith("d") else "meskie" if plec.startswith("m") else None}))
+    return wyn, "ok"
+
+
 def _magento(sklep, url, dzial):
     kod, b = pobierz(url)
     if kod != 200:
@@ -302,7 +342,7 @@ def _sklep(arg):
         else:
             url = wzor.format(q=quote(q))
             lista, stan = {"itemlist": _itemlist, "kafle": _kafle, "kafle2": _kafle2, "idosell": _idosell,
-                            "kappahl": _kappahl, "magento": _magento, "showroom": _showroom}[sposob](sklep, url, dzial)
+                            "kappahl": _kappahl, "vrg": _vrg, "magento": _magento, "showroom": _showroom}[sposob](sklep, url, dzial)
         return sklep, lista, stan
     except Exception as e:
         return sklep, [], "błąd: " + str(e)[:40]

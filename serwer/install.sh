@@ -66,11 +66,11 @@ if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; the
   systemctl restart trendo; sleep 6
   echo; echo "Sklepy podłączone bezpośrednio (próba: sukienka w damskich, koszula w męskich):"
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 300 "$PY" - <<'PYEOF'
-from trendo import lacznik_strony as L, lacznik_zara, lacznik_lpp, lacznik_modivo
+from trendo import lacznik_strony as L, lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_przegladarka
 from collections import Counter
 wyn = {}
 for dz, q in (("damskie", "sukienka"), ("meskie", "koszula")):
-    for l in (lacznik_zara, lacznik_lpp, lacznik_modivo):
+    for l in (lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_przegladarka):
         try:
             lista, stan = l.szukaj(q, dz)
         except Exception as e:
