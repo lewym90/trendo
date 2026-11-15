@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.19.2';
+  const WERSJA = '0.19.3';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -105,7 +105,7 @@
       if (zmiana) { zapisz(); odswiezJesliNa(['start', 'alerty', 'okazje', 'koszyk', 'produkt']); }
     }).catch(() => {});
   }
-  const foto = (p) => (p.zdjecie ? `<img class="zdj" src="${esc(p.zdjecie)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+  const foto = (p) => (p.zdjecie ? `<img class="zdj" src="${esc(p.zdjecie)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="TrendoBezZdjecia(this)">`
     : p.img ? `<img src="img/wzorce/${p.img}.webp" alt="" loading="lazy" decoding="async">`
     : p.k ? G.ubranie(p.typ, p.k[0], p.k[1]) : `<span style="color:var(--szary2);width:40%">${IK.wieszak}</span>`);
   const ikonaW = (n, w) => IK[n].replace('<svg', `<svg width="${w}" height="${w}"`);
@@ -262,7 +262,7 @@
     };
   };
 
-  /* ---------- stylizacje z prawdziwych produktów (0.19.2, wariant B wybrany przez użytkownika) ----------
+  /* ---------- stylizacje z prawdziwych produktów (0.19.3, wariant B wybrany przez użytkownika) ----------
      Serwer zwraca dla każdego miejsca w zestawie uszeregowanych kandydatów; suwak ceny przy rzeczy podmienia ją na bieżąco
      (najlepiej pasująca rzecz do tej kwoty), suwak całości obniża zestaw tam, gdzie tańszy zamiennik traci najmniej. */
   const STYL_ID = {};
@@ -1445,6 +1445,29 @@
     if (ekran.po) { try { ekran.po(); } catch (e) { console.error(e); } }
     document.title = nazwa === 'start' || nazwa === 'witaj' ? 'Trendo' : 'Trendo: ' + (E.querySelector('h1') ? E.querySelector('h1').textContent.replace(/\s+/g, ' ') : '');
   }
+  // Zdjęcie, które się nie wczytało (sklep je usunął albo blokuje): wieszak zamiast pustego pola.
+  window.TrendoBezZdjecia = (im) => { const s = document.createElement('span'); s.style.cssText = 'color:var(--szary2);width:40%;display:flex'; s.innerHTML = IK.wieszak; im.replaceWith(s); };
+
+  /* iPhone, aplikacja z ekranu początkowego: po schowaniu klawiatury iOS potrafi zostawić zmniejszony obszar strony
+     i przyczepione do dołu paski (menu, suma zestawu) wiszą w połowie ekranu. Dół liczymy z faktycznie widocznej części. */
+  const poleAktywne = () => document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  function dopasujDol() {
+    const vv = window.visualViewport;
+    let p = 0;
+    if (vv && !poleAktywne()) p = Math.round(window.innerHeight - (vv.offsetTop + vv.height));
+    document.documentElement.style.setProperty('--przes', Math.min(0, p) + 'px');
+  }
+  function poKlawiaturze() {
+    [80, 400, 900].forEach((t) => setTimeout(() => {
+      if (poleAktywne()) return;
+      window.scrollBy(0, 1); window.scrollBy(0, -1); // wymusza przeliczenie widoku w Safari
+      dopasujDol();
+    }, t));
+  }
+  document.addEventListener('focusout', (e) => { if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) poKlawiaturze(); });
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', dopasujDol); window.visualViewport.addEventListener('scroll', dopasujDol); }
+  window.addEventListener('pageshow', poKlawiaturze);
+
   window.addEventListener('hashchange', () => { ARK.hidden = true; render(); });
   render();
   setTimeout(() => { zglosObserwowane(); odswiezObserwowane(); }, 1500);

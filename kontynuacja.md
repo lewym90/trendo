@@ -288,3 +288,7 @@ Najlepsza droga dla każdego sklepu:
 
 ## 0.19.2 (15.11.2026)
 - Instalacja 0.19.1 OK; stylizacje przez aplikację na żywym serwerze (zrzuty wysłane użytkownikowi): damska smart casual (Reserved), męska wesele z krawatem, damska wieczór (Mohito, brak torebki w Mohito). Opis stylisty bez nazywania stylu rzeczy wyjściowej (pisał „sukienka w stylu smart casual” przy wieczorze). Grafiki trendów: zdobione swetry, buty Mary Jane (odbicie podłogi wycięte ręcznie).
+
+## 0.19.3 (15.11.2026): zdjęcia i pasek menu (zgłoszenie użytkownika ze zrzutami z iPhone'a)
+- Brak zdjęć: Top Secret (40 z 48 produktów: dalsze kafle mają zdjęcie w data-src, czytaliśmy tylko src), Moodo (kafle z filmem: bierzemy poster). Sprawdzone wszystkie sklepy bezpośrednie na 3 hasłach: teraz 0 produktów bez zdjęcia. Aplikacja: zdjęcie, które się nie wczyta, zamienia się w wieszak (TrendoBezZdjecia).
+- Pasek menu w połowie ekranu: błąd iOS w aplikacji z ekranu początkowego po schowaniu klawiatury (zmniejszony obszar strony). Dół pasków liczony z visualViewport (--przes w #menu, .pasek-suma, #komunikat, #arkusz), po wyjściu z pola tekstowego wymuszone przeliczenie widoku. Nie da się tego sprawdzić bez iPhone'a — potwierdzić u użytkownika.

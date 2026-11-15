@@ -103,7 +103,8 @@ def _kafle2(sklep, url, dzial):
         blok = blok[:9000]
         a = dict(re.findall(r'data-dl-([a-z0-9]+)="([^"]*)"', blok[:800]))
         link = re.search(r'<a href="([^"]+)" class="product__link"', blok)
-        img = re.search(r'class="product__img[^"]*"[^>]*?\ssrc="([^"]+)"', blok)
+        # pierwsze kafle mają src, dalsze ładują się leniwie (data-src)
+        img = re.search(r'class="[^"]*product__img[^"]*"[^>]*?\s(?:data-src|src)="(https?://[^"]+)"', blok)
         cena = liczba(a.get("price"))
         nazwa = html.unescape(a.get("name", "")).strip()
         if not cena or not nazwa or not link or not pasuje_dzial(nazwa + " " + a.get("category", ""), dzial):
@@ -138,7 +139,8 @@ def _idosell(sklep, url, dzial):
         st = re.search(r'<del class="price --max">([^<]+)</del>', blok)
         stara = _zl(st.group(1)) if st else None
         om = re.search(r'data-omniprice="([\d,.]+)"', blok)
-        img = re.search(r'data-src="(/hpeciai/[^"]+)"', blok) or re.search(r'<img src="(/hpeciai/[^"]+)"', blok)
+        img = (re.search(r'data-src="(/hpeciai/[^"]+)"', blok) or re.search(r'<img src="(/hpeciai/[^"]+)"', blok)
+               or re.search(r'poster="(/hpeciai/[^"]+)"', blok))  # kafel z filmem: kadr z filmu
         rozm = re.findall(r'<span class="product__size">([^<]+)</span>', blok)
         wyn.append(produkt(sklep, nazwa, cena, urljoin(url, m.group(1).split("?")[0]), urljoin(url, img.group(1)) if img else None,
                            stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
