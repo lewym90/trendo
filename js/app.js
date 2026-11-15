@@ -1,7 +1,7 @@
 /* Trendo 0.1.0: interfejs. Do czasu podłączenia serwera działa na danych przykładowych (js/demo.js). */
 (function () {
   'use strict';
-  const WERSJA = '0.5.0';
+  const WERSJA = '0.6.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -269,7 +269,7 @@
       akt: 'szukaj',
       html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
       <p class="szary maly" style="text-align:center;margin:-6px 0 14px">${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
-      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> Najpierw rzeczy eleganckie.${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} do tej okazji nie pasują (np. plażowe, sportowe, z nadrukiem).` : ''}</p></div>` : ''}
+      ${wynik.okazja ? `<div class="info neutral" style="margin:-4px 0 14px">${IK.iskra}<p><b>Pod okazję: ${esc(wynik.okazja)}.</b> ${wynik.klasyfikacja === 'ai' ? 'Każdą rzecz ocenił stylista AI na podstawie opisu ze sklepu.' : 'Dopasowanie uproszczone (stylista AI chwilowo niedostępny).'} Najpierw rzeczy najbardziej eleganckie.${wynik.pominiete ? ` Pominęliśmy ${wynik.pominiete} ${wynik.pominiete === 1 ? 'rzecz, która' : 'rzeczy, które'} na tę okazję się nie nadają.` : ''}</p></div>` : ''}
       <div class="przelacznik" role="tablist" aria-label="Wyniki">
         <button role="tab" aria-selected="${zakladka === 'sklepy'}" data-akcja="zakladka" data-v="sklepy">W sklepach (${P.length})</button>
         <button role="tab" aria-selected="${zakladka === 'stylizacje'}" data-akcja="zakladka" data-v="stylizacje">Stylizacje</button>

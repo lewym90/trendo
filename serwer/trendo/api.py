@@ -9,10 +9,10 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote_plus, urlparse
 
-from . import lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara
+from . import klasyfikator, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_zara, ocena_ai
 from .wspolne import historia, pamiec_czytaj, pamiec_zapisz, weryfikuj, zapisz_cene
 
-WERSJA = "0.5.0"
+WERSJA = "0.6.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_strony, lacznik_google]
 PULA = ThreadPoolExecutor(max_workers=8)
 WIEK_PAMIECI = 12 * 3600
@@ -52,9 +52,11 @@ def trafnosc(p, tok):
 
 
 # Okazje: czego na pewno nie pokazywać i co premiować. Słowa szukane w nazwie i opisie produktu (małe litery).
-NIEFORMALNE = ["palm", "hawaj", "plaż", "plaz", "tropik", "flaming", "dres", "sportow", "jogger", "bojówk", "cargo",
+NIEFORMALNE = ["coca", "cola", "pepsi", "disney", "marvel", "star wars", "harry potter", "hello kitty", "z motywem", "motyw ",
+               "logo", "napis", "retro print", "palm", "hawaj", "plaż", "plaz", "tropik", "flaming", "dres", "sportow", "jogger", "bojówk", "cargo",
                "z kapturem", "kapturem", "nadruk", "print", "graficzn", "dziur", "przetarc", "ripped", "kąpiel", "piżam",
-               "polar", "trekking", "biegow", "treningow", "kraciaste szorty", "szorty", "klapk", "japonk", "crocs"]
+               "polar", "trekking", "biegow", "treningow", "kraciaste szorty", "szorty", "klapk", "japonk", "crocs",
+               "coca", "cola", "logo", "disney", "marvel", "myszk", "licencj", "napis", "motyw", "komiks", "anime", "pepsi"]
 ELEGANCKIE = ["elegan", "wizytow", "satyn", "jedwab", "smoking", "garnitur", "koronk", "aksamit", "welur", "wełn",
               "kaszmir", "slim", "gładk", "klasycz", "taliowan", "marynar", "szpilk", "lakierk", "oxford", "derby"]
 OKAZJE = {
@@ -119,9 +121,53 @@ def szukaj(q, dzial, okazja=""):
             p["weryf"] = weryfikuj(p)
             produkty.append(p); ile += 1
         sklepy.append({"nazwa": nazwa, "stan": stan, "ile": ile})
-    wynik = {"zapytanie": q, "dzial": dzial, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
+    ocena_stan = ""
+    if okazja and produkty:
+        kandydaci = sorted(produkty, key=lambda p: -p.get("trafnosc", 2))[:150]
+        oceny, ocena_stan = ocena_ai.ocen(kandydaci, okazja, dzial, q)
+        if oceny:
+            zostaw = []
+            for p in kandydaci:
+                w = oceny.get(p["id"])
+                if w is None:
+                    continue  # bez oceny nie pokazujemy w trybie okazji
+                if not w[0]:
+                    pominiete += 1
+                    continue
+                p["punkty"] = w[1]
+                zostaw.append(p)
+            pominiete += len(produkty) - len(kandydaci)
+            produkty = zostaw
+    # Ocena AI (rodzaj, dla kogo, elegancja, okazje) na podstawie tego, co podał sklep.
+    klasyfikacja = "slowa"
+    if produkty and klasyfikator.dostepny():
+        f_haslo = PULA.submit(klasyfikator.rodzaj_hasla, q)
+        ocenione = klasyfikator.klasyfikuj(produkty)
+        try:
+            r_hasla = f_haslo.result(timeout=30)
+        except Exception:
+            r_hasla = None
+        if ocenione:
+            klasyfikacja = "ai"
+            zostaja = []
+            for p in produkty:
+                k = p.get("klasa")
+                if not k:
+                    zostaja.append(p); continue
+                if k["p"] == "dzieciece" or (dzial == "damskie" and k["p"] == "meskie") or (dzial == "meskie" and k["p"] == "damskie"):
+                    continue
+                if not klasyfikator.zgodny_rodzaj(r_hasla, k["r"]):
+                    continue
+                if okazja:
+                    if okazja not in k["o"]:
+                        pominiete += 1
+                        continue
+                    p["punkty"] = k["f"] if okazja in ("wieczor", "wesele", "sylwester", "praca", "randka") else 0
+                zostaja.append(p)
+            produkty = zostaja
+    wynik = {"zapytanie": q, "dzial": dzial, "ocena_ai": ocena_stan, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
              "sklepy": sklepy, "produkty": sorted(produkty, key=lambda p: -p.get("punkty", 0)),
-             "okazja": OKAZJE[okazja]["nazwa"] if okazja else "", "pominiete": pominiete}
+             "okazja": OKAZJE[okazja]["nazwa"] if okazja else "", "pominiete": pominiete, "klasyfikacja": klasyfikacja}
     if produkty:
         pamiec_zapisz(klucz, wynik)
     return wynik
@@ -149,7 +195,7 @@ class Obsluga(BaseHTTPRequestHandler):
         a = {k: v[0] for k, v in parse_qs(u.query).items()}
         try:
             if u.path in ("/", "/zdrowie"):
-                return self._wyslij(200, {"ok": True, "wersja": WERSJA, "laczniki": [l.NAZWA for l in LACZNIKI],
+                return self._wyslij(200, {"ok": True, "wersja": WERSJA, "laczniki": [l.NAZWA for l in LACZNIKI], "ai": klasyfikator.dostepny(),
                                       "sklepy_bezposrednio": sorted({s for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}),
                                           "google": lacznik_google.stan()})
             if u.path == "/szukaj":

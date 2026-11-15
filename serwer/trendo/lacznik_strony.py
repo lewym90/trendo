@@ -2,7 +2,7 @@
 albo w atrybutach kafelków (data-dl-*). Jeden łącznik, wiele sklepów."""
 import html, json, re
 from urllib.parse import quote, urljoin
-from .wspolne import pobierz, pobierz_json, produkt, pasuje_dzial, rownolegle, liczba
+from .wspolne import pobierz, pobierz_json, produkt, pasuje_dzial, rownolegle, liczba, MESKIE
 
 NAZWA = "Sklepy (strony wyszukiwania)"
 # (sklep, adres wyszukiwania dla damskich, dla męskich (None = brak), sposób odczytu)
@@ -12,6 +12,8 @@ SKLEPY_KONF = [
     ("Born2Be", "https://born2be.pl/kobiety?q={q}", "https://born2be.pl/mezczyzni?q={q}", "kafle"),
     ("Renee", "https://www.renee.pl/kobiety?q={q}", None, "kafle"),
     ("Bizuu", "searchanise:1r4h1n5E9I:https://bizuu.com", None, "searchanise"),
+    ("Kazar", "https://kazar.com/catalogsearch/result/?q={q}", "https://kazar.com/catalogsearch/result/?q={q}", "magento"),
+    ("Showroom", "https://www.showroom.pl/search?q={q}", "https://www.showroom.pl/search?q={q}", "showroom"),
 ]
 SKLEPY = [s[0] for s in SKLEPY_KONF]
 
@@ -66,6 +68,72 @@ def _kafle(sklep, url, dzial):
     return wyn, "ok"
 
 
+def _magento(sklep, url, dzial):
+    kod, b = pobierz(url)
+    if kod != 200:
+        return [], f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    wyn = []
+    for blok in t.split('class="item product product-item"')[1:]:
+        blok = blok[:12000]
+        m = re.search(r'class="product-item-link"\s*href="([^"]+)"[^>]*>\s*([^<]+?)\s*</a>', blok)
+        c = re.search(r'data-price-amount="([\d.]+)"\s*data-price-type="finalPrice"', blok)
+        if not m or not c:
+            continue
+        stara = re.search(r'data-price-amount="([\d.]+)"\s*data-price-type="oldPrice"', blok)
+        img = re.search(r'class="product-image-photo[^"]*"\s*src="([^"]+)"', blok)
+        nazwa = html.unescape(m.group(2))
+        alt = re.search(r'alt="([^"]+)"', blok)
+        pelna = html.unescape(alt.group(1)) if alt else nazwa
+        if not pasuje_dzial(pelna, dzial):
+            continue
+        if dzial == "meskie" and sklep in TYLKO_JAWNIE_MESKIE and not MESKIE.search(pelna):
+            continue
+        cena, st = float(c.group(1)), (float(stara.group(1)) if stara else None)
+        wyn.append(produkt(sklep, pelna, cena, m.group(1), img.group(1) if img else None,
+                           stara=(st if st and st > cena else None), zrodlo="sklep", dzial=dzial))
+    return wyn, "ok"
+
+
+TYLKO_JAWNIE_MESKIE = {"Kazar"}  # sklep głównie damski: w dziale męskim tylko rzeczy opisane jako męskie
+MESKIE_KAT = ("Shirts", "Suits", "Blazers > Suit", "Ties")
+DAMSKIE_KAT = ("Blouses", "Dresses", "Skirts", "Jumpsuits", "Bras", "Lingerie")
+
+
+def _showroom(sklep, url, dzial):
+    kod, b = pobierz(url)
+    if kod != 200:
+        return [], f"brak odpowiedzi ({kod})"
+    t = b.decode("utf-8", "ignore")
+    znak = "__PLP_PRELOADED_STATE__ = JSON.stringify("
+    i = t.find(znak)
+    if i < 0:
+        return [], "brak danych na stronie"
+    try:
+        d, _ = json.JSONDecoder().raw_decode(t[i + len(znak):])
+    except Exception:
+        return [], "nieczytelne dane"
+    wyn = []
+    for x in d.get("products") or []:
+        kat = x.get("category") or ""
+        if kat.startswith("Pre-owned"):
+            continue
+        if dzial == "damskie" and kat.startswith(MESKIE_KAT):
+            continue
+        if dzial == "meskie" and kat.startswith(DAMSKIE_KAT):
+            continue
+        cena = (x.get("price") or {}).get("price")
+        if not cena or not x.get("url"):
+            continue
+        stara = (x.get("price") or {}).get("originalPrice")
+        nazwa = f"{x.get('brand', '')} {x.get('title', '')}".strip()
+        foto = ((x.get("photo") or {}).get("url") or "").replace("width=268&height=402", "width=600&height=900")
+        wyn.append(produkt(sklep, nazwa[:1].upper() + nazwa[1:], cena / 100, urljoin(url, x["url"]), foto,
+                           stara=(stara / 100 if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
+                           extra={"rozmiary": x.get("sizes") or None}))
+    return wyn, "ok"
+
+
 def _searchanise(sklep, konf, q, dzial):
     _, klucz, baza = konf.split(":", 2)
     kod, d = pobierz_json(f"https://searchserverapi.com/getresults?api_key={klucz}&q={quote(q)}&items=true&maxResults=40&output=json")
@@ -92,7 +160,7 @@ def _sklep(arg):
             lista, stan = _searchanise(sklep, wzor, q, dzial)
         else:
             url = wzor.format(q=quote(q))
-            lista, stan = (_itemlist if sposob == "itemlist" else _kafle)(sklep, url, dzial)
+            lista, stan = {"itemlist": _itemlist, "kafle": _kafle, "magento": _magento, "showroom": _showroom}[sposob](sklep, url, dzial)
         return sklep, lista, stan
     except Exception as e:
         return sklep, [], "błąd: " + str(e)[:40]
