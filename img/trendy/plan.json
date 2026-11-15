@@ -345,6 +345,88 @@
         "plik": "krok-stylizacje",
         "katalog": "ikony"
       }
+    ],
+    "9": [
+      {
+        "plik": "m-biale-jeansy",
+        "m": [
+          "biale jeansy"
+        ]
+      },
+      {
+        "plik": "m-proste-tshirty",
+        "m": [
+          "proste t shirty"
+        ]
+      },
+      {
+        "plik": "m-kurtka-trucker",
+        "m": [
+          "kurtki trucker"
+        ]
+      },
+      {
+        "plik": "m-plaszcz-ponadczasowy",
+        "m": [
+          "plaszcz o ponadczasowym kroju"
+        ]
+      },
+      {
+        "plik": "m-dzianinowa-estetyka",
+        "m": [
+          "dzianinowa estetyka"
+        ]
+      },
+      {
+        "plik": "m-strukturalny-plaszcz",
+        "m": [
+          "strukturalna odziez wierzchnia"
+        ]
+      },
+      {
+        "plik": "m-buty-do-biegania",
+        "m": [
+          "sportowe buty do biegania"
+        ]
+      },
+      {
+        "plik": "m-mokry-polysk",
+        "m": [
+          "ubrania z efektem mokrego polysku"
+        ]
+      },
+      {
+        "plik": "m-czarny-garnitur",
+        "m": [
+          "czarne garnitury"
+        ]
+      }
+    ],
+    "10": [
+      {
+        "plik": "m-dwurzedowa-marynarka",
+        "m": [
+          "dwurzedowe marynarki"
+        ]
+      },
+      {
+        "plik": "d-broszki",
+        "d": [
+          "broszki"
+        ]
+      },
+      {
+        "plik": "d-dzianinowa-estetyka",
+        "d": [
+          "dzianinowa estetyka"
+        ]
+      },
+      {
+        "plik": "d-buty-szpic",
+        "d": [
+          "buty z noskiem w szpic"
+        ]
+      }
     ]
   }
 }
