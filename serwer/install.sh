@@ -64,13 +64,13 @@ if curl -fsS "https://$HOST/trendo-api/zdrowie" -o /tmp/trendo-zdrowie.json; the
   echo; echo "Znaki sklepów: prawdziwe logo z nagłówka strony sklepu (próba na 5 sklepach, reszta pobierze się sama w tle)..."
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 400 "$PY" -m trendo.logo Reserved Zara "H&M" Zalando Sinsay ) || echo "Znaki sklepów: błąd uruchomienia."
   systemctl restart trendo; sleep 6
-  echo; echo "Sklepy podłączone bezpośrednio (próba: sukienka w damskich, koszula w męskich):"
+  echo; echo "Sklepy podłączone bezpośrednio (próba: sukienka w damskich, koszula w męskich; gdy sklep ich nie ma — buty):"
   ( set -a; . /etc/trendo.env; set +a; cd "$DIR" && timeout 300 "$PY" - <<'PYEOF'
-from trendo import lacznik_strony as L, lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_przegladarka
+from trendo import lacznik_strony as L, lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_ccc, lacznik_wittchen
 from collections import Counter
 wyn = {}
 for dz, q in (("damskie", "sukienka"), ("meskie", "koszula")):
-    for l in (lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_przegladarka):
+    for l in (lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_ccc, lacznik_wittchen):
         try:
             lista, stan = l.szukaj(q, dz)
         except Exception as e:
@@ -81,11 +81,17 @@ for dz, q in (("damskie", "sukienka"), ("meskie", "koszula")):
             wyn.setdefault(l.NAZWA, {})[dz] = stan
     for k in L.SKLEPY_KONF:
         sk, lista, stan = L._sklep((k, q, dz))
+        if stan == "ok" and not lista:  # sklep bez tej rzeczy (np. obuwniczy): próba na butach
+            buty = "botki" if dz == "damskie" else "sneakersy"
+            _, lista2, stan2 = L._sklep((k, buty, dz))
+            if stan2 == "ok" and lista2:
+                wyn.setdefault(sk, {})[dz] = f"{len(lista2)} ({buty})"
+                continue
         if stan != "pomijam":
             wyn.setdefault(sk, {})[dz] = len(lista) if stan == "ok" else stan
 for sk in sorted(wyn, key=str.lower):
     d = wyn[sk]
-    print(f"  {sk:12} damskie: {str(d.get('damskie', '-')):5}  męskie: {d.get('meskie', '-')}")
+    print(f"  {sk:12} damskie: {str(d.get('damskie', '-')):12}  męskie: {d.get('meskie', '-')}")
 PYEOF
   ) || echo "Sklepy: błąd uruchomienia."
   echo; echo "Próbne wyszukiwanie przez serwer (koszula męska; pierwsze może potrwać do 2 minut):"

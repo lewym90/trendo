@@ -225,3 +225,10 @@ Najlepsza droga dla każdego sklepu:
 - Deichmann: /pl-pl/search/{q}?gendersFilter=1887164 (kobiety) / 1887165 (mężczyźni); wyniki w <script id="ng-state"> jako base64+gzip (klucz z „search%2F”), 24 na stronę → dwie strony (&page=2). Ceny w groszach (priceRange.min.withTax), beforeSaleWithTax, lowestPriorPrice (Omnibus). Zdjęcie: asset.deichmann.com/images/f_auto,q_auto/w_600/{public_id}/zdjecie (bez końcowego członu 404).
 - Big Star: API bigstar.pl/api/v2/products/?q= (parametr query={…} jest ignorowany), 63 na stronę; płeć i dzieci z category_path; link bigstar.pl/p-{slug}; regular_price, omnibus_price.
 - Zostają: CCC (wyszukiwanie przekierowuje na stronę główną — do rozpracowania w przeglądarce), 4F (strona nie odpowiada z mojego środowiska), About You (bez danych w odpowiedziach), Wittchen (Synerise z tokenem).
+
+## 0.16.0 (15.11.2026): 30 sklepów (CCC, Wittchen)
+- Instalacja 0.15.1 OK (28 sklepów). Deichmann 0/0 w teście instalatora, bo to sklep z butami: test sprawdza teraz buty (botki / sneakersy), gdy sklep nie ma sukienek ani koszul.
+- Grafika damskiego trendu „Płaszcz o ponadczasowym kroju”: wzorce/d-okrycia-1 (camelowy płaszcz).
+- serwer/trendo/lacznik_ccc.py: api/Search/Search?searchText=…&filterAttributes={"filterAttributeOptions":[]}&page=1&pageSize=60&language=pl_PL&listingName=allproducts, nagłówki x-api-version 4.0, x-frontend-id 44, x-source-name WWW, ciasteczko „anon” (token gościa, ważny długo) pobrane raz przeglądarką do DANE/ccc-ciasteczka.json; przy 407 nowe. Do hasła dopisujemy „damskie”/„męskie”, płeć z categoryTree.itemCategory (Kobiety/Mężczyźni). Link ccc.eu/pl/pl/p/{slug}.
+- serwer/trendo/lacznik_wittchen.py: Synerise smcr.wittchen.com/ai/search/v2/indices/{indeks}/query?query=…&limit=48; token Bearer ważny 1 h przechwytywany przeglądarką (ok. 5 s) do DANE/wittchen-token.json, odnawiany po wygaśnięciu. gender female/male, effectivePrice, price, attributes.omnibus.
+- Zostają przez Google: 4F (strona nie odpowiada z mojego środowiska), About You.
