@@ -1,49 +1,294 @@
 {
-  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor.",
+  "opis": "Plan arkuszy 3x3 do wygenerowania (komórki czytane wierszami, od lewej). plik → img/trendy/<plik>.webp, trendy → klucze w mapa.json (d/m), wzor → cechy.wzor. Arkusze 5–6: kafelki okazji (img/okazje/okazja-<d|m>-<okazja>.webp) i ilustracje pustych ekranów (img/puste/).",
   "arkusze": {
     "1": [
-      {"plik": "d-olowkowa-spodnica", "d": ["olowkowe spodnice"]},
-      {"plik": "d-zwiewna-sukienka-maxi", "d": ["zwiewne sukienki maxi"]},
-      {"plik": "d-duze-kwiaty", "d": ["ubrania w duze kwiaty"]},
-      {"plik": "d-welurowe-spodnie", "d": ["welurowe spodnie"]},
-      {"plik": "d-biale-jeansy", "d": ["biale jeansy"]},
-      {"plik": "d-brazowe-jeansy", "d": ["brazowe jeansy"]},
-      {"plik": "d-zielone-spodnie-khaki", "d": ["zielone spodnie i spodnice khaki"]},
-      {"plik": "d-garnitur-szerokie-ramiona", "d": ["garnitury z szerokimi ramionami"]},
-      {"plik": "d-spodnie-capri", "d": ["spodnie capri"]}
+      {
+        "plik": "d-olowkowa-spodnica",
+        "d": [
+          "olowkowe spodnice"
+        ]
+      },
+      {
+        "plik": "d-zwiewna-sukienka-maxi",
+        "d": [
+          "zwiewne sukienki maxi"
+        ]
+      },
+      {
+        "plik": "d-duze-kwiaty",
+        "d": [
+          "ubrania w duze kwiaty"
+        ]
+      },
+      {
+        "plik": "d-welurowe-spodnie",
+        "d": [
+          "welurowe spodnie"
+        ]
+      },
+      {
+        "plik": "d-biale-jeansy",
+        "d": [
+          "biale jeansy"
+        ]
+      },
+      {
+        "plik": "d-brazowe-jeansy",
+        "d": [
+          "brazowe jeansy"
+        ]
+      },
+      {
+        "plik": "d-zielone-spodnie-khaki",
+        "d": [
+          "zielone spodnie i spodnice khaki"
+        ]
+      },
+      {
+        "plik": "d-garnitur-szerokie-ramiona",
+        "d": [
+          "garnitury z szerokimi ramionami"
+        ]
+      },
+      {
+        "plik": "d-spodnie-capri",
+        "d": [
+          "spodnie capri"
+        ]
+      }
     ],
     "2": [
-      {"plik": "d-baleriny-dwukolorowe", "d": ["baletki chanel"]},
-      {"plik": "d-pudrowy-roz-zolty", "d": ["pudrowy roz i zolty"]},
-      {"plik": "d-torebka-y2k", "d": ["torby w stylu y2k"]},
-      {"plik": "d-fredzle", "d": ["fredzle"]},
-      {"plik": "d-kolnierz-koronkowy", "d": ["kurtki z koronkowymi kolnierzami"]},
-      {"plik": "d-strukturalny-plaszcz", "d": ["strukturalna odziez wierzchnia"]},
-      {"plik": "d-wysoki-kolnierz", "d": ["wysokie kolnierze"]},
-      {"plik": "d-welurowy-dres", "d": ["welurowe dresy"]},
-      {"plik": "d-koronkowe-bufiaste-szorty", "d": ["koronkowe bufiaste spodnie"]}
+      {
+        "plik": "d-baleriny-dwukolorowe",
+        "d": [
+          "baletki chanel"
+        ]
+      },
+      {
+        "plik": "d-pudrowy-roz-zolty",
+        "d": [
+          "pudrowy roz i zolty"
+        ]
+      },
+      {
+        "plik": "d-torebka-y2k",
+        "d": [
+          "torby w stylu y2k"
+        ]
+      },
+      {
+        "plik": "d-fredzle",
+        "d": [
+          "fredzle"
+        ]
+      },
+      {
+        "plik": "d-kolnierz-koronkowy",
+        "d": [
+          "kurtki z koronkowymi kolnierzami"
+        ]
+      },
+      {
+        "plik": "d-strukturalny-plaszcz",
+        "d": [
+          "strukturalna odziez wierzchnia"
+        ]
+      },
+      {
+        "plik": "d-wysoki-kolnierz",
+        "d": [
+          "wysokie kolnierze"
+        ]
+      },
+      {
+        "plik": "d-welurowy-dres",
+        "d": [
+          "welurowe dresy"
+        ]
+      },
+      {
+        "plik": "d-koronkowe-bufiaste-szorty",
+        "d": [
+          "koronkowe bufiaste spodnie"
+        ]
+      }
     ],
     "3": [
-      {"plik": "d-wzory-zwierzece", "d": ["wzory zwierzece"]},
-      {"plik": "retro-sneakersy", "d": ["buty celine reebok"], "m": ["buty celine reebok"]},
-      {"plik": "m-brazowe-jeansy", "m": ["brazowe jeansy"]},
-      {"plik": "m-garnitur-szerokie-ramiona", "m": ["garnitury z szerokimi ramionami"]},
-      {"plik": "m-futro", "m": ["futro"]},
-      {"plik": "m-wysoki-kolnierz", "m": ["wysokie kolnierze"]},
-      {"plik": "m-duze-kwiaty", "m": ["ubrania w duze kwiaty"]},
-      {"plik": "m-barn-jacket", "m": ["kurtki typu barn jacket"]},
-      {"plik": "m-zamszowe-sneakersy", "m": ["zamszowe sneakersy"]}
+      {
+        "plik": "d-wzory-zwierzece",
+        "d": [
+          "wzory zwierzece"
+        ]
+      },
+      {
+        "plik": "retro-sneakersy",
+        "d": [
+          "buty celine reebok"
+        ],
+        "m": [
+          "buty celine reebok"
+        ]
+      },
+      {
+        "plik": "m-brazowe-jeansy",
+        "m": [
+          "brazowe jeansy"
+        ]
+      },
+      {
+        "plik": "m-garnitur-szerokie-ramiona",
+        "m": [
+          "garnitury z szerokimi ramionami"
+        ]
+      },
+      {
+        "plik": "m-futro",
+        "m": [
+          "futro"
+        ]
+      },
+      {
+        "plik": "m-wysoki-kolnierz",
+        "m": [
+          "wysokie kolnierze"
+        ]
+      },
+      {
+        "plik": "m-duze-kwiaty",
+        "m": [
+          "ubrania w duze kwiaty"
+        ]
+      },
+      {
+        "plik": "m-barn-jacket",
+        "m": [
+          "kurtki typu barn jacket"
+        ]
+      },
+      {
+        "plik": "m-zamszowe-sneakersy",
+        "m": [
+          "zamszowe sneakersy"
+        ]
+      }
     ],
     "4": [
-      {"plik": "m-fredzle", "m": ["fredzle"]},
-      {"plik": "m-sztruksowe-spodnie", "m": ["sztruksowe spodnie"]},
-      {"plik": "wzor-krata", "wzor": "krata"},
-      {"plik": "wzor-paski", "wzor": "paski"},
-      {"plik": "wzor-kropki", "wzor": "kropki"},
-      {"plik": "wzor-kwiaty", "wzor": "kwiaty"},
-      {"plik": "wzor-zwierzecy", "wzor": "zwierzecy"},
-      {"plik": "wzor-pepitka", "wzor": "jodelka_pepitka"},
-      {"plik": "wzor-geometryczny", "wzor": "geometryczny"}
+      {
+        "plik": "m-fredzle",
+        "m": [
+          "fredzle"
+        ]
+      },
+      {
+        "plik": "m-sztruksowe-spodnie",
+        "m": [
+          "sztruksowe spodnie"
+        ]
+      },
+      {
+        "plik": "wzor-krata",
+        "wzor": "krata"
+      },
+      {
+        "plik": "wzor-paski",
+        "wzor": "paski"
+      },
+      {
+        "plik": "wzor-kropki",
+        "wzor": "kropki"
+      },
+      {
+        "plik": "wzor-kwiaty",
+        "wzor": "kwiaty"
+      },
+      {
+        "plik": "wzor-zwierzecy",
+        "wzor": "zwierzecy"
+      },
+      {
+        "plik": "wzor-pepitka",
+        "wzor": "jodelka_pepitka"
+      },
+      {
+        "plik": "wzor-geometryczny",
+        "wzor": "geometryczny"
+      }
+    ],
+    "5": [
+      {
+        "plik": "okazja-d-codzien",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-d-smartcasual",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-d-praca",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-d-randka",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-d-wesele",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-d-wieczor",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-d-sylwester",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-d-wyjazd",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "pusty-koszyk",
+        "katalog": "puste"
+      }
+    ],
+    "6": [
+      {
+        "plik": "okazja-m-codzien",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-m-smartcasual",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-m-praca",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-m-randka",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-m-wesele",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-m-wieczor",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-m-sylwester",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "okazja-m-wyjazd",
+        "katalog": "okazje"
+      },
+      {
+        "plik": "pusty-alerty",
+        "katalog": "puste"
+      }
     ]
   }
 }
