@@ -17,6 +17,8 @@ SKLEPY_KONF = [
     ("Top Secret", "https://www.topsecret.pl/wszystkie-produkty?q={q}", None, "kafle2"),
     ("Molton", "https://molton.pl/pl/search.html?text={q}", None, "idosell"),
     ("Moodo", "https://moodo.pl/pl/search.html?text={q}", None, "idosell"),
+    # Specshop: odzież taktyczna i outdoor (Helikon-Tex, Texar, M-Tac, Mil-Tec), dla obu działów (decyzja użytkownika 16.11)
+    ("Specshop", "https://www.specshop.pl/search.php?text={q}", "https://www.specshop.pl/search.php?text={q}", "idosell"),
     # Kappahl miesza w wynikach dzieci, kobiety i mężczyzn; słowo działu w zapytaniu zawęża wyniki do niego
     # Grupa Monnari: wyszukiwarka przyjmuje tylko formularz (POST), dane produktu są w atrybucie data-product
     ("Quiosque", "https://www.quiosque.pl/szukaj.html", None, "monnari"),
@@ -129,19 +131,19 @@ def _idosell(sklep, url, dzial):
     for blok in t.split('data-product_id="')[1:]:
         blok = blok[:7000]
         m = re.search(r'class="product__name" href="([^"]+)"[^>]*>([^<]+)</a>', blok)
-        c = re.search(r'<strong class="price">([^<]+)</strong>', blok)
+        c = re.search(r'<strong class="price(?: --main)?">([^<]+)', blok)
         if not m or not c:
             continue
         cena = _zl(c.group(1))
         nazwa = html.unescape(m.group(2)).strip()
         if not cena or not pasuje_dzial(nazwa, dzial):
             continue
-        st = re.search(r'<del class="price --max">([^<]+)</del>', blok)
+        st = re.search(r'<del class="price --max">([^<]+)', blok)
         stara = _zl(st.group(1)) if st else None
         om = re.search(r'data-omniprice="([\d,.]+)"', blok)
         img = (re.search(r'data-src="(/hpeciai/[^"]+)"', blok) or re.search(r'<img src="(/hpeciai/[^"]+)"', blok)
                or re.search(r'poster="(/hpeciai/[^"]+)"', blok))  # kafel z filmem: kadr z filmu
-        rozm = re.findall(r'<span class="product__size">([^<]+)</span>', blok)
+        rozm = re.findall(r'<span class="product__size"[^>]*>([^<]+)</span>', blok)
         wyn.append(produkt(sklep, nazwa, cena, urljoin(url, m.group(1).split("?")[0]), urljoin(url, img.group(1)) if img else None,
                            stara=(stara if stara and stara > cena else None), zrodlo="sklep", dzial=dzial,
                            extra={"rozmiary": rozm or None, "omnibus": _zl(om.group(1)) if om else None}))

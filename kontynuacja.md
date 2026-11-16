@@ -302,3 +302,22 @@ Najlepsza droga dla każdego sklepu:
 - viewport maximum-scale=1, user-scalable=no; touch-action: manipulation na html/body (podwójne dotknięcie); gesturestart/gesturechange i ruch dwoma palcami blokowane (iOS ignoruje user-scalable=no); pola formularzy min. 16 px (iOS nie powiększa przy wejściu w pole). Celowo bez blokady podwójnego dotknięcia w JS — gubiłaby szybkie kolejne kliknięcia.
 - Powiadomienia o cenie: użytkownik zostawia jak jest (sprawdzanie co 12 h, powiadomienie po otwarciu aplikacji). Prawdziwe Web Push omówione, na później.
 - 0.20.2: zgłoszenie — dalej dało się powiększyć (prawdopodobnie stara wersja w telefonie). Dodatkowo touch-action: pan-x pan-y (bez pinch-zoom) i blokada gestów na window/document w fazie przechwytywania oraz dotyku dwoma palcami.
+
+## 0.21.0 (16.11.2026): trafność wyszukiwania, marki, zdjęcie z kilkoma rzeczami, Specshop (DECYZJE użytkownika)
+- Zgłoszenie: „koszula taktyczna” pokazywała różowe koszule. DECYZJA: niepasujące rzeczy się NIE pokazują.
+- `cechy_hasla` v5 (klucz `hasloV5|`, na stałe): oprócz r/kolor/materiał/wzór także styl, okazja, marka (+warianty), model,
+  `bez_marki` i `wymagane` (cechy typu „taktyczna”, „z kapturem”, „oversize” z rdzeniami słów). Marka tylko, gdy jej ślad jest
+  w haśle albo wskazuje ją model (`_popraw_haslo`, nie zgadujemy).
+- `sprawdz_cechy`: rdzenie słów w nazwie/opisie/adresie (darmowo) → zapamiętane oceny (tabela `cechy_prod`) → reszta jedną krótką
+  oceną tekstową AI (bez zdjęć, paczki po 40, do 240 rzeczy). Odrzucone rzeczy NIE idą do płatnej oceny zdjęć (oszczędność).
+- Po ocenie zdjęć ukrywane rzeczy z innym kolorem/materiałem/wzorem/stylem niż w haśle; okazja z hasła („sukienka na wesele”) filtruje.
+- Marka (DECYZJA): na górze dokładnie ta marka („Ten model” na początku), niżej sekcja „Alternatywnie” z innymi markami (często
+  tańsze), do 48 rzeczy po kolei z różnych sklepów. Serwer szuka naraz: hasło, „rodzaj + marka”, hasło bez marki.
+  Gdy marki nie ma w sklepach: komunikat + same alternatywy. Bez ostrzeżeń o podróbkach (DECYZJA: nie).
+- `/szukaj` zwraca `haslo` {marka, model, bez_marki, rodzaj, cechy, okazja}; produkty mają `alternatywa`, `ten_model`.
+- Zdjęcie: `POST /zdjecie?szukam=...` zwraca `rzeczy` (do 6: q, r, marka i model TYLKO z widocznego logo, znak, dzial, szukaj)
+  + stare pola q/rzecz/dzial. Aplikacja: ekran `#/zdjecie` (podgląd, lista rzeczy do zaznaczenia i poprawienia, pole
+  „Nie ma tego, czego szukasz?” = ponowne rozpoznanie z podpowiedzią, przełącznik działu, „Szukaj zaznaczonych”, „Skomponuj
+  stylizację”). Kilka rzeczy = zakładki w wynikach (`st.zakladki`, pamięć `WYN`, pozostałe dociągane po kolei w tle).
+- Specshop.pl podłączony (IdoSell, oba działy). Militaria.pl, Helikon-Tex, Texar, 8a.pl blokują serwery; zostaje Google Shopping.
+- Kontrola przy instalacji: 4 nowe hasła testowe (marka, okazja, cecha); jednorazowo kilka groszy, potem z pamięci.

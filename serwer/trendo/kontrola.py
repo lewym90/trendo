@@ -93,13 +93,19 @@ HASLA = [
     ("botki", {"r": "botki"}),
     ("szpilki", {"r": "szpilki"}),
     ("trencz", {"r": "płaszcz"}),
+    # 0.21.0: marka, okazja i inne wymagane cechy z hasła (marki nie zgadujemy)
+    ("torebka guess", {"r": "torebka", "marka": "Guess"}),
+    ("czarna torebka na ramię", {"r": "torebka", "kolor": "czarny", "marka": ""}),
+    ("sukienka na wesele", {"r": "sukienka", "okazja": "wesele"}),
+    ("koszula taktyczna", {"r": "koszula", "marka": "", "cecha": "taktyczna"}),
 ]
 
 
 def test_hasel(swiezo=True):
     bledy = []
     for q, oczek in HASLA:
-        c = klasyfikator.cechy_hasla(q, swiezo=swiezo) or {}
+        c = dict(klasyfikator.cechy_hasla(q, swiezo=swiezo) or {})
+        c["cecha"] = next((w["cecha"] for w in c.get("wymagane") or [] if "takty" in w["cecha"]), (c.get("wymagane") or [{}])[0].get("cecha"))
         zle = {pole: (c.get(pole), w) for pole, w in oczek.items()
                if not (c.get(pole) == w or (pole == "r" and klasyfikator.zgodny_rodzaj(w, c.get(pole)) and klasyfikator.zgodny_rodzaj(c.get(pole), w)))}
         if zle:

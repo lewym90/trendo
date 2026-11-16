@@ -4,8 +4,9 @@ Ocena jest tylko jednym głosem: ostateczną decyzję podejmuje nadzor.py.
 Każdy produkt oceniamy raz i zapisujemy na stałe (tabela klasy2).
 Klucz: /root/.trendo-gemini (albo zmienna GEMINI_KEY). Bez własnych limitów kosztów (decyzja użytkownika 15.11): granicą są środki wpłacone na konto klucza.
 Koszt liczymy tylko do wglądu (/zdrowie)."""
-import base64, json, os, re, time
+import base64, json, os, re, time, unicodedata
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse
 from .wspolne import DB, _baza_blokada, licznik, pobierz, pobierz_json
 
 RODZAJE = ["koszula", "bluzka", "t-shirt", "polo", "top", "sweter", "kardigan", "bluza", "marynarka", "kamizelka", "kurtka", "płaszcz",
@@ -308,38 +309,229 @@ def klasyfikuj(produkty, maks=240, swiezo=False, model=None, zapisuj=True):
     return sum(1 for p in produkty if "klasa" in p)
 
 
+OKAZJE_HASLA = ["dowolna", "codzien", "smartcasual", "praca", "randka", "wieczor", "wesele", "sylwester", "wyjazd"]
 SCHEMAT_HASLO = {"type": "OBJECT", "properties": {
     "r": {"type": "STRING", "enum": RODZAJE}, "kolor": {"type": "STRING", "enum": ["dowolny"] + KOLORY},
-    "material": {"type": "STRING", "enum": ["dowolny"] + MATERIALY}, "wzor_rodzaj": {"type": "STRING", "enum": ["dowolny"] + WZORY_RODZAJ}},
-    "required": ["r", "kolor", "material", "wzor_rodzaj"]}
+    "material": {"type": "STRING", "enum": ["dowolny"] + MATERIALY}, "wzor_rodzaj": {"type": "STRING", "enum": ["dowolny"] + WZORY_RODZAJ},
+    "styl": {"type": "STRING", "enum": ["dowolny"] + STYLE}, "okazja": {"type": "STRING", "enum": OKAZJE_HASLA},
+    "marka": {"type": "STRING"}, "marka_warianty": {"type": "ARRAY", "items": {"type": "STRING"}}, "model": {"type": "STRING"},
+    "bez_marki": {"type": "STRING"},
+    "wymagane": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
+        "cecha": {"type": "STRING"}, "slowa": {"type": "ARRAY", "items": {"type": "STRING"}}}, "required": ["cecha", "slowa"]}}},
+    "required": ["r", "kolor", "material", "wzor_rodzaj", "styl", "okazja", "marka", "marka_warianty", "model", "bez_marki", "wymagane"]}
 _haslo_pamiec = {}
+PYTANIE_HASLO = """Klientka lub klient wpisał w wyszukiwarkę sklepu odzieżowego: „{q}”. Ustal, czego dokładnie szuka.
+r = rodzaj rzeczy (jedna wartość z listy).
+kolor, material, wzor_rodzaj = cechy, o które hasło WPROST prosi; jeśli nie prosi, „dowolny”. Słowa mogą mieć dowolną formę:
+  „kraciasta”, „w kratkę”, „w kratę” = krata; „ze skóry”, „skórzane” = skora; „ekoskóra”, „sztuczna skóra” = skora_ekologiczna;
+  „czarna”, „czarne” = czarny.
+styl = tylko gdy hasło wprost go podaje: „elegancka”, „wizytowa” = elegancki; „wieczorowa” = wieczorowy; „sportowa” = sportowy;
+  „casualowa” = casual; „smart casual” = smart_casual. Inaczej „dowolny”.
+okazja = tylko gdy hasło wprost ją podaje: „na wesele” = wesele, „do pracy”, „do biura” = praca, „na sylwestra” = sylwester,
+  „na randkę” = randka, „na co dzień” = codzien. Inaczej „dowolna”.
+marka = marka, jeśli hasło ją zawiera (np. „torebka guess” = Guess, „buty nike air max” = Nike, „koszula helikon” = Helikon-Tex),
+  w poprawnej pisowni. Inaczej pusty napis. Nie zgaduj marki, której w haśle nie ma.
+marka_warianty = inne zapisy tej marki spotykane w nazwach produktów w sklepach (np. Helikon-Tex: „Helikon”; Michael Kors:
+  „MICHAEL Michael Kors”; Tommy Hilfiger: „Tommy Jeans”). Pusta lista, gdy nie ma marki.
+model = nazwa modelu lub linii, jeśli hasło ją podaje (np. „Air Max 90”, „Jet Set”, „Speedy”). Inaczej pusty napis.
+bez_marki = to samo hasło bez marki i modelu, w mianowniku, jako hasło do wyszukiwarki (np. „brązowa torebka michael kors jet set”
+  = „brązowa torebka”). Gdy marka wyraźnie określa charakter rzeczy, zachowaj go słowem (np. „koszula texar” = „koszula
+  taktyczna”, „kurtka the north face” = „kurtka outdoorowa”). Pusty napis, gdy w haśle nie ma marki.
+wymagane = INNE cechy, o które hasło wprost prosi, a których nie opisują pola powyżej: przeznaczenie i charakter (taktyczna,
+  wojskowa, trekkingowa, do biegania, ciążowa, narciarska, przeciwdeszczowa), krój i fason (oversize, slim, maxi, midi, mini,
+  z wysokim stanem, szerokie nogawki, dwurzędowa, kopertowa), detale (z kapturem, na obcasie, na platformie, z frędzlami,
+  na łańcuszku, z kieszeniami, bez rękawów, z golfem). NIE wpisuj płci, rodzaju rzeczy, koloru, materiału, wzoru, stylu, okazji,
+  marki ani ogólników (modna, ładna, tania, nowa, damska). Zwykle lista jest pusta albo ma jedną cechę.
+  cecha = krótko, tak jak w haśle (np. „taktyczna”).
+  slowa = 3 do 10 rdzeni słów (małe litery, bez końcówek, po polsku i po angielsku), które w NAZWIE produktu w sklepie oznaczają
+  tę cechę, np. taktyczna: taktyczn, tactical, militar, wojskow, bojow, combat; z kapturem: kaptur, hood; oversize: oversiz,
+  luzn, loose; na obcasie: obcas, heel, szpil.
+Rodzaje: {rodzaje}"""
 
 
 def cechy_hasla(q, swiezo=False):
-    """Co klientka/klient naprawdę wpisał(a): rodzaj rzeczy i cechy, niezależnie od formy słów
-    („kraciasta koszula” = „koszula w kratę”, „spodnie ze skóry” = „skórzane spodnie”). Wynik pamiętany na stałe."""
+    """Co klientka/klient naprawdę wpisał(a): rodzaj rzeczy, cechy, marka, model, okazja i inne wymagane cechy (np. „taktyczna”),
+    niezależnie od formy słów („kraciasta koszula” = „koszula w kratę”). Wynik pamiętany na stałe."""
     q = " ".join(q.lower().split())
     if q in _haslo_pamiec and not swiezo:
         return _haslo_pamiec[q]
-    zap = None if swiezo else ustawienie("hasloV4|" + q)
+    zap = None if swiezo else ustawienie("hasloV5|" + q)
     if zap:
         _haslo_pamiec[q] = json.loads(zap)
         return _haslo_pamiec[q]
     for m in [x for x in modele() if x not in _martwe]:
-        kod, wyn = _wywolaj(m, [{"text": f"Klientka lub klient wpisał w wyszukiwarkę sklepu odzieżowego: „{q}”.\n"
-                                         "Ustal rodzaj rzeczy (jedna wartość z listy) oraz cechy, o które WPROST prosi "
-                                         "(kolor, materiał, wzór). Jeśli o cechę nie prosi, wpisz „dowolny”. Słowa mogą mieć "
-                                         "dowolną formę: „kraciasta”, „w kratkę”, „w kratę” = krata; „ze skóry”, „skórzane” = "
-                                         "skora; „ekoskóra”, „sztuczna skóra” = skora_ekologiczna; „czarna”, „czarne” = czarny.\n"
-                                         f"Rodzaje: {', '.join(RODZAJE)}"}], SCHEMAT_HASLO)
+        kod, wyn = _wywolaj(m, [{"text": PYTANIE_HASLO.format(q=q, rodzaje=", ".join(RODZAJE))}], SCHEMAT_HASLO)
         if kod == 404:
             continue
         if isinstance(wyn, dict) and wyn.get("r"):
+            wyn = _popraw_haslo(wyn, q)
             _haslo_pamiec[q] = wyn
-            ustawienie("hasloV4|" + q, json.dumps(wyn, ensure_ascii=False))
+            ustawienie("hasloV5|" + q, json.dumps(wyn, ensure_ascii=False))
             return wyn
         return None
     return None
+
+
+def _popraw_haslo(c, q):
+    """Porządek w odpowiedzi modelu: marka tylko taka, której ślad jest w haśle (nie zgadujemy), krótkie listy słów."""
+    c = dict(c)
+    hq = scisle(q)
+    marka = (c.get("marka") or "").strip()
+    warianty = [w.strip() for w in c.get("marka_warianty") or [] if w and w.strip()]
+    model = (c.get("model") or "").strip()
+    model_ok = bool(scisle(model)) and scisle(model) in hq  # „air max” wskazuje markę, choć jej nie wpisano
+    slad = any(len(scisle(x)) >= 2 and scisle(x) in hq for x in [marka] + warianty) or \
+        any(len(scisle(x)) >= 4 and scisle(x) in hq for x in marka.replace("-", " ").split())
+    if marka and not (slad or model_ok):
+        marka, warianty = "", []
+    c["marka"], c["marka_warianty"] = marka, warianty[:6]
+    c["model"] = model if marka and model_ok else ""
+    c["bez_marki"] = " ".join((c.get("bez_marki") or "").split())[:80] if marka else ""
+    wym = []
+    for w in c.get("wymagane") or []:
+        cecha = " ".join((w.get("cecha") or "").lower().split())[:40]
+        slowa = list(dict.fromkeys(bez_ogonkow(s).strip() for s in w.get("slowa") or [] if len(bez_ogonkow(s).strip()) >= 3))[:12]
+        if cecha:
+            wym.append({"cecha": cecha, "slowa": slowa})
+    c["wymagane"] = wym[:4]
+    return c
+
+
+def bez_ogonkow(s):
+    s = unicodedata.normalize("NFKD", (s or "").lower().replace("ł", "l"))
+    return " ".join("".join(ch for ch in s if not unicodedata.combining(ch)).split())
+
+
+def scisle(s):
+    """Do porównywania marek i modeli: bez wielkich liter, ogonków, spacji i znaków („Helikon-Tex” = „helikontex”)."""
+    return re.sub(r"[^a-z0-9]", "", bez_ogonkow(s))
+
+
+def _tekst_produktu(p):
+    sciezka = re.sub(r"[-_/.+]", " ", urlparse(p.get("url") or "").path)
+    return " ".join([p.get("nazwa") or "", p.get("material") or "", p.get("marka") or "", sciezka])
+
+
+def _jest(wariant, tekst_sc, tekst_sl):
+    v = scisle(wariant)
+    if len(v) < 2:
+        return False
+    if len(v) >= 5:
+        return v in tekst_sc
+    return re.search(r"(?<![a-z0-9])" + re.escape(bez_ogonkow(wariant)) + r"(?![a-z0-9])", tekst_sl) is not None
+
+
+def ma_marke(p, c):
+    """Czy produkt jest marki, o którą prosi hasło (nazwa, opis, adres strony albo sam sklep, np. Zara w Zarze)."""
+    if not c or not c.get("marka"):
+        return None
+    t = _tekst_produktu(p) + " " + (p.get("sklep") or "")
+    sc, sl = scisle(t), bez_ogonkow(re.sub(r"[-_/.+]", " ", t))
+    return any(_jest(w, sc, sl) for w in [c["marka"]] + list(c.get("marka_warianty") or []))
+
+
+def ten_model(p, c):
+    if not c or not c.get("model"):
+        return False
+    t = _tekst_produktu(p)
+    return _jest(c["model"], scisle(t), bez_ogonkow(re.sub(r"[-_/.+]", " ", t)))
+
+
+def pasuje_styl(c, k):
+    """Styl lub okazja, o które hasło prosi wprost (np. „elegancka sukienka”), według oceny zdjęcia. None = brak danych."""
+    if not c or not k:
+        return None
+    s = c.get("styl")
+    if s and s != "dowolny":
+        ks, f = k.get("styl"), k.get("f") or 0
+        ok = {"elegancki": ks in ("elegancki", "wieczorowy") or f >= 4, "wieczorowy": ks == "wieczorowy" or "wieczor" in (k.get("o") or []),
+              "smart_casual": ks in ("smart_casual", "elegancki") or "smartcasual" in (k.get("o") or []),
+              "casual": ks in ("casual", "smart_casual", "sportowy"), "sportowy": ks == "sportowy" or "sport" in (k.get("o") or []),
+              "plazowy_domowy": ks == "plazowy_domowy"}.get(s, True)
+        if not ok:
+            return False
+    return True
+
+
+with _baza_blokada:
+    DB.execute("CREATE TABLE IF NOT EXISTS cechy_prod (klucz TEXT PRIMARY KEY, ok INTEGER)")
+    DB.commit()
+SCHEMAT_CECHY = {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
+    "i": {"type": "INTEGER"}, "ma": {"type": "ARRAY", "items": {"type": "INTEGER"}}}, "required": ["i", "ma"]}}
+
+
+def _cechy_partia(lista, cechy, model):
+    opis = "\n".join(f"{j}) {c}" for j, (c, _) in enumerate(cechy))
+    czesci = [{"text": "Klientka lub klient szuka w sklepie odzieżowym rzeczy, która ma WSZYSTKIE te cechy:\n" + opis +
+               "\n\nDla każdego produktu wypisz numery cech, które ten produkt ma. Cechę ma, gdy wynika to z nazwy, opisu, "
+               "cech ze zdjęcia albo z Twojej pewnej wiedzy o marce i modelu (np. Helikon-Tex, Texar, M-Tac i Mil-Tec szyją "
+               "odzież taktyczną). Gdy nic na to nie wskazuje, cechy nie ma: nie zgaduj. Zwróć wpis dla każdego numeru produktu."}]
+    for i, p in enumerate(lista):
+        k = p.get("klasa") or {}
+        zdj = f" | ze zdjęcia: {k.get('kolor')}, {k.get('material')}, styl {k.get('styl')}, wzór {k.get('wzor_rodzaj')}" if k else ""
+        czesci.append({"text": f"Produkt {i}: {p['nazwa'][:160]} | sklep: {p['sklep']} | opis: {(p.get('material') or '')[:80]}{zdj}"})
+    kod, wyn = _wywolaj(model, czesci, SCHEMAT_CECHY)
+    if kod != 200 or not isinstance(wyn, list):
+        return None
+    out = {i: set() for i in range(len(lista))}
+    for x in wyn:
+        try:
+            i = int(x["i"])
+            if i in out:
+                out[i] |= {int(j) for j in x.get("ma") or [] if 0 <= int(j) < len(cechy)}
+        except Exception:
+            continue
+    return out
+
+
+def sprawdz_cechy(produkty, wymagane):
+    """Wymagane cechy z hasła (np. „taktyczna”, „z kapturem”). Najpierw słowa w nazwie i opisie (bez kosztów), potem zapamiętane
+    oceny, a resztę rozstrzyga model z samego tekstu (bez zdjęć, kilka groszy na wyszukiwanie; każda para cecha + produkt raz).
+    Ustawia p['cechy_ok']: True (ma wszystkie), False (czegoś na pewno nie ma), None (nie udało się sprawdzić)."""
+    cechy = [(w["cecha"], w.get("slowa") or []) for w in wymagane or [] if w.get("cecha")]
+    if not cechy:
+        return
+    wynik, do_ai = {}, []
+    klucze = {(p["id"], j): f"{bez_ogonkow(c)}|{p['id']}" for p in produkty for j, (c, _) in enumerate(cechy)}
+    with _baza_blokada:
+        zn = {}
+        kl = list(set(klucze.values()))
+        for i in range(0, len(kl), 500):
+            cz = kl[i:i + 500]
+            zn.update(dict(DB.execute(f"SELECT klucz, ok FROM cechy_prod WHERE klucz IN ({','.join('?' * len(cz))})", cz).fetchall()))
+    for p in produkty:
+        t = bez_ogonkow(re.sub(r"[-_/.+]", " ", _tekst_produktu(p)))
+        brak = False
+        for j, (c, slowa) in enumerate(cechy):
+            if any(s in t for s in slowa) or bez_ogonkow(c) in t:
+                wynik[(p["id"], j)] = True
+            elif klucze[(p["id"], j)] in zn:
+                wynik[(p["id"], j)] = bool(zn[klucze[(p["id"], j)]])
+            else:
+                brak = True
+        if brak:
+            do_ai.append(p)
+    if do_ai and dostepny():
+        m = next((x for x in modele() if x not in _martwe), None)
+        partie = [do_ai[i:i + 40] for i in range(0, min(len(do_ai), 240), 40)]
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            odp = list(ex.map(lambda pa: (pa, _cechy_partia(pa, cechy, m)), partie)) if m else []
+        zapis = []
+        for pa, w in odp:
+            if w is None:
+                continue
+            for i, p in enumerate(pa):
+                for j in range(len(cechy)):
+                    if (p["id"], j) not in wynik:
+                        wynik[(p["id"], j)] = j in w.get(i, set())
+                        zapis.append((klucze[(p["id"], j)], int(wynik[(p["id"], j)])))
+        if zapis:
+            with _baza_blokada:
+                DB.executemany("INSERT OR REPLACE INTO cechy_prod VALUES (?,?)", zapis)
+                DB.commit()
+    for p in produkty:
+        v = [wynik.get((p["id"], j)) for j in range(len(cechy))]
+        p["cechy_ok"] = False if False in v else None if None in v else True
 
 
 def rodzaj_hasla(q):
@@ -401,26 +593,59 @@ def stan():
 
 
 SCHEMAT_ZDJECIE = {"type": "OBJECT", "properties": {
-    "rzecz": {"type": "BOOLEAN"}, "q": {"type": "STRING"}, "dzial": {"type": "STRING", "enum": ["damskie", "meskie", "nieznany"]}},
-    "required": ["rzecz", "q", "dzial"]}
+    "rzeczy": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
+        "q": {"type": "STRING"}, "r": {"type": "STRING", "enum": RODZAJE}, "marka": {"type": "STRING"}, "model": {"type": "STRING"},
+        "znak": {"type": "STRING"}, "dzial": {"type": "STRING", "enum": ["damskie", "meskie", "nieznany"]}},
+        "required": ["q", "r", "marka", "model", "znak", "dzial"]}}},
+    "required": ["rzeczy"]}
+PYTANIE_ZDJECIE = """Na zdjęciu (zrzut ekranu z internetu, kadr z filmu, zdjęcie z ulicy) są ubrania, buty albo dodatki, które ktoś chce kupić.
+Wypisz WSZYSTKIE rzeczy do kupienia, które dobrze widać (najwyżej 6), od najbardziej widocznej. Pomiń rzeczy ledwo widoczne.{prosba}
+Dla każdej rzeczy:
+q = hasło do wyszukiwarki polskiego sklepu odzieżowego: 2 do 5 słów, po polsku, w mianowniku, tak jak wpisałby je człowiek,
+  BEZ marki, np. „czarne skórzane spodnie”, „brązowa skórzana torebka na ramię”, „białe sneakersy na grubej podeszwie”.
+  Podaj rodzaj rzeczy, kolor i najważniejszą cechę (materiał, krój albo wzór).
+r = rodzaj rzeczy (jedna wartość z listy).
+marka = marka TYLKO wtedy, gdy na tej rzeczy WYRAŹNIE widać jej logo, napis z nazwą albo jednoznaczny znak firmowy (monogram LV,
+  GG Gucci, krata Burberry, logo Michael Kors, „swoosh” Nike, trzy paski i trójliść adidas, napis GUESS). Nigdy nie zgaduj marki
+  z kształtu, koloru ani stylu rzeczy; gdy znak jest nieczytelny albo niepewny, wpisz pusty napis.
+model = nazwa modelu lub linii, gdy jest wyraźnie widoczna albo pewna po znaku i charakterystycznym kształcie (np. „Jet Set”,
+  „Air Force 1”, „Speedy”). Gdy nie masz pewności, pusty napis.
+znak = co dokładnie widać, gdy podajesz markę (np. „logo MK na klapie”, „napis GUESS na pasku”); inaczej pusty napis.
+dzial = damskie albo meskie, gdy rzecz jest wyraźnie dla jednej płci, inaczej nieznany.
+Gdy na zdjęciu nie ma żadnej rzeczy do kupienia, zwróć pustą listę.
+Rodzaje: {rodzaje}"""
 
 
-def opis_zdjecia(b, typ="image/jpeg"):
-    """Zdjęcie rzeczy (np. zrzut ekranu z Instagrama) -> krótkie hasło do wyszukiwarki sklepów, po polsku.
-    Zwraca (kod, {"rzecz": bool, "q": str, "dzial": str}) albo (kod, None)."""
+def opis_zdjecia(b, typ="image/jpeg", szukam=""):
+    """Zdjęcie (np. zrzut z Instagrama) -> lista rzeczy do wyszukania: hasło po polsku, rodzaj, marka i model tylko z widocznego znaku.
+    szukam: opcjonalna podpowiedź („torebka”, „szukam tych butów”): ta rzecz trafia na pierwsze miejsce.
+    Zwraca (kod, {"rzeczy": [...], "rzecz": bool, "q": str, "dzial": str}) albo (kod, None). rzecz/q/dzial: dla starszej aplikacji."""
+    szukam = " ".join((szukam or "").split())[:80]
+    prosba = (f"\nKlient napisał, czego szuka na tym zdjęciu: „{szukam}”. Tę rzecz podaj jako PIERWSZĄ (także gdy jest mała), "
+              "a pozostałe po niej.") if szukam else ""
     czesci = [{"inline_data": {"mime_type": typ, "data": base64.b64encode(b).decode()}},
-              {"text": "Na zdjęciu jest ubranie, buty albo dodatek, który ktoś chce kupić. Jeśli rzeczy jest kilka, wybierz tę "
-                       "na pierwszym planie albo w środku kadru. Napisz hasło do wyszukiwarki polskiego sklepu odzieżowego: "
-                       "2 do 5 słów, po polsku, w mianowniku, tak jak wpisałby je człowiek, np. „czarne skórzane spodnie”, "
-                       "„beżowy płaszcz wełniany”, „brązowe botki na obcasie”. Podaj rodzaj rzeczy, kolor i najważniejszą cechę "
-                       "(materiał, krój albo wzór), bez marki. dzial: damskie albo meskie, jeśli rzecz jest wyraźnie dla jednej "
-                       "płci, inaczej nieznany. rzecz = false, jeśli na zdjęciu nie ma żadnej rzeczy do kupienia (wtedy q puste)."}]
+              {"text": PYTANIE_ZDJECIE.format(prosba=prosba, rodzaje=", ".join(RODZAJE))}]
     for m in [x for x in modele() if x not in _martwe]:
         kod, wyn = _wywolaj(m, czesci, SCHEMAT_ZDJECIE)
         if kod == 404:
             continue
-        if isinstance(wyn, dict):
-            wyn["q"] = " ".join((wyn.get("q") or "").split())[:60]
-            return 200, wyn
-        return kod, None
+        if not isinstance(wyn, dict):
+            return kod, None
+        rzeczy, widziane = [], set()
+        for x in wyn.get("rzeczy") or []:
+            q = " ".join((x.get("q") or "").split())[:60]
+            if not q or q.lower() in widziane:
+                continue
+            widziane.add(q.lower())
+            marka = " ".join((x.get("marka") or "").split())[:40]
+            model = " ".join((x.get("model") or "").split())[:40] if marka else ""
+            if marka and scisle(marka) in scisle(q):
+                q = re.sub(re.escape(marka), "", q, flags=re.I).strip() or q
+            rzeczy.append({"q": q, "r": x.get("r") or "inne", "marka": marka, "model": model,
+                           "znak": " ".join((x.get("znak") or "").split())[:80] if marka else "",
+                           "dzial": x.get("dzial") if x.get("dzial") in ("damskie", "meskie") else "nieznany",
+                           "szukaj": " ".join([q, marka, model]).strip()})
+        rzeczy = rzeczy[:6]
+        g = rzeczy[0] if rzeczy else {}
+        return 200, {"rzeczy": rzeczy, "rzecz": bool(rzeczy), "q": g.get("szukaj", ""), "dzial": g.get("dzial", "nieznany")}
     return 0, None

@@ -10,7 +10,7 @@ Endpointy (za Caddy pod /trendo-api/):
   GET /okazje?dzial=...           sprawdzone obniżki z ostatnich 48 godzin (Omnibus albo nasza historia z 30 dni)
   GET /produkty?ids=a,b           ostatni znany stan produktów (alerty, ulubione, koszyk)
   GET /obserwuj?ids=a,b           serwer odświeża ceny tych produktów co 12 godzin w ich sklepach
-  POST /zdjecie                   zdjęcie rzeczy (JPEG, do 2 MB) -> hasło do wyszukania
+  POST /zdjecie?szukam=...        zdjęcie (JPEG, do 2 MB) -> lista rzeczy do wyszukania (marka tylko z widocznego logo)
   GET /rozmiary?id=...            rozmiarówka produktu: tabela ze strony produktu albo ogólna tabela sklepu
 """
 import json, os, re, time, traceback
@@ -22,9 +22,9 @@ import threading
 from . import klasyfikator, lacznik_ccc, lacznik_google, lacznik_lpp, lacznik_modivo, lacznik_przegladarka, lacznik_strony, lacznik_wittchen, lacznik_zara, logo, nadzor, obserwowane, rozmiary, stylizacje, trendy
 from .wspolne import DB, _baza_blokada, historia, licznik, pamiec_czytaj, pamiec_zapisz, plec_ze_sklepu, weryfikuj, zapisz_cene
 
-WERSJA = "0.20.2"
+WERSJA = "0.21.0"
 LACZNIKI = [lacznik_zara, lacznik_lpp, lacznik_modivo, lacznik_ccc, lacznik_wittchen, lacznik_strony, lacznik_przegladarka, lacznik_google]
-PULA = ThreadPoolExecutor(max_workers=8)
+PULA = ThreadPoolExecutor(max_workers=24)
 WIEK_PAMIECI = 12 * 3600
 
 
@@ -75,38 +75,56 @@ def wykluczone():
         return {(a, b) for a, b in DB.execute("SELECT pid, okazja FROM zgloszenia WHERE okazja != ''")}
 
 
-def pobierz_produkty(q, dzial, laczniki):
-    zad = {PULA.submit(l.szukaj, q, dzial): l.NAZWA for l in laczniki}
+def pobierz_produkty(q, dzial, laczniki, tok=None):
+    """q: hasło albo lista haseł (np. z marką i bez marki), szukane naraz. tok: słowa do trafności (domyślnie z pierwszego hasła)."""
+    hasla = [q] if isinstance(q, str) else list(q)
+    zad = {PULA.submit(l.szukaj, h, dzial): (l.NAZWA, n) for n, h in enumerate(hasla) for l in laczniki}
     gotowe, _ = wait(zad, timeout=55)
-    sklepy, produkty, widziane = [], [], set()
-    tok = tokeny(q)
+    stany, produkty, widziane, ids = {}, [], set(), set()
+    tok = tokeny(hasla[0]) if tok is None else tok
     wlasne = {s.lower() for l in LACZNIKI if l is not lacznik_google for s in getattr(l, "SKLEPY", [l.NAZWA])}
-    for f, nazwa in zad.items():
+    for f, (nazwa, n) in zad.items():
+        sk = stany.setdefault(nazwa, {"nazwa": nazwa, "stan": "ok", "ile": 0})
         if f not in gotowe:
-            sklepy.append({"nazwa": nazwa, "stan": "za długo", "ile": 0}); continue
+            if n == 0:
+                sk["stan"] = "za długo"
+            continue
         try:
             lista, stan = f.result()
         except Exception as e:
             traceback.print_exc()
             lista, stan = [], "błąd: " + str(e)[:60]
-        ile = 0
+        if n == 0:
+            sk["stan"] = stan
         for p in lista:
             k = (p["sklep"].lower(), p["nazwa"].lower(), p["cena"])
-            if k in widziane or not p.get("url") or (p["zrodlo"] == "google" and p["sklep"].lower() in wlasne):
+            if k in widziane or p["id"] in ids or not p.get("url") or (p["zrodlo"] == "google" and p["sklep"].lower() in wlasne):
                 continue
             p["trafnosc"] = trafnosc(p, tok) if tok else 2
             if not p["trafnosc"]:
                 if not klasyfikator.dostepny():
                     continue  # bez AI zostaje dopasowanie słów
                 p["trafnosc"], p["tylko_ai"] = 1, True  # słowa się nie zgadzają („polówka” / „koszulka polo”): rozstrzygnie rodzaj ze zdjęcia
-            widziane.add(k)
+            widziane.add(k); ids.add(p["id"])
             p["plec_sklepu"] = plec_ze_sklepu(p, dzial)
             logo.poznaj(p)
             zapisz_cene(p)
             p["weryf"] = weryfikuj(p)
-            produkty.append(p); ile += 1
-        sklepy.append({"nazwa": nazwa, "stan": stan, "ile": ile})
-    return sklepy, produkty
+            produkty.append(p); sk["ile"] += 1
+    return list(stany.values()), produkty
+
+
+def _po_sklepach(lista, n):
+    """Do n rzeczy po kolei z każdego sklepu (najpierw najlepiej pasujące słowami), żeby zamienniki nie były z jednego sklepu."""
+    grupy = {}
+    for p in sorted(lista, key=lambda p: -p.get("trafnosc", 0)):
+        grupy.setdefault(p["sklep"], []).append(p)
+    out = []
+    while len(out) < n and any(grupy.values()):
+        for g in grupy.values():
+            if g and len(out) < n:
+                out.append(g.pop(0))
+    return out
 
 
 # Wszystkie okazje w kolejności z aplikacji. Szukanie rzeczy niczego nie ukrywa: każdy produkt dostaje listę okazji,
@@ -130,9 +148,14 @@ def okazje_produktu(p, wyk):
     return wyn
 
 
+MAKS_ZAMIENNIKOW = 48  # rzeczy innych marek do sekcji „Alternatywnie” (ocena zdjęć kosztuje, więc z umiarem)
+
+
 def szukaj(q, dzial, okazja="", test=False):
     """okazja: przyjmowana dla zgodności ze starszą aplikacją, ale nie filtruje (filtr jest w aplikacji).
-    test: próba instalatora: sprawdza sklepy bez płatnej oceny AI i niczego nie zapamiętuje w pamięci wyszukiwań."""
+    test: próba instalatora: sprawdza sklepy bez płatnej oceny AI i niczego nie zapamiętuje w pamięci wyszukiwań.
+    DECYZJA użytkownika 16.11: rzeczy niepasujące do hasła się nie pokazują (np. różowa koszula przy „koszula taktyczna”).
+    Hasło z marką: na górze dokładnie ta marka, niżej osobno „Alternatywnie” podobne rzeczy innych marek (często tańsze)."""
     q = " ".join(q.split())[:80]
     klucz = f"szukaj|{WERSJA}|{q.lower()}|{dzial}"
     zap = None if test else pamiec_czytaj(klucz, WIEK_PAMIECI)
@@ -140,43 +163,85 @@ def szukaj(q, dzial, okazja="", test=False):
         zap["z_pamieci"] = True
         return zap
     t0 = time.time()
-    sklepy, produkty = pobierz_produkty(q, dzial, LACZNIKI)
-    # Ocena każdego produktu (zdjęcie + nazwa), raz na zawsze. Rodzaj hasła równolegle.
+    ai = klasyfikator.dostepny() and not test
+    c = None
+    if ai:
+        try:
+            c = klasyfikator.cechy_hasla(q)  # zapamiętane na stałe: zwykle bez kosztu i bez czekania
+        except Exception:
+            traceback.print_exc()
+    marka = (c or {}).get("marka") or ""
+    bez = (c or {}).get("bez_marki") or "" if marka else ""
+    hasla = [q]
+    if marka:  # długie hasło ze zdjęcia („brązowa skórzana torebka na ramię michael kors”) sklepy często zwracają puste
+        r = (c or {}).get("r")
+        hasla.append(f"{r} {marka}" if r and r != "inne" else marka)
+    if bez:
+        hasla.append(bez)
+    hasla = list(dict.fromkeys(h.lower() for h in hasla if h))
+    sklepy, produkty = pobierz_produkty(hasla, dzial, LACZNIKI, tokeny(bez) if bez else None)
     klasyfikacja, nieocenione = "slowa", 0
     if test:
         produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial) and not p.get("tylko_ai")]
         klasyfikacja = "pominieta (test instalatora)"
-    elif produkty and klasyfikator.dostepny():
-        f_haslo = PULA.submit(klasyfikator.cechy_hasla, q)
-        ocenione = klasyfikator.klasyfikuj(produkty, maks=None)  # bez limitu: oceniamy wszystko
-        try:
-            c_hasla = f_haslo.result(timeout=40)
-        except Exception:
-            c_hasla = None
-        r_hasla = (c_hasla or {}).get("r")
+    elif produkty and ai:
+        klasyfikator.klasyfikuj(produkty, maks=0)  # oceny już zapisane (bez kosztów), żeby od razu odsiać płeć i cechy
+        produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)]
+        if c and c.get("wymagane"):
+            klasyfikator.sprawdz_cechy(produkty, c["wymagane"])  # np. „taktyczna”: słowa w nazwie, potem krótka ocena z tekstu
+            produkty = [p for p in produkty if p.get("cechy_ok") is not False]
+        if marka:
+            for p in produkty:
+                p["alternatywa"] = not klasyfikator.ma_marke(p, c)
+            inne = [p for p in produkty if p["alternatywa"]]
+            if len(inne) > MAKS_ZAMIENNIKOW:
+                zostaja = {p["id"] for p in _po_sklepach(inne, MAKS_ZAMIENNIKOW)}
+                produkty = [p for p in produkty if not p["alternatywa"] or p["id"] in zostaja]
+        ocenione = klasyfikator.klasyfikuj(produkty, maks=None)  # bez limitu: oceniamy wszystko, co zostało
+        r_hasla = (c or {}).get("r")
         nieocenione = len(produkty) - ocenione
         if ocenione:
             klasyfikacja = "ai"
             produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)
                         and (klasyfikator.zgodny_rodzaj(r_hasla, p["klasa"]["r"]) if p.get("klasa") else not p.get("tylko_ai"))]
-            # Trafność według znaczenia, nie formy słów: „kraciasta koszula” = „koszula w kratę” (cechy ze zdjęcia i opisu).
+            # Cechy według znaczenia, nie formy słów: „kraciasta koszula” = „koszula w kratę” (ocena zdjęcia i opisu).
+            dalej = []
             for p in produkty:
-                if p.get("klasa") and klasyfikator.pasuje_do_hasla(c_hasla, p["klasa"]):
-                    p["trafnosc"] = 2
+                k = p.get("klasa")
+                if k:
+                    z = klasyfikator.pasuje_do_hasla(c, k)
+                    if z is False or klasyfikator.pasuje_styl(c, k) is False:
+                        continue  # inny kolor, materiał, wzór albo styl niż w haśle: nie pokazujemy
+                    if z:
+                        p["trafnosc"] = 2
+                if p.get("cechy_ok") is None and c and c.get("wymagane"):
+                    p["trafnosc"] = 1  # cechy nie dało się sprawdzić: między podobnymi
+                dalej.append(p)
+            produkty = dalej
         else:
-            produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial) and not p.get("tylko_ai")]
+            produkty = [p for p in produkty if not p.get("tylko_ai")]
     else:
         produkty = [p for p in produkty if nadzor.zgodna_plec(p, dzial)]
+    for p in produkty:
+        p.pop("cechy_ok", None)
+        if marka and not p.get("alternatywa") and klasyfikator.ten_model(p, c):
+            p["ten_model"] = True
     wyk = wykluczone()
     for p in produkty:
         p["okazje"] = okazje_produktu(p, wyk)
+    ok_hasla = (c or {}).get("okazja")
+    if ok_hasla and ok_hasla in OKAZJE_NAZWY:
+        produkty = [p for p in produkty if p["okazje"] is None or ok_hasla in p["okazje"]]  # „sukienka na wesele”
     try:
         obserwowane.zapamietaj(produkty)
     except Exception:
         traceback.print_exc()
     wynik = {"zapytanie": q, "dzial": dzial, "czas": round(time.time() - t0, 1), "sprawdzono": int(time.time()),
              "sklepy": sklepy, "produkty": produkty, "nieocenione": nieocenione, "klasyfikacja": klasyfikacja,
-             "okazje_nazwy": {o: OKAZJE_NAZWY[o] for o in OKAZJE_WSZYSTKIE}}
+             "okazje_nazwy": {o: OKAZJE_NAZWY[o] for o in OKAZJE_WSZYSTKIE},
+             "haslo": {"marka": marka, "model": (c or {}).get("model") or "", "bez_marki": bez, "rodzaj": (c or {}).get("r") or "",
+                       "cechy": [w["cecha"] for w in (c or {}).get("wymagane") or []],
+                       "okazja": ok_hasla if ok_hasla in OKAZJE_NAZWY else ""}}
     # Bez pełnej oceny nie zapamiętujemy wyniku na 12 godzin, żeby następne wyszukiwanie spróbowało ocenić resztę.
     if produkty and not test and (nieocenione == 0 or not klasyfikator.dostepny()):
         pamiec_zapisz(klucz, wynik)
@@ -310,7 +375,7 @@ class Obsluga(BaseHTTPRequestHandler):
             if not klasyfikator.dostepny():
                 return self._wyslij(503, {"blad": "Rozpoznawanie zdjęć jest teraz niedostępne."})
             licznik(time.strftime("zdjecia-%Y-%m-%d"), 1)  # tylko do wglądu, bez limitu
-            kod, wyn = klasyfikator.opis_zdjecia(b, typ)
+            kod, wyn = klasyfikator.opis_zdjecia(b, typ, parse_qs(u.query).get("szukam", [""])[0])
             if kod in (403, 429):
                 return self._wyslij(503, {"blad": "Rozpoznawanie zdjęć chwilowo nie działa. Wpisz, czego szukasz."})
             if not wyn:

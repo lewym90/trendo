@@ -2,7 +2,7 @@
    gdy serwer nie odpowiada, oraz dla stylizacji, które są jeszcze przykładowe. */
 (function () {
   'use strict';
-  const WERSJA = '0.20.2';
+  const WERSJA = '0.21.0';
   const IK = G.IK;
   const E = document.getElementById('ekran');
   const MENU = document.getElementById('menu');
@@ -578,6 +578,7 @@
           .then((r) => r.json())
           .then((d) => {
             wynik = d && d.produkty ? d : null;
+            if (wynik) { WYN[kluczWyniku(st.zapytanie, st.dzial)] = wynik; dociagnijZakladki(); }
             const h = HIST().szukania.find((x) => x.q === st.zapytanie && x.dzial === st.dzial);
             if (h && wynik) { h.n = wynik.produkty.length; zapisz(); }
           })
@@ -605,9 +606,49 @@
   // Filtry wyników (na czas jednego wyszukiwania). Domyślnie widać wszystko, poza limitem ceny ustawionym przy szukaniu.
   let filtrOkazji = 'wszystkie', budzetWl = true, tylkoPromocje = false, tylkoSecond = false, kolejnosc = 'polecane';
   const norm = (x) => (x || '').trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 80);
+  // Wyniki kilku rzeczy ze zdjęcia (zakładki): pamiętane w tej sesji, pozostałe zakładki dociągane po kolei w tle.
+  const WYN = {};
+  const kluczWyniku = (q, dz) => norm(q) + '|' + dz;
+  const WYN_TRWA = {}, WYN_BLAD = {};
+  function pobierzWynik(q, dz) {
+    const k = kluczWyniku(q, dz);
+    if (WYN[k]) return Promise.resolve(WYN[k]);
+    if (WYN_TRWA[k]) return WYN_TRWA[k];
+    WYN_TRWA[k] = fetch(`${API}/szukaj?q=${encodeURIComponent(q)}&dzial=${dz}`).then((r) => r.json())
+      .then((d) => { if (d && d.produkty) WYN[k] = d; else WYN_BLAD[k] = true; return WYN[k] || null; })
+      .catch(() => { WYN_BLAD[k] = true; return null; }).finally(() => { delete WYN_TRWA[k]; });
+    return WYN_TRWA[k];
+  }
+  function dociagnijZakladki() {
+    const z = st.zakladki, dz = st.dzial;
+    if (!z) return;
+    z.reduce((pr, q) => pr.then(() => pobierzWynik(q, dz)), Promise.resolve()).then(() => { if (trasa() === 'wyniki') render(true); });
+  }
+  function pasekZakladek(q) {
+    const z = st.zakladki;
+    if (!z || !z.some((x) => norm(x) === norm(q))) return '';
+    return `<div class="zakladki" role="tablist" aria-label="Rzeczy ze zdjęcia">${z.map((x, i) => {
+      const w = WYN[kluczWyniku(x, st.dzial)], akt = norm(x) === norm(q);
+      return `<button class="zakladka" role="tab" aria-selected="${akt}" data-akcja="zakladka" data-i="${i}"><span class="zt">${esc(x)}</span>${w ? `<span class="ile">${w.produkty.length}</span>` : akt ? '' : '<span class="kolko maly-k" aria-hidden="true"></span>'}</button>`;
+    }).join('')}</div>`;
+  }
   EKRANY.wyniki = () => {
     const q = st.zapytanie || 'Skórzane spodnie';
+    if (!(wynik && norm(wynik.zapytanie) === norm(q) && wynik.dzial === st.dzial) && WYN[kluczWyniku(q, st.dzial)]) {
+      wynik = WYN[kluczWyniku(q, st.dzial)];
+      try { sessionStorage.setItem('trendo-wynik', JSON.stringify(wynik)); } catch (e) { /* pełna pamięć */ }
+    }
     if (wynik && norm(wynik.zapytanie) === norm(q) && wynik.dzial === st.dzial) return wynikiPrawdziwe(q, wynik);
+    if (pasekZakladek(q) && WYN_BLAD[kluczWyniku(q, st.dzial)]) {
+      return { akt: 'szukaj', html: `<div class="naglowek"><a class="ikonka bez" href="#/zdjecie" aria-label="Wróć do zdjęcia">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
+        ${pasekZakladek(q)}<div class="info uwaga" style="margin-top:16px">${IK.uwaga}<p>Serwer nie odpowiedział na to wyszukiwanie.</p></div>
+        <button class="btn drugi" style="margin-top:14px" data-akcja="zakladkaPonow">Spróbuj jeszcze raz</button>` };
+    }
+    if (pasekZakladek(q)) {
+      pobierzWynik(q, st.dzial).then(() => { if (trasa() === 'wyniki' && norm(st.zapytanie) === norm(q)) render(true); });
+      return { akt: 'szukaj', html: `<div class="naglowek"><a class="ikonka bez" href="#/zdjecie" aria-label="Wróć do zdjęcia">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
+        ${pasekZakladek(q)}<div class="zdj-laduje"><span class="kolko" aria-hidden="true"></span><p>Szukam w sklepach…</p></div>` };
+    }
     return wynikiPrawdziwe(q, { zapytanie: q, dzial: st.dzial, sprawdzono: Date.now() / 1000, sklepy: [], produkty: DEMO.P.filter((p) => p.id.startsWith('p')), demo: true });
   };
   const SECOND = /vinted|olx|allegro lokalnie|sprzedajemy|depop|remixshop/i;
@@ -618,8 +659,26 @@
     let h = dokladne.length ? `<div class="siatka">${dokladne.map(kartaProduktu).join('')}</div>` : '';
     if (podobne.length) {
       h += `<div class="sekcja-tytul" style="margin:${dokladne.length ? 28 : 4}px 0 12px"><h2>Podobne</h2><span class="maly szary">${podobne.length}</span></div>
-        <p class="maly szary" style="margin:-6px 0 14px">Ten sam rodzaj rzeczy, ale nie każde słowo z hasła „${esc(q)}” jest w opisie sklepu.</p>
+        <p class="maly szary" style="margin:-6px 0 14px">Ten sam rodzaj rzeczy, ale nie każdą cechę z hasła „${esc(q)}” udało się potwierdzić.</p>
         <div class="siatka">${podobne.map(kartaProduktu).join('')}</div>`;
+    }
+    return h;
+  }
+  /* Hasło z marką (DECYZJA użytkownika 16.11): na górze dokładnie ta marka, niżej osobno „Alternatywnie” podobne rzeczy innych marek. */
+  function wynikiMarki(lista, q, H, przedFiltrami) {
+    const marki = lista.filter((p) => !p.alternatywa), inne = lista.filter((p) => p.alternatywa);
+    const nazwa = esc(H.marka + (H.model ? ' ' + H.model : ''));
+    let h = '';
+    if (marki.length) h += siatkaWynikow(marki, q);
+    else if (!przedFiltrami.some((p) => !p.alternatywa)) {
+      h += `<div class="info neutral" style="margin-bottom:6px">${IK.info}<p>W sklepach, które sprawdzamy, nie ma teraz takiej rzeczy marki ${esc(H.marka)}.${inne.length ? ' Niżej podobne rzeczy innych marek.' : ''}</p></div>`;
+    } else {
+      h += `<div class="info neutral" style="margin-bottom:6px">${IK.info}<p>Rzeczy marki ${esc(H.marka)} są, ale nie w tych filtrach. Zmień filtry wyżej.</p></div>`;
+    }
+    if (inne.length) {
+      h += `<div class="sekcja-tytul alternatywnie" style="margin:${marki.length ? 32 : 18}px 0 12px"><h2>Alternatywnie</h2><span class="maly szary">${inne.length}</span></div>
+        <p class="maly szary" style="margin:-6px 0 14px">Podobne rzeczy innych marek niż ${nazwa}, często dużo tańsze.</p>
+        <div class="siatka">${inne.map(kartaProduktu).join('')}</div>`;
     }
     return h;
   }
@@ -639,7 +698,9 @@
     if (filtrOkazji !== 'wszystkie') lista = lista.filter((p) => (p.okazje || []).includes(filtrOkazji));
     const promo = (p) => (p.weryf === 'ok' ? 2 : p.stara ? 1 : 0);
     lista = lista.slice().sort(kolejnosc === 'najtaniej' ? (a, b) => a.cena - b.cena : kolejnosc === 'najdrozej' ? (a, b) => b.cena - a.cena
-      : (a, b) => promo(b) - promo(a) || a.cena - b.cena);
+      : (a, b) => (b.ten_model ? 1 : 0) - (a.ten_model ? 1 : 0) || promo(b) - promo(a) || a.cena - b.cena);
+    const H = W.haslo || {};
+    const wymog = (H.cechy || []).concat(H.okazja && NAZWA_OKAZJI[H.okazja] ? [NAZWA_OKAZJI[H.okazja].toLowerCase()] : []);
     const ileSklepow = new Set(P.map((p) => p.sklep)).size;
     const kiedy = new Date(W.sprawdzono * 1000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
     const uwagi = (W.sklepy || []).filter((x) => x.stan !== 'ok').map((x) => `${x.nazwa}: ${x.stan}`).join(', ');
@@ -657,7 +718,8 @@
     const pusto = !lista.length && !komunikaty;
     return {
       akt: 'szukaj',
-      html: `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
+      html: `<div class="naglowek"><a class="ikonka bez" href="${pasekZakladek(q) ? '#/zdjecie' : '#/szukaj'}" aria-label="Zmień wyszukiwanie">${IK.wstecz}</a><h1>${esc(q)}</h1><span class="puste"></span></div>
+      ${pasekZakladek(q)}
       ${W.demo ? demoZnak() : ''}
       ${inneDemo ? `<div class="info uwaga" style="margin-bottom:14px">${IK.uwaga}<p>Serwer nie odpowiedział, więc pokazujemy przykład dla skórzanych spodni.</p></div>` : ''}
       <div class="wyniki-meta"><p class="szary maly">${W.demo ? `${P.length} przykładowych produktów` : `${P.length} produktów z ${ileSklepow} ${ileSklepow === 1 ? 'sklepu' : 'sklepów'}, sprawdzone o ${kiedy}`}${uwagi ? `<br>${esc(uwagi)}` : ''}</p>
@@ -673,8 +735,12 @@
         ${OKAZJE_LISTA.map(([v, n]) => `<button class="chip${ileNa(v) ? '' : ' wyblakly'}" aria-pressed="${filtrOkazji === v}" data-akcja="filtrOkazji" data-v="${v}">${n} <span class="ile">${ileNa(v)}</span></button>`).join('')}
       </div>` : ''}
       <div style="height:14px"></div>
+      ${wymog.length && P.length ? `<p class="maly szary" style="margin:-4px 0 12px">Pokazujemy tylko rzeczy, które spełniają: ${esc(wymog.join(', '))}.</p>` : ''}
       ${komunikaty}
-      ${lista.length ? siatkaWynikow(lista, q) : pusto ? `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/${tylkoPromocje ? 'pusty-okazje' : 'pusty-wyniki'}.webp" alt=""><p>${tylkoSecond ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPromocje ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.' : 'Nic nie znaleźliśmy. Spróbuj innego hasła.'}</p></div>` : ''}
+      ${lista.length ? (H.marka ? wynikiMarki(lista, q, H, P) : siatkaWynikow(lista, q)) : pusto ? `<div class="pusty"><img class="ilustracja-pusta" src="img/ikony/${tylkoPromocje ? 'pusty-okazje' : 'pusty-wyniki'}.webp" alt=""><p>${tylkoSecond ? 'Tym razem nie znaleźliśmy ogłoszeń z drugiej ręki.' : tylkoPromocje ? 'Brak promocji w tej grupie. Wyłącz filtr, żeby zobaczyć wszystko.'
+        : !P.length && H.marka ? `W sklepach, które sprawdzamy, nie ma teraz takiej rzeczy marki ${esc(H.marka)} ani podobnych. Spróbuj krótszego hasła.`
+        : !P.length && wymog.length ? `Nic nie spełnia dokładnie hasła „${esc(q)}”. Pokazujemy tylko rzeczy z wszystkimi wpisanymi cechami, więc spróbuj krótszego hasła.`
+        : 'Nic nie znaleźliśmy. Spróbuj innego hasła.'}</p></div>` : ''}
       ${limit && drozsze ? `<button class="btn drugi" style="margin-top:22px" data-akcja="budzetWl">Pokaż też droższe: ${drozsze} ${drozsze === 1 ? 'rzecz' : 'rzeczy'} powyżej ${zl(limit)}</button>` : ''}`
     };
   }
@@ -1218,7 +1284,7 @@
     return `<div class="produkt"><a href="#/produkt/${p.id}" class="foto" aria-label="${esc(p.sklep + ', ' + p.nazwa)}">${foto(p)}${r ? `<span class="rabat">−${r}%</span>` : ''}</a>
       <button class="serce" style="position:relative;margin:-50px 8px 14px auto;width:36px;height:36px;border-radius:18px;background:rgba(var(--pasek-rgb),.6);border:none;display:flex;align-items:center;justify-content:center" data-akcja="ulubiony" data-id="${p.id}" aria-pressed="${ul}" aria-label="${ul ? 'Usuń z obserwowanych' : 'Obserwuj'}">${(ul ? IK.sercePelne : IK.serce).replace('<svg', '<svg width="18" height="18"')}</button>
       <a href="#/produkt/${p.id}" style="text-decoration:none;color:var(--tekst);display:flex;flex-direction:column;gap:4px">
-      <span class="sklep">${marka(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
+      ${p.ten_model ? '<span class="ten-model">Ten model</span>' : ''}<span class="sklep">${marka(p.sklep)}</span><span class="nazwa">${esc(p.nazwa)}</span>
       <span class="ceny"><span class="cena">${zl(p.cena)}</span>${p.stara ? `<span class="stara">${zl(p.stara)}</span>` : ''}</span>${wer}</a></div>`;
   }
   function wierszElementu(p) {
@@ -1341,6 +1407,36 @@
       document.querySelectorAll('[data-akcja="okazja"]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === st.okazja)));
     },
     zdjecie() { const f = document.getElementById('plik'); if (f) f.click(); },
+    zdjWyb(el) {
+      const i = +el.dataset.i;
+      ZDJ.wyb = ZDJ.wyb.includes(i) ? ZDJ.wyb.filter((x) => x !== i) : ZDJ.wyb.concat(i).sort((a, b) => a - b);
+      render(true);
+    },
+    zdjPonow() { rozpoznajZdjecie(); },
+    zdjPodpowiedz() {
+      const t = document.getElementById('zdj-szukam');
+      ZDJ.szukam = ((t && t.value) || '').trim();
+      if (!ZDJ.szukam) { komunikat('Napisz, czego szukasz na zdjęciu, np. torebka.'); if (t) t.focus(); return; }
+      rozpoznajZdjecie();
+    },
+    zdjSzukaj() {
+      const q = tekstyZdjecia();
+      if (!q.length) { komunikat('Zaznacz rzecz albo wpisz jej opis.'); return; }
+      zacznijSzukanie(q[0], q);
+    },
+    zdjStyl() {
+      const q = tekstyZdjecia();
+      if (!q.length) { komunikat('Zaznacz rzecz, do której mamy dobrać stylizację.'); return; }
+      Object.assign(st, { stylQ: q[0], stylStart: null, stylRozm: null, stylTryb: 'outfit' });
+      zapisz(); location.hash = '#/komponuj';
+    },
+    zakladkaPonow() { delete WYN_BLAD[kluczWyniku(st.zapytanie, st.dzial)]; render(true); },
+    zakladka(el) {
+      const q = st.zakladki && st.zakladki[+el.dataset.i]; if (!q || q === st.zapytanie) return;
+      st.zapytanie = q; dopiszSzukanie(q);
+      filtrOkazji = 'wszystkie'; tylkoPromocje = false; tylkoSecond = false;
+      zapisz(); render();
+    },
     szukaj() {
       const q = (document.getElementById('q').value || '').trim();
       if (!q) { komunikat('Wpisz, czego szukasz.'); document.getElementById('q').focus(); return; }
@@ -1447,6 +1543,8 @@
       document.getElementById(t.id + 'v').textContent = t.id === 'b1' ? opisCeny(+t.value) : '~ ' + zl(+t.value);
     }
     if (t.id === 'q') { st.zapytanie = t.value; zapisz(); }
+    if (t.dataset.zrz && ZDJ && ZDJ.rzeczy[+t.dataset.zrz]) ZDJ.rzeczy[+t.dataset.zrz].tekst = t.value;
+    if (t.id === 'zdj-szukam' && ZDJ) ZDJ.szukam = t.value;
     const d = STYL && STYL.dane;
     if (d && (t.classList.contains('suwak-rzeczy') || t.id === 'styl-suma')) {
       const S = stylStan(stylWidok.tryb, stylWidok.z), Z = d.tryby[stylWidok.tryb].zestawy[stylWidok.z];
@@ -1487,6 +1585,8 @@
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.id === 'q') { e.preventDefault(); A.szukaj(); }
+    if (e.key === 'Enter' && e.target.id === 'zdj-szukam') { e.preventDefault(); A.zdjPodpowiedz(); }
+    if (e.key === 'Enter' && e.target.dataset.zrz) { e.preventDefault(); e.target.blur(); }
     if (e.key === 'Escape' && !ARK.hidden) ARK.hidden = true;
   });
 
@@ -1535,8 +1635,9 @@
   }
 
   /* ---------- szukanie: z hasła albo ze zdjęcia ---------- */
-  function zacznijSzukanie(q) {
+  function zacznijSzukanie(q, zakladki) {
     st.zapytanie = q;
+    st.zakladki = zakladki && zakladki.length > 1 ? zakladki.slice(0, 6) : null; // kilka rzeczy ze zdjęcia = zakładki w wynikach
     st.ostatnie = [q].concat(st.ostatnie.filter((x) => x.toLowerCase() !== q.toLowerCase())).slice(0, 8);
     dopiszSzukanie(q);
     filtrOkazji = 'wszystkie'; budzetWl = true; tylkoPromocje = false; tylkoSecond = false; kolejnosc = 'polecane';
@@ -1558,24 +1659,72 @@
       im.src = u;
     });
   }
-  let rozpoznaje = false;
+  /* Szukanie ze zdjęcia (0.21.0, decyzja użytkownika 16.11): AI wypisuje wszystkie rzeczy ze zdjęcia, markę tylko z widocznego logo.
+     Można poprawić opis, zaznaczyć kilka rzeczy (wyniki w zakładkach) albo dopisać, czego się szuka, i rozpoznać jeszcze raz. */
+  let ZDJ = null; // { url, blob, stan: 'laduje'|'gotowe'|'blad', rzeczy, wyb: [indeksy], szukam, blad }
   function szukajZeZdjecia(plik) {
-    if (rozpoznaje) return;
-    rozpoznaje = true;
-    komunikat('Rozpoznaję rzecz ze zdjęcia…');
+    if (ZDJ && ZDJ.url) URL.revokeObjectURL(ZDJ.url);
+    ZDJ = { stan: 'laduje', rzeczy: [], wyb: [], szukam: '' };
+    location.hash = '#/zdjecie';
+    render();
     zmniejsz(plik)
-      .then((b) => fetch(`${API}/zdjecie`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: b }))
+      .then((b) => { ZDJ.blob = b; ZDJ.url = URL.createObjectURL(b); rozpoznajZdjecie(); })
+      .catch(() => { ZDJ.stan = 'blad'; ZDJ.blad = 'Nie udało się odczytać zdjęcia. Wybierz inne.'; odswiezZdjecie(); });
+  }
+  const odswiezZdjecie = () => { if (trasa() === 'zdjecie') render(true); };
+  function rozpoznajZdjecie() {
+    if (!ZDJ || !ZDJ.blob) return;
+    const z = ZDJ;
+    z.stan = 'laduje'; odswiezZdjecie();
+    fetch(`${API}/zdjecie${z.szukam ? '?szukam=' + encodeURIComponent(z.szukam) : ''}`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: z.blob })
       .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
-        if (!ok) { komunikat(d.blad || 'Nie udało się rozpoznać zdjęcia. Spróbuj jeszcze raz.'); return; }
-        if (!d.rzecz || !d.q) { komunikat('Nie widzę na zdjęciu ubrania ani dodatku. Spróbuj innego zdjęcia.'); return; }
-        komunikat(`Szukam: ${d.q}`);
-        zacznijSzukanie(d.q);
+        if (z !== ZDJ) return;
+        if (!ok) { z.stan = 'blad'; z.blad = d.blad || 'Nie udało się rozpoznać zdjęcia. Spróbuj jeszcze raz.'; return; }
+        // starszy serwer zwraca jedno hasło
+        z.rzeczy = Array.isArray(d.rzeczy) ? d.rzeczy : d.rzecz && d.q ? [{ q: d.q, szukaj: d.q, marka: '', model: '', znak: '', dzial: d.dzial }] : [];
+        z.rzeczy.forEach((x) => { x.tekst = x.szukaj || x.q; });
+        z.wyb = z.rzeczy.length ? [0] : [];
+        z.stan = 'gotowe';
+        const dz = z.rzeczy[0] && z.rzeczy[0].dzial;
+        if ((dz === 'damskie' || dz === 'meskie') && dz !== st.dzial) { st.dzial = dz; zapisz(); }
       })
-      .catch(() => komunikat('Nie udało się wysłać zdjęcia. Sprawdź internet albo wpisz, czego szukasz.'))
-      .finally(() => { rozpoznaje = false; });
+      .catch(() => { if (z === ZDJ) { z.stan = 'blad'; z.blad = 'Nie udało się wysłać zdjęcia. Sprawdź internet albo wpisz, czego szukasz.'; } })
+      .finally(() => { if (z === ZDJ) odswiezZdjecie(); });
   }
-
+  EKRANY.zdjecie = () => {
+    const z = ZDJ;
+    const naglowek = `<div class="naglowek"><a class="ikonka bez" href="#/szukaj" aria-label="Wróć">${IK.wstecz}</a><h1>Ze zdjęcia</h1><span class="puste"></span></div>`;
+    if (!z) return { akt: 'szukaj', html: `${naglowek}<div class="pusty"><p>Wybierz zdjęcie, a rozpoznamy rzeczy, które na nim są.</p><button class="btn" data-akcja="zdjecie">${IK.aparat} Wybierz zdjęcie</button></div><input type="file" id="plik" accept="image/*" hidden>` };
+    const fot = z.url ? `<div class="zdj-podglad"><img src="${z.url}" alt="Twoje zdjęcie"></div>` : '';
+    const wybrane = z.wyb.filter((i) => z.rzeczy[i]);
+    let tresc;
+    if (z.stan === 'laduje') {
+      tresc = `<div class="zdj-laduje"><span class="kolko" aria-hidden="true"></span><p>${z.szukam ? `Szukam na zdjęciu: ${esc(z.szukam)}…` : 'Rozpoznaję rzeczy na zdjęciu…'}</p></div>`;
+    } else if (z.stan === 'blad') {
+      tresc = `<div class="info uwaga" style="margin-top:16px">${IK.uwaga}<p>${esc(z.blad)}</p></div>
+        <button class="btn drugi" style="margin-top:14px" data-akcja="${z.blob ? 'zdjPonow' : 'zdjecie'}">${z.blob ? 'Spróbuj jeszcze raz' : 'Wybierz inne zdjęcie'}</button>`;
+    } else {
+      tresc = (z.rzeczy.length ? `<p class="zdj-pyt">Co z tego szukamy?</p>
+        <p class="maly szary" style="margin:-4px 0 12px">Możesz poprawić opis i zaznaczyć kilka rzeczy. Wyniki pokażemy w zakładkach.</p>
+        <div class="zdj-lista">${z.rzeczy.map((x, i) => `<div class="zdj-rzecz${z.wyb.includes(i) ? ' wyb' : ''}">
+            <button class="zdj-znak" data-akcja="zdjWyb" data-i="${i}" aria-pressed="${z.wyb.includes(i)}" aria-label="Szukaj tej rzeczy">${z.wyb.includes(i) ? IK.ok : ''}</button>
+            <div class="zdj-opis"><label class="ukryj" for="zr-${i}">Opis rzeczy ${i + 1}</label>
+              <textarea id="zr-${i}" data-zrz="${i}" rows="${Math.min(3, Math.max(1, Math.ceil((x.tekst || '').length / 30)))}" autocomplete="off" enterkeyhint="done">${esc(x.tekst)}</textarea>
+              ${x.marka ? `<span class="zdj-marka">Marka z logo: <b>${esc(x.marka)}${x.model ? ' ' + esc(x.model) : ''}</b>${x.znak ? ` (${esc(x.znak)})` : ''}</span>` : ''}</div></div>`).join('')}</div>`
+        : `<div class="info neutral" style="margin-top:16px">${IK.info}<p>Nie widzę na zdjęciu ubrania ani dodatku. Napisz niżej, czego szukasz, albo wybierz inne zdjęcie.</p></div>`)
+        + `<div class="zdj-podpowiedz"><label for="zdj-szukam">${z.rzeczy.length ? 'Nie ma tego, czego szukasz?' : 'Czego szukasz na tym zdjęciu?'}</label>
+          <div class="pole-szukaj">${IK.szukaj}<input id="zdj-szukam" value="${esc(z.szukam)}" placeholder="Np. torebka, kolczyki, te buty" autocomplete="off" enterkeyhint="search">
+          <button class="ikonka" data-akcja="zdjPodpowiedz" aria-label="Rozpoznaj jeszcze raz">${IK.dalej}</button></div></div>`
+        + (wybrane.length ? `<div class="przelacznik" role="radiogroup" aria-label="Dział" style="margin-top:18px">
+          <button role="radio" aria-checked="${st.dzial === 'damskie'}" data-akcja="dzial" data-v="damskie">Damskie</button>
+          <button role="radio" aria-checked="${st.dzial === 'meskie'}" data-akcja="dzial" data-v="meskie">Męskie</button></div>
+          <button class="btn" style="margin-top:16px" data-akcja="zdjSzukaj">${wybrane.length > 1 ? `Szukaj zaznaczonych (${wybrane.length})` : 'Szukaj w sklepach'} ${IK.szukaj}</button>
+          <button class="btn drugi" style="margin-top:10px" data-akcja="zdjStyl">Skomponuj stylizację ${IK.iskra}</button>` : '');
+    }
+    return { akt: 'szukaj', html: `${naglowek}${fot}${tresc}<input type="file" id="plik" accept="image/*" hidden>` };
+  };
+  const tekstyZdjecia = () => ZDJ.wyb.filter((i) => ZDJ.rzeczy[i]).map((i) => (ZDJ.rzeczy[i].tekst || '').trim()).filter(Boolean);
 
   /* ---------- router ---------- */
   function render(zachowajPozycje) {
