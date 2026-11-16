@@ -321,3 +321,8 @@ Najlepsza droga dla każdego sklepu:
   stylizację”). Kilka rzeczy = zakładki w wynikach (`st.zakladki`, pamięć `WYN`, pozostałe dociągane po kolei w tle).
 - Specshop.pl podłączony (IdoSell, oba działy). Militaria.pl, Helikon-Tex, Texar, 8a.pl blokują serwery; zostaje Google Shopping.
 - Kontrola przy instalacji: 4 nowe hasła testowe (marka, okazja, cecha); jednorazowo kilka groszy, potem z pamięci.
+
+## 0.21.1 (16.11.2026)
+- Instalacja 0.21.0 OK: hasła testowe 32/32 (w tym marka, okazja, cecha), kontrola 0 krytycznych, inne aplikacje 200/200/200/400.
+- Próba na żywo „koszula taktyczna” (męskie): 69 rzeczy, wszystkie taktyczne/wojskowe (Allegro, Specshop, sklepy militarne z Google, Vinted), koszt ok. 0,09 USD.
+- Specshop: brak wyników = przekierowanie z kodem 404 → teraz „ok, 0”, a nie awaria widoczna w wynikach.

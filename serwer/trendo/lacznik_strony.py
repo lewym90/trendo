@@ -124,6 +124,8 @@ def _kafle2(sklep, url, dzial):
 def _idosell(sklep, url, dzial):
     """Sklepy na platformie IdoSell: wspólny szablon listy wyników (product__name, product__prices)."""
     kod, b = pobierz(url)
+    if kod == 404:
+        return [], "ok"  # brak wyników: IdoSell przekierowuje na noproduct.php z kodem 404 (np. „sukienka” w Specshopie)
     if kod != 200:
         return [], f"brak odpowiedzi ({kod})"
     t = b.decode("utf-8", "ignore")
